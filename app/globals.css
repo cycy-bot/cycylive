@@ -1,0 +1,73 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #06050b;
+  color: #f5f1ff;
+  font-family: var(--font-sans);
+}
+
+/* Fond spatial : la vraie texture de nébuleuse fournie, en fond fixe,
+   assombrie et mélangée à un dégradé violet pour rester lisible. */
+.fond-spatial {
+  position: relative;
+  background-color: #06050b;
+  background-image:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(6, 5, 11, 0.4), rgba(6, 5, 11, 0.92) 60%),
+    url("/images/starfield-bg.jpg");
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.glow-text {
+  text-shadow: 0 0 24px rgba(161, 92, 255, 0.45);
+}
+
+.eyebrow {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.carte-holo {
+  background: linear-gradient(180deg, rgba(20, 16, 34, 0.9), rgba(13, 10, 23, 0.9));
+  border: 1px solid rgba(161, 92, 255, 0.25);
+}
+
+.liseret-glow {
+  box-shadow: 0 0 0 1px rgba(161, 92, 255, 0.2), 0 0 30px rgba(123, 56, 255, 0.08);
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
