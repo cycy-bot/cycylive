@@ -5,7 +5,6 @@ import {
   IconStar4,
   IconPlanetRing,
   IconOrbit,
-  IconMoonCrescent,
 } from "@/components/Icons";
 
 const typesCollab = [
@@ -13,7 +12,6 @@ const typesCollab = [
   { label: "Événements", icon: IconStar4 },
   { label: "Marques", icon: IconPlanetRing },
   { label: "Sponsoring", icon: IconOrbit },
-  { label: "Campagnes sociales", icon: IconMoonCrescent },
   { label: "Collabs créateurs", icon: IconCrystal },
 ];
 

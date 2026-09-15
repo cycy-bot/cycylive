@@ -8,7 +8,6 @@ import {
   IconTikTok,
   IconInstagram,
   IconYouTube,
-  IconMail,
   IconStar4,
   IconOrbit,
 } from "@/components/Icons";
@@ -74,10 +73,6 @@ export default function Hero() {
             <a href={liens.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"
               className="h-10 w-10 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
               <IconYouTube className="w-4 h-4" />
-            </a>
-            <a href={`mailto:${liens.mailPro}`} aria-label="Mail pro"
-              className="h-10 w-10 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
-              <IconMail className="w-4 h-4" />
             </a>
           </div>
         </div>

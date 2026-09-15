@@ -59,7 +59,7 @@ cycylive/
 
 | Je veux changer... | Fichier à ouvrir |
 |---|---|
-| Le planning de la semaine | `data/planning.ts` |
+| Le planning de la semaine | Interface web `/admin` (voir plus bas) — plus besoin de fichier |
 | Un lien Twitch / TikTok / Instagram / YouTube / Discord / mail | `data/liens.ts` |
 | Les textes du site (accroche, à propos, communauté, partenariats, contact) | `data/textes.ts` |
 | Les vidéos mises en avant sur l'accueil | `data/contenus.ts` |
@@ -146,6 +146,51 @@ Vercel redéploie automatiquement le site en quelques secondes.
 4. Ajoute ces enregistrements chez ton fournisseur de domaine (OVH, Namecheap, etc.).
 5. La propagation prend généralement entre quelques minutes et 24h.
 
+## Interface d'administration du planning
+
+Tu peux maintenant modifier le planning **sans jamais ouvrir de fichier de code**, via une vraie page web : `/admin` (ex : `tonsite.vercel.app/admin` ou `localhost:3000/admin` en local).
+
+Pour que les modifications soient réellement sauvegardées (et visibles par tous les visiteurs, pas juste sur ton ordinateur), il faut connecter une petite base de données Redis gratuite chez **Upstash** (Vercel KV a été abandonné).
+
+### Étape 1 — Créer une base gratuite sur Upstash
+
+1. Va sur [upstash.com](https://upstash.com) et crée un compte gratuit (tu peux te connecter avec GitHub).
+2. Clique sur **Create Database**, choisis le type **Redis**, une région proche (Europe), le plan **Free**, et crée-la.
+3. Sur la page de ta base, ouvre la section **REST API**. Clique sur l'icône œil pour révéler le token, puis copie les deux valeurs : `UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN`.
+4. Sur [vercel.com](https://vercel.com), ouvre ton projet Cycylive → **Settings → Environment Variables**.
+5. Ajoute les deux variables avec **exactement les mêmes noms** que sur Upstash (`UPSTASH_REDIS_REST_URL` et `UPSTASH_REDIS_REST_TOKEN`) et colle les valeurs copiées.
+
+### Étape 2 — Choisir un mot de passe pour /admin
+
+1. Toujours dans **Settings → Environment Variables** de ton projet Vercel, ajoute une nouvelle variable :
+   - **Name** : `ADMIN_PASSWORD`
+   - **Value** : le mot de passe de ton choix (garde-le pour toi)
+2. Redéploie le projet (un nouveau `git push` suffit).
+
+### Étape 3 — Utiliser l'interface
+
+Va sur `tonsite.vercel.app/admin`. Deux onglets sont disponibles :
+
+**Onglet "Planning"** : coche "OFF" pour un jour sans live, ou renseigne l'heure (et le jeu si tu veux — sinon le site affiche juste "Stream"). Entre ton mot de passe et clique **Enregistrer le planning**.
+
+**Onglet "Derniers contenus"** : pour faire apparaître tes dernières vidéos TikTok, Reels Instagram, vidéos YouTube ou clips Twitch sur le site (page d'accueil et page Réseaux) :
+1. Clique **+ Ajouter une vidéo**.
+2. Choisis la plateforme et le format (vertical pour TikTok/Reels, horizontal pour YouTube).
+3. Colle le lien de la vidéo et donne-lui un titre.
+4. Entre ton mot de passe et clique **Enregistrer les contenus**.
+
+Chaque enregistrement est immédiatement visible sur le site, pour tout le monde.
+
+⚠️ Note importante : TikTok et Instagram n'ont pas d'API publique simple permettant de récupérer automatiquement tes dernières vidéos — c'est pour ça que tu les ajoutes toi-même via cet onglet. YouTube, en revanche, a une API officielle et gratuite ; si un jour tu veux que tes vidéos YouTube apparaissent automatiquement sans avoir à les ajouter à la main, c'est une évolution possible (voir "Évolutions futures").
+
+### Pour tester `/admin` en local (optionnel)
+
+1. Installe l'outil Vercel CLI une seule fois : `npm install -g vercel`
+2. Dans le dossier du projet : `vercel link` (connecte le dossier à ton projet Vercel), puis `vercel env pull .env.local` (récupère automatiquement toutes les variables, y compris KV).
+3. Relance `npm run dev` et va sur `localhost:3000/admin`.
+
+Si tu préfères ne pas faire cette étape technique, ce n'est pas grave : tu peux tout aussi bien te connecter directement sur `tonsite.vercel.app/admin` une fois le site déployé.
+
 ## Détection automatique du live Twitch
 
 Le site vérifie maintenant **réellement et automatiquement** si tu es en live sur Twitch (toutes les 60 secondes), et adapte les CTA, les couleurs et les textes en conséquence — plus aucun interrupteur à changer à la main.
@@ -187,7 +232,13 @@ C'est tout : le site en ligne détecte désormais tout seul quand tu passes en l
 
 ## Variables d'environnement
 
-Le site fonctionne sans aucune configuration (le bloc Twitch affichera simplement "hors ligne" avec le prochain live calculé depuis le planning). Pour activer la **détection réelle du live**, voir la section précédente "Détection automatique du live Twitch" — 3 variables sont nécessaires : `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_CHANNEL_LOGIN`.
+Le site fonctionne sans aucune configuration (planning par défaut, statut Twitch "hors ligne"). Pour activer les fonctionnalités avancées :
+
+| Variable | Pour quoi | Où la trouver |
+|---|---|---|
+| `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Sauvegarder le planning via `/admin` | [upstash.com](https://upstash.com) (voir "Interface d'administration") |
+| `ADMIN_PASSWORD` | Protéger l'accès à `/admin` | Choisi par toi |
+| `TWITCH_CLIENT_ID`, `TWITCH_CLIENT_SECRET`, `TWITCH_CHANNEL_LOGIN` | Détecter le vrai statut Twitch | [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps) (voir "Détection automatique du live Twitch") |
 
 ## Évolutions futures (déjà prévues dans l'architecture)
 

@@ -5,9 +5,9 @@
 
 export const liens = {
   twitch: "https://twitch.tv/cycylive",
-  tiktok: "https://tiktok.com/@cycylive",
+  tiktok: "https://tiktok.com/@cycylive_",
   instagram: "https://instagram.com/cycylive",
   youtube: "https://youtube.com/@cycylive",
-  discord: "https://discord.gg/cycylive",
-  mailPro: "contact@cycylive.com",
+  discord: "https://discord.gg/sER6tztDSz",
+  mailPro: "contact@cycylive.fr",
 };

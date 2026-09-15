@@ -1,13 +1,21 @@
 "use client";
 
-import { getProchainLive } from "@/data/planning";
+import { useEffect, useState } from "react";
 import { liens } from "@/data/liens";
 import { useTwitchStatus } from "@/components/useTwitchStatus";
 import { IconTwitch, IconMoonCrescent, IconStar4 } from "@/components/Icons";
+import type { ProchainLive } from "@/data/planning";
 
 export default function StatutTwitch() {
   const { enLigne, titre, categorie, viewers, miniature } = useTwitchStatus();
-  const prochainLive = getProchainLive();
+  const [prochainLive, setProchainLive] = useState<ProchainLive | null>(null);
+
+  useEffect(() => {
+    fetch("/api/prochain-live")
+      .then((r) => r.json())
+      .then((data) => setProchainLive(data.prochainLive))
+      .catch(() => {});
+  }, []);
 
   return (
     <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">

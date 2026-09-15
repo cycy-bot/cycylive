@@ -1,20 +1,16 @@
 // ============================================================
-// PLANNING DES LIVES — le planning type de la semaine
+// PLANNING DES LIVES — types et calculs
 // ============================================================
-// Comme tes jours off / jours de live sont toujours les mêmes,
-// tu n'as PAS besoin de mettre à jour les dates ni le "prochain
-// live" : tout est calculé automatiquement à partir de la liste
-// ci-dessous et de l'heure actuelle.
+// ⚠️ Tu n'as normalement plus besoin de modifier ce fichier.
+// Pour changer le planning au quotidien, utilise l'interface web
+// sur /admin (voir le README, section "Interface d'administration
+// du planning").
 //
-// Tu ne modifies CE FICHIER que si :
-// - un jour off/live change de façon durable ;
-// - un horaire change ;
-// - tu veux préciser un jeu pour une semaine donnée (optionnel).
-//
-// "off: true"   -> jour sans live (heure et jeu ignorés)
-// "off: false"  -> jour avec live (renseigne au moins l'heure)
-// "jeu"         -> optionnel. Si tu ne le remplis pas, le site
-//                  affiche juste "En live" à la place.
+// Le tableau ci-dessous ne sert que de PLANNING PAR DÉFAUT, utilisé
+// si l'interface /admin n'a encore jamais rien enregistré (ou si le
+// stockage n'est pas configuré). Une fois que tu as fait une
+// première sauvegarde via /admin, c'est celle-ci qui prend le relais
+// partout sur le site.
 
 export type JourPlanning = {
   jour: string;
@@ -23,24 +19,23 @@ export type JourPlanning = {
   heure?: string; // format "21h30"
 };
 
-export const planning: JourPlanning[] = [
+export const LABEL_GENERIQUE = "Stream";
+
+export const planningParDefaut: JourPlanning[] = [
   { jour: "Lundi", off: false, heure: "21h30" },
   { jour: "Mardi", off: false, heure: "21h30" },
   { jour: "Mercredi", off: false, heure: "21h30" },
   { jour: "Jeudi", off: false, heure: "21h30" },
   { jour: "Vendredi", off: true },
   { jour: "Samedi", off: false, heure: "21h30" },
-  { jour: "Dimanche", off: true },
+  { jour: "Dimanche", off: false, heure: "21h30" },
 ];
-
-// Libellé générique utilisé quand aucun jeu n'est précisé pour un jour.
-export const LABEL_GENERIQUE = "En live";
 
 // ------------------------------------------------------------
 // Calculs automatiques (rien à modifier en dessous de cette ligne)
 // ------------------------------------------------------------
 
-const JOURS_ORDRE = [
+export const JOURS_ORDRE = [
   "Dimanche",
   "Lundi",
   "Mardi",
@@ -84,9 +79,11 @@ export type ProchainLive = {
   estAujourdhui: boolean;
 };
 
-// Trouve automatiquement le prochain live à venir (ou en cours ce
-// soir) en se basant sur le planning et l'heure actuelle.
-export function getProchainLive(): ProchainLive | null {
+// Trouve le prochain live à venir à partir d'UN planning donné
+// (celui par défaut, ou celui enregistré via /admin).
+export function calculerProchainLive(
+  planning: JourPlanning[]
+): ProchainLive | null {
   const maintenant = new Date();
 
   for (let decalage = 0; decalage < 8; decalage++) {
@@ -101,8 +98,6 @@ export function getProchainLive(): ProchainLive | null {
     const dateLive = new Date(date);
     dateLive.setHours(heures, minutes, 0, 0);
 
-    // Si c'est aujourd'hui mais que l'heure est déjà passée, on ignore
-    // ce jour et on continue à chercher plus loin dans la semaine.
     if (decalage === 0 && dateLive.getTime() < maintenant.getTime()) continue;
 
     return {

@@ -1,7 +1,9 @@
-import { planning, getSemaineActuelle, LABEL_GENERIQUE } from "@/data/planning";
+import { getSemaineActuelle, LABEL_GENERIQUE } from "@/data/planning";
+import { lirePlanning } from "@/lib/planningStore";
 import { IconMoonCrescent, IconCrystal } from "@/components/Icons";
 
-export default function Planning() {
+export default async function Planning() {
+  const planning = await lirePlanning();
   const { du, au } = getSemaineActuelle();
 
   return (

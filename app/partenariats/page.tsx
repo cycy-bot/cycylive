@@ -5,7 +5,6 @@ import {
   IconStar4,
   IconPlanetRing,
   IconOrbit,
-  IconMoonCrescent,
   IconMail,
 } from "@/components/Icons";
 
@@ -14,7 +13,6 @@ const typesCollab = [
   { label: "Événements", icon: IconStar4 },
   { label: "Marques", icon: IconPlanetRing },
   { label: "Sponsoring", icon: IconOrbit },
-  { label: "Campagnes sociales", icon: IconMoonCrescent },
   { label: "Collaborations créateurs", icon: IconCrystal },
 ];
 

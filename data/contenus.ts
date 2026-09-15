@@ -1,8 +1,14 @@
 // ============================================================
-// DERNIERS CONTENUS — à modifier pour mettre en avant tes vidéos
+// DERNIERS CONTENUS — types et valeur par défaut
 // ============================================================
-// "format: 'vertical'" -> carte style téléphone (TikTok/Reels/Shorts)
-// "format: 'horizontal'" -> carte large (YouTube, clips Twitch)
+// ⚠️ Tu n'as normalement plus besoin de modifier ce fichier.
+// Pour ajouter/retirer une vidéo au quotidien, utilise l'interface
+// web sur /admin (voir le README, section "Interface
+// d'administration").
+//
+// Le tableau ci-dessous ne sert que de valeur PAR DÉFAUT, utilisée
+// si /admin n'a encore jamais rien enregistré (ou si le stockage
+// n'est pas configuré).
 
 export type Contenu = {
   id: string;
@@ -10,16 +16,14 @@ export type Contenu = {
   titre: string;
   url: string;
   format: "vertical" | "horizontal";
-  // Chemin d'une miniature dans /public/images, ou laisse vide pour le placeholder par défaut
-  miniature?: string;
 };
 
-export const contenus: Contenu[] = [
+export const contenusParDefaut: Contenu[] = [
   {
     id: "1",
     plateforme: "TikTok",
     titre: "Clip Valorant qui part en vrille",
-    url: "https://tiktok.com/@cycylive",
+    url: "https://tiktok.com/@cycylive_",
     format: "vertical",
   },
   {
@@ -35,19 +39,5 @@ export const contenus: Contenu[] = [
     titre: "Best-of du mois — moments cultes",
     url: "https://youtube.com/@cycylive",
     format: "horizontal",
-  },
-  {
-    id: "4",
-    plateforme: "Twitch",
-    titre: "Clutch de fin de round",
-    url: "https://twitch.tv/cycylive/clips",
-    format: "vertical",
-  },
-  {
-    id: "5",
-    plateforme: "TikTok",
-    titre: "Réaction en direct",
-    url: "https://tiktok.com/@cycylive",
-    format: "vertical",
   },
 ];

@@ -102,10 +102,6 @@ export default function ContactPage() {
         >
           Envoyer le message
         </button>
-
-        <p className="text-ink-soft/70 text-xs text-center">
-          Envoie un mail directement à {liens.mailPro}
-        </p>
       </form>
     </div>
   );

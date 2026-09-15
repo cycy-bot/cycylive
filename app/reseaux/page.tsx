@@ -1,5 +1,6 @@
 import { liens } from "@/data/liens";
-import { contenus } from "@/data/contenus";
+import { lireContenus } from "@/lib/contenusStore";
+import type { Contenu } from "@/data/contenus";
 import {
   IconTwitch,
   IconTikTok,
@@ -40,9 +41,42 @@ const plateformes = [
     lien: liens.discord,
     icon: IconDiscord,
   },
-];
+] as const;
 
-export default function ReseauxPage() {
+function GalerieContenus({ titre, items }: { titre: string; items: Contenu[] }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <h2 className="text-2xl font-semibold text-ink mt-14 mb-6">{titre}</h2>
+      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+        {items.map((c) => (
+          <a
+            key={c.id}
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`snap-start shrink-0 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all ${
+              c.format === "vertical" ? "w-40" : "w-64"
+            }`}
+          >
+            <div
+              className={`bg-nebula flex items-center justify-center text-ink-soft/40 text-xs ${
+                c.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
+              }`}
+            >
+              Aperçu
+            </div>
+            <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
+          </a>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default async function ReseauxPage() {
+  const contenus = await lireContenus();
+
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-16">
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
@@ -71,27 +105,22 @@ export default function ReseauxPage() {
         ))}
       </div>
 
-      <h2 className="text-2xl font-semibold text-ink mt-14 mb-6">
-        Derniers clips Twitch
-      </h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-        {contenus
-          .filter((c) => c.plateforme === "Twitch")
-          .map((c) => (
-            <a
-              key={c.id}
-              href={c.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="snap-start shrink-0 w-40 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all"
-            >
-              <div className="aspect-[9/16] bg-nebula flex items-center justify-center text-ink-soft/40 text-xs">
-                Aperçu
-              </div>
-              <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
-            </a>
-          ))}
-      </div>
+      <GalerieContenus
+        titre="Derniers clips Twitch"
+        items={contenus.filter((c) => c.plateforme === "Twitch")}
+      />
+      <GalerieContenus
+        titre="Derniers TikTok"
+        items={contenus.filter((c) => c.plateforme === "TikTok")}
+      />
+      <GalerieContenus
+        titre="Derniers Reels Instagram"
+        items={contenus.filter((c) => c.plateforme === "Instagram")}
+      />
+      <GalerieContenus
+        titre="Dernières vidéos YouTube"
+        items={contenus.filter((c) => c.plateforme === "YouTube")}
+      />
     </div>
   );
 }

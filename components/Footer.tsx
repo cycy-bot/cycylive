@@ -6,7 +6,6 @@ import {
   IconTikTok,
   IconInstagram,
   IconYouTube,
-  IconMail,
 } from "@/components/Icons";
 
 const reseaux = [
@@ -55,14 +54,6 @@ export default function Footer() {
               <Icon className="w-4 h-4" />
             </a>
           ))}
-          <a
-            href={`mailto:${liens.mailPro}`}
-            aria-label="Mail"
-            title={liens.mailPro}
-            className="h-9 w-9 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all"
-          >
-            <IconMail className="w-4 h-4" />
-          </a>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-8 pb-8 text-xs text-ink-soft/60 flex gap-4">

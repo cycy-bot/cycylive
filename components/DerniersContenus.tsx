@@ -1,4 +1,4 @@
-import { contenus } from "@/data/contenus";
+import { lireContenus } from "@/lib/contenusStore";
 import {
   IconTikTok,
   IconInstagram,
@@ -13,7 +13,8 @@ const iconParPlateforme = {
   Twitch: IconTwitch,
 };
 
-export default function DerniersContenus() {
+export default async function DerniersContenus() {
+  const contenus = await lireContenus();
   return (
     <section className="py-14">
       <div className="mx-auto max-w-6xl px-5 md:px-8 mb-8">
