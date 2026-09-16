@@ -3,7 +3,9 @@
 // ============================================================
 // Toutes en SVG "currentColor" pour hériter la couleur du texte parent.
 
-type IconProps = { className?: string };
+import type { CSSProperties } from "react";
+
+type IconProps = { className?: string; style?: CSSProperties };
 
 export function IconTwitch({ className }: IconProps) {
   return (
@@ -111,9 +113,9 @@ export function IconRocket({ className }: IconProps) {
 
 /* ---------- Motifs cosmiques décoratifs ---------- */
 
-export function IconStar4({ className }: IconProps) {
+export function IconStar4({ className, style }: IconProps) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
+    <svg viewBox="0 0 24 24" fill="none" className={className} style={style}>
       <path
         d="M12 2c.3 3.6 1 6.9 3.4 8.6C13 12.3 12.3 15.6 12 19.2c-.3-3.6-1-6.9-3.4-8.6C11 8.9 11.7 5.6 12 2Z"
         fill="currentColor"
