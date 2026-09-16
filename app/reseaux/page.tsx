@@ -1,12 +1,13 @@
 import { liens } from "@/data/liens";
 import { lireContenus } from "@/lib/contenusStore";
-import type { Contenu } from "@/data/contenus";
+import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
 import {
   IconTwitch,
   IconTikTok,
   IconInstagram,
   IconYouTube,
   IconDiscord,
+  IconLink,
 } from "@/components/Icons";
 
 const plateformes: {
@@ -47,9 +48,15 @@ const plateformes: {
     lien: liens.discord,
     icon: IconDiscord,
   },
+  {
+    nom: "Linktree",
+    description: "Tous mes réseaux réunis au même endroit.",
+    lien: liens.linktree,
+    icon: IconLink,
+  },
 ];
 
-function GalerieContenus({ titre, items }: { titre: string; items: Contenu[] }) {
+function GalerieClips({ titre, items }: { titre: string; items: ContenuAvecMiniature[] }) {
   if (items.length === 0) return null;
   return (
     <>
@@ -66,11 +73,20 @@ function GalerieContenus({ titre, items }: { titre: string; items: Contenu[] }) 
             }`}
           >
             <div
-              className={`bg-nebula flex items-center justify-center text-ink-soft/40 text-xs ${
+              className={`relative bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden ${
                 c.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
               }`}
             >
-              Aperçu
+              {c.miniature ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.miniature}
+                  alt={c.titre}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+              ) : (
+                <span>{c.plateforme}</span>
+              )}
             </div>
             <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
           </a>
@@ -81,7 +97,7 @@ function GalerieContenus({ titre, items }: { titre: string; items: Contenu[] }) 
 }
 
 export default async function ReseauxPage() {
-  const contenus = await lireContenus();
+  const contenus = await ajouterMiniatures(await lireContenus());
 
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-16">
@@ -111,19 +127,19 @@ export default async function ReseauxPage() {
         ))}
       </div>
 
-      <GalerieContenus
+      <GalerieClips
         titre="Derniers clips Twitch"
         items={contenus.filter((c) => c.plateforme === "Twitch")}
       />
-      <GalerieContenus
+      <GalerieClips
         titre="Derniers TikTok"
         items={contenus.filter((c) => c.plateforme === "TikTok")}
       />
-      <GalerieContenus
+      <GalerieClips
         titre="Derniers Reels Instagram"
         items={contenus.filter((c) => c.plateforme === "Instagram")}
       />
-      <GalerieContenus
+      <GalerieClips
         titre="Dernières vidéos YouTube"
         items={contenus.filter((c) => c.plateforme === "YouTube")}
       />

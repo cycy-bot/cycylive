@@ -58,6 +58,16 @@ export default function AdminPage() {
     setContenus((prev) => prev.filter((_, i) => i !== index));
   }
 
+  function deplacerContenu(index: number, direction: -1 | 1) {
+    setContenus((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
   async function enregistrerPlanning() {
     setEnregistrement(true);
     setMessage(null);
@@ -237,13 +247,33 @@ export default function AdminPage() {
                     <option value="vertical">Vertical (TikTok/Reel)</option>
                     <option value="horizontal">Horizontal (YouTube)</option>
                   </select>
-                  <button
-                    onClick={() => supprimerContenu(index)}
-                    aria-label="Supprimer"
-                    className="ml-auto text-ink-soft/60 hover:text-red-300 text-sm px-2"
-                  >
-                    Supprimer
-                  </button>
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() => deplacerContenu(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Monter"
+                      title="Monter"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerContenu(index, 1)}
+                      disabled={index === contenus.length - 1}
+                      aria-label="Descendre"
+                      title="Descendre"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerContenu(index)}
+                      aria-label="Supprimer"
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
                 </div>
                 <input
                   type="text"

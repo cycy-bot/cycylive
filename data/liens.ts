@@ -9,5 +9,6 @@ export const liens = {
   instagram: "https://instagram.com/cycylive",
   youtube: "https://youtube.com/@cycylive",
   discord: "https://discord.gg/sER6tztDSz",
+  linktree: "https://linktr.ee/Cycylive",
   mailPro: "contact@cycylive.fr",
 };
