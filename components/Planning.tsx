@@ -7,7 +7,7 @@ export default async function Planning() {
   const { du, au } = getSemaineActuelle();
 
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
       <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-2">
         <h2 className="text-2xl md:text-3xl font-semibold text-ink">
           Planning des lives

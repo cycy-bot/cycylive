@@ -77,6 +77,7 @@ export type ProchainLive = {
   heure: string;
   jeu: string;
   estAujourdhui: boolean;
+  timestamp: string; // date/heure exacte (ISO), pour calculer un compte à rebours
 };
 
 // Trouve le prochain live à venir à partir d'UN planning donné
@@ -105,6 +106,7 @@ export function calculerProchainLive(
       heure: jourPlanning.heure ?? "",
       jeu: jourPlanning.jeu ?? LABEL_GENERIQUE,
       estAujourdhui: decalage === 0,
+      timestamp: dateLive.toISOString(),
     };
   }
 

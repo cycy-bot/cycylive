@@ -22,9 +22,25 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://cycylive.fr"),
   title: "Cycylive — Streameuse & créatrice de contenu",
   description:
     "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
+  openGraph: {
+    title: "Cycylive — Streameuse & créatrice de contenu",
+    description:
+      "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
+    images: ["/og-image.jpg"],
+    type: "website",
+    locale: "fr_FR",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Cycylive — Streameuse & créatrice de contenu",
+    description:
+      "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
+    images: ["/og-image.jpg"],
+  },
 };
 
 export default function RootLayout({

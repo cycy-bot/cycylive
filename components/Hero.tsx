@@ -17,7 +17,7 @@ export default function Hero() {
   const textes = useTextes();
 
   return (
-    <section className="relative mx-auto max-w-6xl px-5 md:px-8 pt-14 pb-10 md:pt-20 md:pb-16 overflow-hidden">
+    <section className="relative mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-6 md:pt-14 md:pb-10 overflow-hidden">
       {/* décor cosmique discret, en arrière-plan de la section */}
       <IconStar4 className="hidden md:block absolute top-6 left-[42%] w-4 h-4 text-violet-light/60 animate-pulse" aria-hidden />
       <IconStar4 className="hidden md:block absolute bottom-10 left-10 w-3 h-3 text-lilac/50" aria-hidden />
@@ -64,16 +64,16 @@ export default function Hero() {
 
           <div className="flex items-center gap-3">
             <a href={liens.tiktok} target="_blank" rel="noopener noreferrer" aria-label="TikTok"
-              className="h-10 w-10 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
-              <IconTikTok className="w-4 h-4" />
+              className="h-11 w-11 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
+              <IconTikTok className="w-5 h-5" />
             </a>
             <a href={liens.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram"
-              className="h-10 w-10 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
-              <IconInstagram className="w-4 h-4" />
+              className="h-11 w-11 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
+              <IconInstagram className="w-5 h-5" />
             </a>
             <a href={liens.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"
-              className="h-10 w-10 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
-              <IconYouTube className="w-4 h-4" />
+              className="h-11 w-11 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
+              <IconYouTube className="w-5 h-5" />
             </a>
           </div>
         </div>

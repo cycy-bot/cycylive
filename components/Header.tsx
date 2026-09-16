@@ -55,7 +55,7 @@ export default function Header() {
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border border-violet/40 bg-violet/10 text-ink hover:bg-violet/20 hover:shadow-glow-sm transition-all"
           >
-            <IconTwitch className="w-4 h-4" />
+            <IconTwitch className="w-5 h-5" />
             {enLigne ? (
               <>
                 <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
@@ -101,7 +101,7 @@ export default function Header() {
             rel="noopener noreferrer"
             className="mt-1 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium border border-violet/40 bg-violet/10 text-ink"
           >
-            <IconTwitch className="w-4 h-4" />
+            <IconTwitch className="w-5 h-5" />
             {enLigne ? "EN LIVE" : "Voir le live"}
           </a>
         </nav>

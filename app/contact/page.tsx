@@ -17,7 +17,7 @@ export default function ContactPage() {
   const textes = useTextes();
 
   return (
-    <div className="mx-auto max-w-2xl px-5 md:px-8 py-16">
+    <div className="mx-auto max-w-2xl px-5 md:px-8 py-12">
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.contact.titre}
       </h1>

@@ -18,7 +18,7 @@ const typesCollab = [
 export default async function PartenariatsApercu() {
   const textes = await lireTextes();
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
       <div className="grid md:grid-cols-2 gap-8 items-center">
         <div>
           <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">
@@ -34,15 +34,15 @@ export default async function PartenariatsApercu() {
             {textes.partenariats.cta}
           </Link>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-wrap gap-2 md:justify-end">
           {typesCollab.map(({ label, icon: Icon }) => (
-            <div
+            <span
               key={label}
-              className="carte-holo rounded-xl p-4 flex items-center gap-2.5 text-sm text-ink-soft border border-violet/10"
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3.5 py-1.5 text-xs text-ink-soft/80"
             >
-              <Icon className="w-4 h-4 text-violet-light shrink-0" />
+              <Icon className="w-3.5 h-3.5 text-violet-light/70" />
               {label}
-            </div>
+            </span>
           ))}
         </div>
       </div>

@@ -12,7 +12,7 @@ const piliers = [
 export default async function CommunautePage() {
   const textes = await lireTextes();
   return (
-    <div className="mx-auto max-w-3xl px-5 md:px-8 py-16 text-center">
+    <div className="mx-auto max-w-3xl px-5 md:px-8 py-12 text-center">
       <AccentCosmique variante="constellation" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         {textes.communaute.titre}
@@ -39,7 +39,7 @@ export default async function CommunautePage() {
         rel="noopener noreferrer"
         className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
       >
-        <IconDiscord className="w-4 h-4" />
+        <IconDiscord className="w-5 h-5" />
         Rejoindre le Discord
       </a>
     </div>

@@ -233,6 +233,28 @@ Pour l'activer, il te faut deux clés gratuites fournies par Twitch.
 
 C'est tout : le site en ligne détecte désormais tout seul quand tu passes en live, sans aucune action de ta part.
 
+## Compteur de followers Twitch
+
+Depuis septembre 2023, Twitch a fermé l'accès au nombre de followers via une simple clé d'API (le même type de clé que ci-dessus, valable pour "êtes-vous en live"). Pour afficher ce chiffre (sur la page Partenariats), il faut te connecter **une seule fois** avec ton propre compte Twitch, un peu comme un bouton "Se connecter avec Twitch".
+
+### Étape 1 — Ajouter les URL de callback dans ta console Twitch
+
+1. Retourne sur [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps), ouvre ton application (celle créée pour la détection du live).
+2. Dans **OAuth Redirect URLs**, ajoute (en plus de celle déjà présente) :
+   - `http://localhost:3000/api/twitch-callback` (pour tester en local)
+   - `https://tonsite.vercel.app/api/twitch-callback` (remplace par ta vraie URL Vercel)
+   - `https://cycylive.fr/api/twitch-callback` (une fois ton domaine connecté)
+3. Sauvegarde.
+
+### Étape 2 — Se connecter
+
+1. Va sur `tonsite.vercel.app/admin`.
+2. Tout en haut, dans le bloc "Compteur de followers Twitch", clique sur **Connecter Twitch**.
+3. Tu es redirigée vers Twitch : connecte-toi avec ton compte Cycylive et autorise l'accès (permission "voir vos followers").
+4. Tu reviens automatiquement sur `/admin` avec un message de confirmation, et le nombre de followers s'affiche.
+
+C'est fait une seule fois : le site se souvient de la connexion et se reconnecte tout seul en arrière-plan par la suite (pas besoin de refaire cette étape à chaque fois).
+
 ## Variables d'environnement
 
 Le site fonctionne sans aucune configuration (planning par défaut, statut Twitch "hors ligne"). Pour activer les fonctionnalités avancées :
@@ -247,7 +269,7 @@ Le site fonctionne sans aucune configuration (planning par défaut, statut Twitc
 
 Le dossier `data/` a été pensé pour accueillir facilement :
 
-- **Compteur de followers / statistiques** : nouveau composant qui interroge l'API Twitch (déjà connectée), TikTok ou Instagram.
+- **Statistiques avancées** : graphique d'évolution des followers dans le temps, compteur TikTok/Instagram (nécessiterait une validation d'app par ces plateformes).
 - **Media kit PDF** : ajoute le fichier dans `public/`, puis remplace le bouton désactivé dans `app/partenariats/page.tsx` par un lien de téléchargement.
 - **Newsletter, boutique, calendrier d'événements, galerie** : nouvelles pages dans `app/`, suivant le même modèle que les pages existantes.
 - **Formulaire de contact avec envoi réel** (au lieu du mailto actuel) : brancher un service comme Formspree, Resend ou EmailJS — aucune base de données nécessaire.

@@ -5,7 +5,7 @@ import { IconDiscord, IconStar4 } from "@/components/Icons";
 export default async function CommunauteApercu() {
   const textes = await lireTextes();
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
       <div className="relative carte-holo rounded-3xl p-8 md:p-12 text-center border border-violet/15 overflow-hidden">
         <IconStar4 className="absolute top-5 right-6 w-4 h-4 text-violet-light/40" aria-hidden />
         <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">
@@ -20,7 +20,7 @@ export default async function CommunauteApercu() {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
         >
-          <IconDiscord className="w-4 h-4" />
+          <IconDiscord className="w-5 h-5" />
           Rejoindre le Discord
         </a>
       </div>

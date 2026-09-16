@@ -5,7 +5,7 @@ import AccentCosmique from "@/components/AccentCosmique";
 export default async function AProposPage() {
   const textes = await lireTextes();
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-16">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
       <AccentCosmique variante="lune" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
         {textes.apropos.pageTitre}

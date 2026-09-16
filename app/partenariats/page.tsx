@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { lireTextes } from "@/lib/textesStore";
 import AccentCosmique from "@/components/AccentCosmique";
+import FollowersTwitch from "@/components/FollowersTwitch";
 import {
   IconCrystal,
   IconStar4,
@@ -20,27 +21,31 @@ const typesCollab = [
 export default async function PartenariatsPage() {
   const textes = await lireTextes();
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-16">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
       <AccentCosmique variante="planete" />
-      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
+      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.partenariats.titre}
       </h1>
-      <p className="text-ink-soft leading-relaxed mb-10 max-w-2xl">
+      <p className="text-ink-soft leading-relaxed mb-4 max-w-2xl">
         {textes.partenariats.intro}
       </p>
 
-      <h2 className="text-xl font-semibold text-ink mb-4">
+      <div className="mb-8">
+        <FollowersTwitch />
+      </div>
+
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
         {textes.partenariats.typesTitre}
-      </h2>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+      </p>
+      <div className="flex flex-wrap gap-2 mb-10">
         {typesCollab.map(({ label, icon: Icon }) => (
-          <div
+          <span
             key={label}
-            className="carte-holo rounded-xl p-4 flex items-center gap-2.5 text-sm text-ink-soft border border-violet/12"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3.5 py-1.5 text-xs text-ink-soft/80"
           >
-            <Icon className="w-4 h-4 text-violet-light shrink-0" />
+            <Icon className="w-3.5 h-3.5 text-violet-light/70" />
             {label}
-          </div>
+          </span>
         ))}
       </div>
 

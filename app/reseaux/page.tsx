@@ -101,7 +101,7 @@ export default async function ReseauxPage() {
   const contenus = await ajouterMiniatures(await lireContenus());
 
   return (
-    <div className="mx-auto max-w-5xl px-5 md:px-8 py-16">
+    <div className="mx-auto max-w-5xl px-5 md:px-8 py-12">
       <AccentCosmique variante="fusee" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
         Réseaux
@@ -118,8 +118,8 @@ export default async function ReseauxPage() {
               accent ? "border-violet/40" : "border-violet/12"
             }`}
           >
-            <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
-              <Icon className="w-5 h-5" />
+            <span className="h-12 w-12 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
+              <Icon className="w-6 h-6" />
             </span>
             <div>
               <h2 className="text-xl font-semibold text-ink mb-1.5">{nom}</h2>

@@ -6,9 +6,25 @@ import { useTwitchStatus } from "@/components/useTwitchStatus";
 import { IconTwitch, IconMoonCrescent, IconStar4 } from "@/components/Icons";
 import type { ProchainLive } from "@/data/planning";
 
+function formaterCompteARebours(msRestant: number): string {
+  if (msRestant <= 0) return "c'est maintenant !";
+
+  const secondes = Math.floor(msRestant / 1000);
+  const jours = Math.floor(secondes / 86400);
+  const heures = Math.floor((secondes % 86400) / 3600);
+  const minutes = Math.floor((secondes % 3600) / 60);
+  const sec = secondes % 60;
+
+  if (jours > 0) return `dans ${jours}j ${heures}h`;
+  if (heures > 0) return `dans ${heures}h ${minutes}min`;
+  if (minutes > 0) return `dans ${minutes}min`;
+  return `dans ${sec}s`;
+}
+
 export default function StatutTwitch() {
   const { enLigne, titre, categorie, viewers, miniature } = useTwitchStatus();
   const [prochainLive, setProchainLive] = useState<ProchainLive | null>(null);
+  const [compteARebours, setCompteARebours] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/prochain-live")
@@ -17,8 +33,21 @@ export default function StatutTwitch() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    if (!prochainLive) return;
+    const cible = new Date(prochainLive.timestamp).getTime();
+
+    function tick() {
+      setCompteARebours(formaterCompteARebours(cible - Date.now()));
+    }
+
+    tick();
+    const intervalle = setInterval(tick, 1000);
+    return () => clearInterval(intervalle);
+  }, [prochainLive]);
+
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
       <div className="relative carte-holo liseret-glow rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 overflow-hidden">
         <IconStar4 className="hidden md:block absolute top-6 right-8 w-5 h-5 text-violet-light/40" aria-hidden />
 
@@ -42,7 +71,7 @@ export default function StatutTwitch() {
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
               >
-                <IconTwitch className="w-4 h-4" />
+                <IconTwitch className="w-5 h-5" />
                 Regarder maintenant
               </a>
             </div>
@@ -68,11 +97,16 @@ export default function StatutTwitch() {
               Prochain live
             </h2>
             {prochainLive ? (
-              <p className="text-ink-soft mb-6">
-                {prochainLive.estAujourdhui ? "Ce soir" : prochainLive.jour} ·{" "}
-                {prochainLive.heure} ·{" "}
-                <span className="text-lilac">{prochainLive.jeu}</span>
-              </p>
+              <>
+                <p className="text-ink-soft mb-1">
+                  {prochainLive.estAujourdhui ? "Ce soir" : prochainLive.jour} ·{" "}
+                  {prochainLive.heure} ·{" "}
+                  <span className="text-lilac">{prochainLive.jeu}</span>
+                </p>
+                {compteARebours && (
+                  <p className="text-violet-light text-sm mb-6">{compteARebours}</p>
+                )}
+              </>
             ) : (
               <p className="text-ink-soft mb-6">
                 Planning à venir, reste connecté·e !
@@ -84,7 +118,7 @@ export default function StatutTwitch() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 border border-violet/40 bg-violet/10 text-ink font-medium hover:bg-violet/20 hover:shadow-glow-sm transition-all"
             >
-              <IconTwitch className="w-4 h-4" />
+              <IconTwitch className="w-5 h-5" />
               Voir la chaîne Twitch
             </a>
           </div>

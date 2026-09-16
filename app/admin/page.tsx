@@ -83,6 +83,9 @@ export default function AdminPage() {
   const [enregistrement, setEnregistrement] = useState(false);
   const [message, setMessage] = useState<{ type: "ok" | "erreur"; texte: string } | null>(null);
 
+  const [twitchConnecte, setTwitchConnecte] = useState<boolean | null>(null);
+  const [twitchFollowers, setTwitchFollowers] = useState<number | null>(null);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/planning").then((r) => r.json()),
@@ -95,6 +98,21 @@ export default function AdminPage() {
         setTextes(dataTextes.textes);
       })
       .finally(() => setChargement(false));
+
+    fetch("/api/followers")
+      .then((r) => r.json())
+      .then((data) => {
+        setTwitchConnecte(data.connecte);
+        setTwitchFollowers(data.followers);
+      })
+      .catch(() => setTwitchConnecte(false));
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("twitch") === "connecte") {
+      setMessage({ type: "ok", texte: "Compte Twitch connecté avec succès !" });
+    } else if (params.get("twitch") === "erreur") {
+      setMessage({ type: "erreur", texte: "La connexion à Twitch a échoué, réessaie." });
+    }
   }, []);
 
   function modifierJour(index: number, champs: Partial<JourPlanning>) {
@@ -176,6 +194,25 @@ export default function AdminPage() {
       <h1 className="text-3xl font-semibold text-ink glow-text mb-6">
         Administration
       </h1>
+
+      <div className="carte-holo rounded-2xl p-4 mb-8 flex items-center justify-between gap-4 border border-violet/12 text-sm">
+        <div>
+          <p className="text-ink font-medium mb-0.5">Compteur de followers Twitch</p>
+          <p className="text-ink-soft/70">
+            {twitchConnecte === null
+              ? "Vérification..."
+              : twitchConnecte
+              ? `Connecté — ${twitchFollowers ?? "?"} followers`
+              : "Pas encore connecté"}
+          </p>
+        </div>
+        <a
+          href="/api/twitch-connect"
+          className="shrink-0 rounded-full px-4 py-2 border border-violet/30 text-ink-soft hover:bg-violet/10 transition-all"
+        >
+          {twitchConnecte ? "Reconnecter" : "Connecter Twitch"}
+        </a>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-8">
         {(
