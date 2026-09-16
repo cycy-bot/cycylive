@@ -11,7 +11,7 @@
 }
 
 body {
-  background-color: #06050b;
+  background-color: #0d0a17;
   color: #f5f1ff;
   font-family: var(--font-sans);
 }
@@ -20,9 +20,9 @@ body {
    assombrie et mélangée à un dégradé violet pour rester lisible. */
 .fond-spatial {
   position: relative;
-  background-color: #06050b;
+  background-color: #0d0a17;
   background-image:
-    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(6, 5, 11, 0.4), rgba(6, 5, 11, 0.92) 60%),
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(13, 10, 23, 0.4), rgba(13, 10, 23, 0.92) 60%),
     url("/images/starfield-bg.jpg");
   background-size: cover;
   background-position: top center;

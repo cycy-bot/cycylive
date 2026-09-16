@@ -22,20 +22,13 @@ export default function Footer() {
       <div className="mx-auto max-w-6xl px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <Image
-            src="/logo/cycylive-icon.png"
-            alt="Cycylive"
-            width={30}
-            height={30}
-            className="rounded-full"
-          />
-          <Image
             src="/logo/cycylive-wordmark.png"
             alt="Cycylive"
-            width={90}
-            height={90}
+            width={110}
+            height={110}
             className="opacity-90"
           />
-          <span className="text-ink-soft/60 text-xs ml-2">
+          <span className="text-ink-soft/60 text-xs ml-1">
             © {new Date().getFullYear()}
           </span>
         </div>

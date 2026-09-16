@@ -2,6 +2,7 @@ import { liens } from "@/data/liens";
 import { lireContenus } from "@/lib/contenusStore";
 import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
 import AccentCosmique from "@/components/AccentCosmique";
+import CarouselFleches from "@/components/CarouselFleches";
 import {
   IconTwitch,
   IconTikTok,
@@ -61,8 +62,8 @@ function GalerieClips({ titre, items }: { titre: string; items: ContenuAvecMinia
   if (items.length === 0) return null;
   return (
     <>
-      <h2 className="text-2xl font-semibold text-ink mt-14 mb-6">{titre}</h2>
-      <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+      <h2 className="text-2xl font-semibold text-ink mt-10 mb-6">{titre}</h2>
+      <CarouselFleches>
         {items.map((c) => (
           <a
             key={c.id}
@@ -92,7 +93,7 @@ function GalerieClips({ titre, items }: { titre: string; items: ContenuAvecMinia
             <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
           </a>
         ))}
-      </div>
+      </CarouselFleches>
     </>
   );
 }

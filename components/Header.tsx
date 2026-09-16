@@ -22,13 +22,13 @@ export default function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-violet/10 bg-void/70 backdrop-blur-md">
-      <div className="mx-auto max-w-6xl px-5 md:px-8 h-16 flex items-center justify-between">
+      <div className="mx-auto max-w-6xl px-5 md:px-8 h-20 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <Image
             src="/logo/cycylive-icon.png"
             alt="Cycylive"
-            width={34}
-            height={34}
+            width={46}
+            height={46}
             className="rounded-full"
           />
           <span className="font-display font-semibold text-ink text-lg tracking-wide">

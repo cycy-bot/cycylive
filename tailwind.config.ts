@@ -9,7 +9,7 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        void: "#06050B",
+        void: "#0B0817",
         nebula: "#0D0A17",
         card: "#141022",
         violet: "#7B38FF",

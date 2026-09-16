@@ -17,7 +17,7 @@ export default function Hero() {
   const textes = useTextes();
 
   return (
-    <section className="relative mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-6 md:pt-14 md:pb-10 overflow-hidden">
+    <section className="relative mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-6 md:pt-14 md:pb-10">
       {/* décor cosmique discret, en arrière-plan de la section */}
       <IconStar4 className="hidden md:block absolute top-6 left-[42%] w-4 h-4 text-violet-light/60 animate-pulse" aria-hidden />
       <IconStar4 className="hidden md:block absolute bottom-10 left-10 w-3 h-3 text-lilac/50" aria-hidden />
