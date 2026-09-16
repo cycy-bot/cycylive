@@ -9,7 +9,13 @@ import {
   IconDiscord,
 } from "@/components/Icons";
 
-const plateformes = [
+const plateformes: {
+  nom: string;
+  description: string;
+  lien: string;
+  icon: typeof IconTwitch;
+  accent?: boolean;
+}[] = [
   {
     nom: "Twitch",
     description: "Lives gaming plusieurs fois par semaine.",
@@ -41,7 +47,7 @@ const plateformes = [
     lien: liens.discord,
     icon: IconDiscord,
   },
-] as const;
+];
 
 function GalerieContenus({ titre, items }: { titre: string; items: Contenu[] }) {
   if (items.length === 0) return null;
