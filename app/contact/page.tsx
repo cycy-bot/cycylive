@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { liens } from "@/data/liens";
-import { textes } from "@/data/textes";
+import { useTextes } from "@/components/useTextes";
 
 const categories = [
   "Partenariat",
@@ -14,6 +14,7 @@ const categories = [
 
 export default function ContactPage() {
   const [categorie, setCategorie] = useState(categories[0]);
+  const textes = useTextes();
 
   return (
     <div className="mx-auto max-w-2xl px-5 md:px-8 py-16">

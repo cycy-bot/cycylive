@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
 import {
   IconCrystal,
   IconStar4,
@@ -15,7 +15,8 @@ const typesCollab = [
   { label: "Collabs créateurs", icon: IconCrystal },
 ];
 
-export default function PartenariatsApercu() {
+export default async function PartenariatsApercu() {
+  const textes = await lireTextes();
   return (
     <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
       <div className="grid md:grid-cols-2 gap-8 items-center">

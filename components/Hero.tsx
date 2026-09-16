@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { liens } from "@/data/liens";
-import { textes } from "@/data/textes";
+import { useTextes } from "@/components/useTextes";
 import { useTwitchStatus } from "@/components/useTwitchStatus";
 import {
   IconTikTok,
@@ -14,6 +14,7 @@ import {
 
 export default function Hero() {
   const { enLigne } = useTwitchStatus();
+  const textes = useTextes();
 
   return (
     <section className="relative mx-auto max-w-6xl px-5 md:px-8 pt-14 pb-10 md:pt-20 md:pb-16 overflow-hidden">
@@ -84,7 +85,20 @@ export default function Hero() {
             }`}
             aria-hidden
           />
-          <IconOrbit className="absolute -top-8 -left-6 w-24 h-24 text-violet-light/40 animate-spin-slow" aria-hidden />
+          <IconOrbit
+            className="hidden md:block absolute -bottom-10 -right-10 w-20 h-20 text-violet-light/25"
+            aria-hidden
+          />
+          <div
+            className="absolute -inset-8 rounded-full pointer-events-none animate-spin-slow"
+            aria-hidden
+          >
+            <div className="absolute inset-0 rounded-full border border-violet-light/20" />
+            <span
+              className="absolute top-0 left-1/2 h-2.5 w-2.5 rounded-full bg-lilac -translate-x-1/2 -translate-y-1/2"
+              style={{ boxShadow: "0 0 12px 3px rgba(224,179,255,0.55)" }}
+            />
+          </div>
           <div
             className={`relative w-64 md:w-80 aspect-[4/5] rounded-[2rem] overflow-hidden border ${
               enLigne ? "border-red-400/40" : "border-violet/25 liseret-glow"
@@ -98,7 +112,6 @@ export default function Hero() {
               priority
             />
           </div>
-          <div className="absolute -bottom-4 -right-4 h-16 w-16 rounded-full border border-violet-light/40 animate-spin-slow" aria-hidden />
           <IconStar4 className="absolute -top-3 right-10 w-5 h-5 text-lilac animate-pulse" aria-hidden />
         </div>
       </div>

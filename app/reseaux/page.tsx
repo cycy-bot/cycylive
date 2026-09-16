@@ -1,6 +1,7 @@
 import { liens } from "@/data/liens";
 import { lireContenus } from "@/lib/contenusStore";
 import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
+import AccentCosmique from "@/components/AccentCosmique";
 import {
   IconTwitch,
   IconTikTok,
@@ -101,6 +102,7 @@ export default async function ReseauxPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-16">
+      <AccentCosmique variante="fusee" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
         Réseaux
       </h1>

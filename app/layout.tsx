@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BarreMobile from "@/components/BarreMobile";
+import CielAnime from "@/components/CielAnime";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -34,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="fond-spatial min-h-screen flex flex-col">
+        <CielAnime />
         <Header />
         <main className="flex-1 pb-16 md:pb-0">{children}</main>
         <Footer />

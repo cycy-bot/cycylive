@@ -1,9 +1,12 @@
 import Image from "next/image";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
+import AccentCosmique from "@/components/AccentCosmique";
 
-export default function AProposPage() {
+export default async function AProposPage() {
+  const textes = await lireTextes();
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-16">
+      <AccentCosmique variante="lune" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
         {textes.apropos.pageTitre}
       </h1>

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
+import AccentCosmique from "@/components/AccentCosmique";
 import {
   IconCrystal,
   IconStar4,
@@ -16,9 +17,11 @@ const typesCollab = [
   { label: "Collaborations créateurs", icon: IconCrystal },
 ];
 
-export default function PartenariatsPage() {
+export default async function PartenariatsPage() {
+  const textes = await lireTextes();
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-16">
+      <AccentCosmique variante="planete" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         {textes.partenariats.titre}
       </h1>

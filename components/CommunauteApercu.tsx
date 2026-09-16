@@ -1,8 +1,9 @@
 import { liens } from "@/data/liens";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
 import { IconDiscord, IconStar4 } from "@/components/Icons";
 
-export default function CommunauteApercu() {
+export default async function CommunauteApercu() {
+  const textes = await lireTextes();
   return (
     <section className="mx-auto max-w-6xl px-5 md:px-8 py-14">
       <div className="relative carte-holo rounded-3xl p-8 md:p-12 text-center border border-violet/15 overflow-hidden">

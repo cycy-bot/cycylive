@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
+import { textesParDefaut, type Textes } from "@/data/textes";
 
-type Onglet = "planning" | "contenus";
+type Onglet = "planning" | "contenus" | "textes";
 
 const PLATEFORMES: Contenu["plateforme"][] = ["TikTok", "Instagram", "YouTube", "Twitch"];
 
@@ -12,12 +13,71 @@ function genererId(): string {
   return Math.random().toString(36).slice(2, 10);
 }
 
+type ChampTexte = { cle: string; label: string; type: "input" | "textarea" };
+type SectionTexte = { titre: string; cle: keyof Textes; champs: ChampTexte[] };
+
+const SECTIONS_TEXTES: SectionTexte[] = [
+  {
+    titre: "Hero (tout en haut de l'accueil)",
+    cle: "hero",
+    champs: [
+      { cle: "ligneCourte", label: "Petite ligne au-dessus du titre", type: "input" },
+      { cle: "accroche", label: "Titre principal", type: "input" },
+      { cle: "description", label: "Description", type: "textarea" },
+      { cle: "boutonPrincipal", label: "Texte du bouton Twitch", type: "input" },
+      { cle: "boutonSecondaire", label: "Texte du bouton Discord", type: "input" },
+    ],
+  },
+  {
+    titre: "À propos",
+    cle: "apropos",
+    champs: [
+      { cle: "titreAccueil", label: "Titre (bloc sur l'accueil)", type: "input" },
+      { cle: "texteCourt", label: "Texte court (bloc sur l'accueil)", type: "textarea" },
+      { cle: "boutonPlus", label: "Texte du bouton \"en savoir plus\"", type: "input" },
+      { cle: "pageTitre", label: "Titre (page \"À propos\" complète)", type: "input" },
+      { cle: "pageTexte1", label: "Paragraphe 1 (page complète)", type: "textarea" },
+      { cle: "pageTexte2", label: "Paragraphe 2 (page complète)", type: "textarea" },
+      { cle: "pageTexte3", label: "Paragraphe 3 (page complète)", type: "textarea" },
+    ],
+  },
+  {
+    titre: "Communauté",
+    cle: "communaute",
+    champs: [
+      { cle: "titre", label: "Titre", type: "input" },
+      { cle: "texte", label: "Texte (bloc sur l'accueil)", type: "textarea" },
+      { cle: "pageTexte", label: "Texte (page complète)", type: "textarea" },
+    ],
+  },
+  {
+    titre: "Partenariats",
+    cle: "partenariats",
+    champs: [
+      { cle: "titre", label: "Titre", type: "input" },
+      { cle: "intro", label: "Texte d'introduction", type: "textarea" },
+      { cle: "typesTitre", label: "Titre \"types de collaborations\"", type: "input" },
+      { cle: "cta", label: "Texte du bouton contact", type: "input" },
+      { cle: "mediaKit", label: "Texte du bouton media kit", type: "input" },
+    ],
+  },
+  {
+    titre: "Contact",
+    cle: "contact",
+    champs: [
+      { cle: "titre", label: "Titre", type: "input" },
+      { cle: "texte", label: "Texte d'introduction", type: "textarea" },
+    ],
+  },
+];
+
 export default function AdminPage() {
   const [onglet, setOnglet] = useState<Onglet>("planning");
   const [motDePasse, setMotDePasse] = useState("");
 
   const [planning, setPlanning] = useState<JourPlanning[]>([]);
   const [contenus, setContenus] = useState<Contenu[]>([]);
+  const [textes, setTextes] = useState<Textes>(textesParDefaut);
   const [chargement, setChargement] = useState(true);
 
   const [enregistrement, setEnregistrement] = useState(false);
@@ -27,10 +87,12 @@ export default function AdminPage() {
     Promise.all([
       fetch("/api/planning").then((r) => r.json()),
       fetch("/api/contenus").then((r) => r.json()),
+      fetch("/api/textes").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus]) => {
+      .then(([dataPlanning, dataContenus, dataTextes]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
+        setTextes(dataTextes.textes);
       })
       .finally(() => setChargement(false));
   }, []);
@@ -68,41 +130,30 @@ export default function AdminPage() {
     });
   }
 
-  async function enregistrerPlanning() {
-    setEnregistrement(true);
-    setMessage(null);
-    try {
-      const reponse = await fetch("/api/planning", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ motDePasse, planning }),
-      });
-      const data = await reponse.json();
-      setMessage(
-        data.ok
-          ? { type: "ok", texte: "Planning enregistré et visible sur le site !" }
-          : { type: "erreur", texte: data.erreur ?? "Erreur inconnue." }
-      );
-    } catch {
-      setMessage({ type: "erreur", texte: "Impossible de contacter le serveur." });
-    } finally {
-      setEnregistrement(false);
-    }
+  function modifierTexte(section: keyof Textes, champ: string, valeur: string) {
+    setTextes((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [champ]: valeur },
+    }));
   }
 
-  async function enregistrerContenus() {
+  async function enregistrer(
+    url: string,
+    corps: Record<string, unknown>,
+    libelleSucces: string
+  ) {
     setEnregistrement(true);
     setMessage(null);
     try {
-      const reponse = await fetch("/api/contenus", {
+      const reponse = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ motDePasse, contenus }),
+        body: JSON.stringify({ motDePasse, ...corps }),
       });
       const data = await reponse.json();
       setMessage(
         data.ok
-          ? { type: "ok", texte: "Contenus enregistrés et visibles sur le site !" }
+          ? { type: "ok", texte: libelleSucces }
           : { type: "erreur", texte: data.erreur ?? "Erreur inconnue." }
       );
     } catch {
@@ -126,27 +177,26 @@ export default function AdminPage() {
         Administration
       </h1>
 
-      <div className="flex gap-2 mb-8">
-        <button
-          onClick={() => setOnglet("planning")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-            onglet === "planning"
-              ? "bg-violet text-ink"
-              : "border border-violet/20 text-ink-soft"
-          }`}
-        >
-          Planning
-        </button>
-        <button
-          onClick={() => setOnglet("contenus")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-            onglet === "contenus"
-              ? "bg-violet text-ink"
-              : "border border-violet/20 text-ink-soft"
-          }`}
-        >
-          Derniers contenus
-        </button>
+      <div className="flex flex-wrap gap-2 mb-8">
+        {(
+          [
+            { valeur: "planning", label: "Planning" },
+            { valeur: "contenus", label: "Derniers contenus" },
+            { valeur: "textes", label: "Textes" },
+          ] as const
+        ).map((o) => (
+          <button
+            key={o.valeur}
+            onClick={() => setOnglet(o.valeur)}
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              onglet === o.valeur
+                ? "bg-violet text-ink"
+                : "border border-violet/20 text-ink-soft"
+            }`}
+          >
+            {o.label}
+          </button>
+        ))}
       </div>
 
       {onglet === "planning" && (
@@ -198,7 +248,9 @@ export default function AdminPage() {
           </div>
 
           <button
-            onClick={enregistrerPlanning}
+            onClick={() =>
+              enregistrer("/api/planning", { planning }, "Planning enregistré et visible sur le site !")
+            }
             disabled={enregistrement}
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
@@ -301,11 +353,68 @@ export default function AdminPage() {
           </button>
 
           <button
-            onClick={enregistrerContenus}
+            onClick={() =>
+              enregistrer("/api/contenus", { contenus }, "Contenus enregistrés et visibles sur le site !")
+            }
             disabled={enregistrement}
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer les contenus"}
+          </button>
+        </>
+      )}
+
+      {onglet === "textes" && (
+        <>
+          <p className="text-ink-soft mb-6 text-sm">
+            Modifie n'importe quel texte du site, regroupé par section.
+          </p>
+
+          <div className="space-y-6 mb-6">
+            {SECTIONS_TEXTES.map((section) => (
+              <div
+                key={section.cle}
+                className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12"
+              >
+                <h2 className="text-ink font-medium">{section.titre}</h2>
+                {section.champs.map((champ) => (
+                  <div key={champ.cle}>
+                    <label className="block text-xs text-ink-soft/70 mb-1">
+                      {champ.label}
+                    </label>
+                    {champ.type === "textarea" ? (
+                      <textarea
+                        rows={3}
+                        value={(textes[section.cle] as Record<string, string>)[champ.cle] ?? ""}
+                        onChange={(e) =>
+                          modifierTexte(section.cle, champ.cle, e.target.value)
+                        }
+                        className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
+                      />
+                    ) : (
+                      <input
+                        type="text"
+                        value={(textes[section.cle] as Record<string, string>)[champ.cle] ?? ""}
+                        onChange={(e) =>
+                          modifierTexte(section.cle, champ.cle, e.target.value)
+                        }
+                        className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={() =>
+              enregistrer("/api/textes", { textes }, "Textes enregistrés et visibles sur le site !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les textes"}
           </button>
         </>
       )}

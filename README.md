@@ -61,7 +61,7 @@ cycylive/
 |---|---|
 | Le planning de la semaine | Interface web `/admin` (voir plus bas) — plus besoin de fichier |
 | Un lien Twitch / TikTok / Instagram / YouTube / Discord / mail | `data/liens.ts` |
-| Les textes du site (accroche, à propos, communauté, partenariats, contact) | `data/textes.ts` |
+| Les textes du site (accroche, à propos, communauté, partenariats, contact) | Interface web `/admin`, onglet "Textes" |
 | Les vidéos mises en avant sur l'accueil | `data/contenus.ts` |
 | Le statut "en live" / "hors ligne" et le prochain live | `data/twitch.ts` |
 | La photo de Cycy | remplace `public/images/cycy-photo.jpg` (même nom de fichier) |
@@ -169,7 +169,7 @@ Pour que les modifications soient réellement sauvegardées (et visibles par tou
 
 ### Étape 3 — Utiliser l'interface
 
-Va sur `tonsite.vercel.app/admin`. Deux onglets sont disponibles :
+Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 **Onglet "Planning"** : coche "OFF" pour un jour sans live, ou renseigne l'heure (et le jeu si tu veux — sinon le site affiche juste "Stream"). Entre ton mot de passe et clique **Enregistrer le planning**.
 
@@ -177,7 +177,10 @@ Va sur `tonsite.vercel.app/admin`. Deux onglets sont disponibles :
 1. Clique **+ Ajouter une vidéo**.
 2. Choisis la plateforme et le format (vertical pour TikTok/Reels, horizontal pour YouTube).
 3. Colle le lien de la vidéo et donne-lui un titre.
-4. Entre ton mot de passe et clique **Enregistrer les contenus**.
+4. Utilise les flèches ↑ ↓ pour réordonner, ou "Supprimer" pour retirer une vidéo.
+5. Entre ton mot de passe et clique **Enregistrer les contenus**.
+
+**Onglet "Textes"** : modifie n'importe quel texte du site (hero, à propos, communauté, partenariats, contact), regroupé par section. Change ce que tu veux, entre ton mot de passe et clique **Enregistrer les textes**.
 
 Chaque enregistrement est immédiatement visible sur le site, pour tout le monde.
 

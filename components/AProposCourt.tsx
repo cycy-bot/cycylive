@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
 
-export default function AProposCourt() {
+export default async function AProposCourt() {
+  const textes = await lireTextes();
   return (
     <section className="mx-auto max-w-3xl px-5 md:px-8 py-14 text-center">
       <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">

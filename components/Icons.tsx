@@ -94,6 +94,21 @@ export function IconLink({ className }: IconProps) {
   );
 }
 
+export function IconRocket({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M12 2c2.8 1.8 4.5 5 4.5 8.5 0 2-.5 3.8-1.4 5.3L12 18l-3.1-2.2A10 10 0 0 1 7.5 10.5C7.5 7 9.2 3.8 12 2Z"
+        fill="currentColor"
+        fillOpacity="0.9"
+      />
+      <circle cx="12" cy="9.5" r="1.6" fill="#06050B" />
+      <path d="M8.3 14.5 6 17l2.8-.6M15.7 14.5 18 17l-2.8-.6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M10.5 18.5 12 22l1.5-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 /* ---------- Motifs cosmiques décoratifs ---------- */
 
 export function IconStar4({ className }: IconProps) {

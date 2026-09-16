@@ -1,5 +1,6 @@
 import { liens } from "@/data/liens";
-import { textes } from "@/data/textes";
+import { lireTextes } from "@/lib/textesStore";
+import AccentCosmique from "@/components/AccentCosmique";
 import { IconDiscord, IconCrystal, IconStar4, IconOrbit } from "@/components/Icons";
 
 const piliers = [
@@ -8,9 +9,11 @@ const piliers = [
   { titre: "Discussions", texte: "Un espace pour échanger au quotidien, entre deux lives.", icon: IconOrbit },
 ];
 
-export default function CommunautePage() {
+export default async function CommunautePage() {
+  const textes = await lireTextes();
   return (
     <div className="mx-auto max-w-3xl px-5 md:px-8 py-16 text-center">
+      <AccentCosmique variante="constellation" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         {textes.communaute.titre}
       </h1>

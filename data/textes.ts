@@ -1,8 +1,16 @@
 // ============================================================
-// TEXTES DU SITE — à modifier ici, sans toucher aux composants
+// TEXTES DU SITE — valeur par défaut
 // ============================================================
+// ⚠️ Tu n'as normalement plus besoin de modifier ce fichier.
+// Pour changer un texte au quotidien, utilise l'interface web sur
+// /admin, onglet "Textes" (voir le README, section "Interface
+// d'administration").
+//
+// Ce fichier ne sert que de valeur PAR DÉFAUT, utilisée si /admin
+// n'a encore jamais rien enregistré (ou si le stockage n'est pas
+// configuré).
 
-export const textes = {
+export const textesParDefaut = {
   hero: {
     ligneCourte: "Streaming · Gaming · Création de contenu",
     accroche: "Bienvenue dans mon univers.",
@@ -45,3 +53,5 @@ export const textes = {
       "Pour une collaboration, un partenariat ou toute autre demande professionnelle, remplis le formulaire ci-dessous ou écris directement par mail.",
   },
 };
+
+export type Textes = typeof textesParDefaut;

@@ -64,6 +64,26 @@ h1, h2, h3 {
   display: none;
 }
 
+/* Scintillement discret des étoiles animées */
+@keyframes scintille {
+  0%, 100% { opacity: 0.2; transform: scale(0.75); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Étoile filante : traverse l'écran en diagonale, rarement */
+@keyframes file {
+  0% { transform: translate(0, 0); opacity: 0; }
+  4% { opacity: 1; }
+  16% { opacity: 0; }
+  100% { transform: translate(-260px, 200px); opacity: 0; }
+}
+
+/* Dérive très lente d'un élément (planète, fusée...) */
+@keyframes derive-lente {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, -14px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.001ms !important;
