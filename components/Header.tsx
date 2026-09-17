@@ -12,8 +12,7 @@ const navItems = [
   { label: "À propos", href: "/a-propos" },
   { label: "Gaming", href: "/gaming" },
   { label: "Réseaux", href: "/reseaux" },
-  { label: "Partenariats", href: "/partenariats" },
-  { label: "Contact", href: "/contact" },
+  { label: "Partenaires & Bons plans", href: "/partenariats" },
 ];
 
 export default function Header() {

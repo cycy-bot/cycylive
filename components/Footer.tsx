@@ -50,6 +50,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-8 py-6 md:py-0 md:pb-8 pb-24 text-xs text-ink-soft/60 flex flex-wrap gap-4 justify-center md:justify-start">
+        <a href="/contact" className="hover:text-ink-soft">Contact</a>
         <a href="/mentions-legales" className="hover:text-ink-soft">Mentions légales</a>
         <a href="/confidentialite" className="hover:text-ink-soft">Politique de confidentialité</a>
         <span className="md:hidden">© {new Date().getFullYear()} Cycylive</span>

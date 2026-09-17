@@ -8,10 +8,12 @@ import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
 import type { DonneesGaming } from "@/lib/gamingStore";
+import type { Partenaire } from "@/data/partners";
+import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
-type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant";
+type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires";
 
 const PLATEFORMES: Contenu["plateforme"][] = ["TikTok", "Instagram", "YouTube", "Twitch"];
 
@@ -90,6 +92,8 @@ export default function AdminPage() {
     autresJeux: [],
     jeuxDuMoment: [],
   });
+  const [partenaires, setPartenaires] = useState<Partenaire[]>([]);
+  const [bonsPlans, setBonsPlans] = useState<BonPlan[]>([]);
   const [profilValorant, setProfilValorant] = useState<ProfilValorant>({
     intro: "",
     rankActuel: "",
@@ -119,8 +123,10 @@ export default function AdminPage() {
       fetch("/api/valorant-clips").then((r) => r.json()),
       fetch("/api/valorant-profil").then((r) => r.json()),
       fetch("/api/gaming").then((r) => r.json()),
+      fetch("/api/partenaires").then((r) => r.json()),
+      fetch("/api/bons-plans").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming, dataPartenaires, dataBonsPlans]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
@@ -130,6 +136,8 @@ export default function AdminPage() {
         setClipsValorant(dataClips.clips);
         setProfilValorant(dataProfil.profil);
         setGaming(dataGaming.gaming);
+        setPartenaires(dataPartenaires.partenaires);
+        setBonsPlans(dataBonsPlans.bonsPlans);
       })
       .finally(() => setChargement(false));
 
@@ -343,6 +351,64 @@ export default function AdminPage() {
     }));
   }
 
+  function modifierPartenaire(index: number, champs: Partial<Partenaire>) {
+    setPartenaires((prev) => prev.map((p, i) => (i === index ? { ...p, ...champs } : p)));
+  }
+
+  function ajouterPartenaire() {
+    setPartenaires((prev) => [
+      ...prev,
+      {
+        id: genererId(),
+        nom: "",
+        description: "",
+        typePartenariat: "",
+        url: "",
+        ctaLabel: "Découvrir",
+        active: true,
+      },
+    ]);
+  }
+
+  function supprimerPartenaire(index: number) {
+    setPartenaires((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerPartenaire(index: number, direction: -1 | 1) {
+    setPartenaires((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
+  function modifierBonPlan(index: number, champs: Partial<BonPlan>) {
+    setBonsPlans((prev) => prev.map((b, i) => (i === index ? { ...b, ...champs } : b)));
+  }
+
+  function ajouterBonPlan() {
+    setBonsPlans((prev) => [
+      ...prev,
+      { id: genererId(), marque: "", offre: "", url: "", active: true },
+    ]);
+  }
+
+  function supprimerBonPlan(index: number) {
+    setBonsPlans((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerBonPlan(index: number, direction: -1 | 1) {
+    setBonsPlans((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
   async function enregistrer(
     url: string,
     corps: Record<string, unknown>,
@@ -411,6 +477,7 @@ export default function AdminPage() {
             { valeur: "timeline", label: "Timeline" },
             { valeur: "apropos", label: "À propos" },
             { valeur: "valorant", label: "Gaming" },
+            { valeur: "partenaires", label: "Partenaires" },
           ] as const
         ).map((o) => (
           <button
@@ -1222,6 +1289,189 @@ export default function AdminPage() {
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer"}
+          </button>
+        </>
+      )}
+
+      {onglet === "partenaires" && (
+        <>
+          <h2 className="text-ink font-medium mb-3">Mes partenaires</h2>
+          <p className="text-ink-soft mb-4 text-sm">
+            Décoche "Actif" pour masquer un partenaire sans le supprimer. Avec un seul partenaire actif, il s'affiche en grande carte mise en avant.
+          </p>
+          <div className="space-y-3 mb-4">
+            {partenaires.map((p, index) => (
+              <div key={p.id} className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <input
+                    type="text"
+                    placeholder="Nom du partenaire"
+                    value={p.nom}
+                    onChange={(e) => modifierPartenaire(index, { nom: e.target.value })}
+                    className="flex-1 min-w-[140px] rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-ink-soft shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={p.active}
+                      onChange={(e) => modifierPartenaire(index, { active: e.target.checked })}
+                      className="accent-violet"
+                    />
+                    Actif
+                  </label>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => deplacerPartenaire(index, -1)} disabled={index === 0} className="text-ink-soft/60 hover:text-ink disabled:opacity-25 text-sm px-1.5">↑</button>
+                    <button onClick={() => deplacerPartenaire(index, 1)} disabled={index === partenaires.length - 1} className="text-ink-soft/60 hover:text-ink disabled:opacity-25 text-sm px-1.5">↓</button>
+                    <button onClick={() => supprimerPartenaire(index)} className="text-ink-soft/60 hover:text-red-300 text-sm px-2">Supprimer</button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Type de partenariat (ex: Matériel, Sponsoring...)"
+                  value={p.typePartenariat}
+                  onChange={(e) => modifierPartenaire(index, { typePartenariat: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Courte description"
+                  value={p.description}
+                  onChange={(e) => modifierPartenaire(index, { description: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Lien du site (https://...)"
+                  value={p.url}
+                  onChange={(e) => modifierPartenaire(index, { url: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Lien du logo (URL image, optionnel)"
+                  value={p.logo ?? ""}
+                  onChange={(e) => modifierPartenaire(index, { logo: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Code promo (optionnel)"
+                    value={p.promoCode ?? ""}
+                    onChange={(e) => modifierPartenaire(index, { promoCode: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Réduction (ex: -10%)"
+                    value={p.reduction ?? ""}
+                    onChange={(e) => modifierPartenaire(index, { reduction: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Texte du bouton (ex: Découvrir, Profiter du bon plan...)"
+                  value={p.ctaLabel}
+                  onChange={(e) => modifierPartenaire(index, { ctaLabel: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={ajouterPartenaire}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter un partenaire
+          </button>
+          <button
+            onClick={() => enregistrer("/api/partenaires", { partenaires }, "Partenaires enregistrés !")}
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les partenaires"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Bons plans</h2>
+          <div className="space-y-3 mb-4">
+            {bonsPlans.map((b, index) => (
+              <div key={b.id} className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <input
+                    type="text"
+                    placeholder="Marque"
+                    value={b.marque}
+                    onChange={(e) => modifierBonPlan(index, { marque: e.target.value })}
+                    className="flex-1 min-w-[140px] rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <label className="flex items-center gap-1.5 text-xs text-ink-soft shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={b.active}
+                      onChange={(e) => modifierBonPlan(index, { active: e.target.checked })}
+                      className="accent-violet"
+                    />
+                    Actif
+                  </label>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => deplacerBonPlan(index, -1)} disabled={index === 0} className="text-ink-soft/60 hover:text-ink disabled:opacity-25 text-sm px-1.5">↑</button>
+                    <button onClick={() => deplacerBonPlan(index, 1)} disabled={index === bonsPlans.length - 1} className="text-ink-soft/60 hover:text-ink disabled:opacity-25 text-sm px-1.5">↓</button>
+                    <button onClick={() => supprimerBonPlan(index)} className="text-ink-soft/60 hover:text-red-300 text-sm px-2">Supprimer</button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Offre (ex: -15% sur toute la boutique)"
+                  value={b.offre}
+                  onChange={(e) => modifierBonPlan(index, { offre: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Lien de l'offre (https://...)"
+                  value={b.url}
+                  onChange={(e) => modifierBonPlan(index, { url: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Code promo (optionnel)"
+                    value={b.promoCode ?? ""}
+                    onChange={(e) => modifierBonPlan(index, { promoCode: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Date de fin (optionnel)"
+                    value={b.dateFin ?? ""}
+                    onChange={(e) => modifierBonPlan(index, { dateFin: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                </div>
+                <input
+                  type="text"
+                  placeholder="Conditions (optionnel)"
+                  value={b.conditions ?? ""}
+                  onChange={(e) => modifierBonPlan(index, { conditions: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={ajouterBonPlan}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter un bon plan
+          </button>
+          <button
+            onClick={() => enregistrer("/api/bons-plans", { bonsPlans }, "Bons plans enregistrés !")}
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les bons plans"}
           </button>
         </>
       )}

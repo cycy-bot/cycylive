@@ -192,6 +192,38 @@ Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 Comme pour les vidéos, tu réordonnes tout avec les flèches ↑ ↓ — y compris où le Setup et la Timeline apparaissent dans la page.
 
+## Formulaire de contact (envoi réel par email)
+
+La page `/contact` (accessible uniquement depuis le footer, pas dans le menu principal) envoie un vrai email via [Resend](https://resend.com), sans jamais exposer ton adresse mail dans le code du site. Elle inclut aussi une protection antispam invisible (honeypot) et des messages de succès/erreur propres.
+
+### Étape 1 — Créer un compte Resend (gratuit)
+
+1. Va sur [resend.com](https://resend.com) et crée un compte gratuit (100 emails/jour, largement suffisant).
+2. Dans le tableau de bord, va dans **API Keys** → **Create API Key**. Copie la clé (elle ne sera affichée qu'une fois).
+
+### Étape 2 — Ajouter la clé en local et sur Vercel
+
+1. Dans `.env.local` : `RESEND_API_KEY=ta_clé`
+2. Sur Vercel : Environment Variables → ajoute `RESEND_API_KEY` avec la même valeur.
+
+### Étape 3 (recommandé) — Vérifier ton domaine pour un envoi plus fiable
+
+Par défaut, les emails partent depuis `onboarding@resend.dev` (fonctionne tout de suite, mais peut finir en spam). Pour un envoi plus fiable :
+1. Sur Resend, va dans **Domains** → **Add Domain** → entre `cycylive.fr`.
+2. Ajoute les enregistrements DNS demandés chez Ionos (même principe que pour Vercel).
+3. Une fois le domaine vérifié, ajoute la variable `RESEND_FROM_EMAIL` avec par exemple `Cycylive <contact@cycylive.fr>`.
+
+Sans cette étape 3, le formulaire fonctionne quand même (juste moins fiable niveau délivrabilité).
+
+## Page Partenaires & Bons plans
+
+La page `/partenariats` (renommée "Partenaires & Bons plans" dans le menu) a 3 sections :
+- **Mes partenaires** : affiche tes partenaires actifs. Avec un seul partenaire, il s'affiche en grande carte mise en avant ; avec plusieurs, en grille.
+- **Bons plans** : offres avec code promo copiable en un clic ("Code copié !").
+- **Envie de travailler ensemble ?** : section professionnelle pour les futurs partenaires (univers, plateformes, types de collaboration, CTA vers Contact).
+
+Tout se gère depuis `/admin`, onglet "Partenaires" (décoche "Actif" pour masquer sans supprimer).
+
 ## Page Gaming
 
 La page `/gaming` (accessible depuis le menu principal) a remplacé l'ancienne page Valorant — elle regroupe tout l'univers jeux vidéo de Cycylive :

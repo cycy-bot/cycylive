@@ -34,7 +34,7 @@ export const textesParDefaut = {
       "Rejoindre le Discord Cycylive, c'est accéder à un espace où on organise des soirées communautaires, des sessions de jeu improvisées, des annonces de live en avant-première, et des discussions au quotidien. Pas de règles interminables, juste l'envie de passer du bon temps ensemble.",
   },
   partenariats: {
-    titre: "Collaborations & Partenariats",
+    titre: "Partenaires & Bons plans",
     intro:
       "Je développe Cycylive à la croisée du gaming, du streaming et de la création de contenu, avec une communauté engagée et une identité forte.<br><br>" +
       "Grâce à mon parcours en communication et webmarketing, j'aborde aussi les collaborations avec une vraie compréhension des enjeux de marque.<br><br>" +
