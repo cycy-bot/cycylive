@@ -30,13 +30,13 @@ const presence = [
 ];
 
 const typesCollab = [
-  { label: "Campagnes gaming", icon: IconCrystal },
   { label: "Sponsoring", icon: IconOrbit },
+  { label: "Gaming", icon: IconCrystal },
   { label: "Événements", icon: IconStar4 },
-  { label: "Tests / découvertes", icon: IconMoonCrescent },
+  { label: "Campagnes sociales", icon: IconMoonCrescent },
+  { label: "Tests / découvertes", icon: IconPlanetRing },
   { label: "Création de contenu", icon: IconCrystal },
-  { label: "Collaborations créateurs", icon: IconPlanetRing },
-  { label: "Activations sur-mesure", icon: IconStar4 },
+  { label: "Collaborations créateurs", icon: IconStar4 },
 ];
 
 function Tag({ label }: { label: string }) {
@@ -73,21 +73,28 @@ export default async function PartenariatsPage() {
         className="text-ink-soft leading-relaxed mb-6 max-w-2xl"
       />
 
+      <nav className="flex flex-wrap gap-2 mb-8 text-xs">
+        <a href="#univers" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Mon univers</a>
+        <a href="#plateformes" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Plateformes</a>
+        <a href="#collaborations" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Collaborations</a>
+        <a href="#contact" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Contact</a>
+      </nav>
+
       {/* Chiffres clés : masqué automatiquement tant qu'aucune donnée n'est disponible */}
       <div className="mb-8">
         <FollowersTwitch />
       </div>
 
       {/* Univers */}
-      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Univers</p>
+      <p id="univers" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">Mon univers</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {univers.map((u) => (
           <Tag key={u} label={u} />
         ))}
       </div>
 
-      {/* Présence */}
-      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Présence</p>
+      {/* Mes plateformes */}
+      <p id="plateformes" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">Mes plateformes</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {presence.map(({ nom, href, icon: Icon }) => (
           <a
@@ -104,7 +111,7 @@ export default async function PartenariatsPage() {
       </div>
 
       {/* Collaborations possibles */}
-      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
+      <p id="collaborations" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">
         {textes.partenariats.typesTitre}
       </p>
       <div className="flex flex-wrap gap-2 mb-10">
@@ -119,7 +126,7 @@ export default async function PartenariatsPage() {
         ))}
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div id="contact" className="flex flex-wrap gap-3 scroll-mt-24">
         <Link
           href="/contact"
           className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"

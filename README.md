@@ -16,10 +16,11 @@ cycylive/
 ├── app/                     → les pages du site (routing automatique Next.js)
 │   ├── page.tsx             → Accueil
 │   ├── a-propos/page.tsx    → À propos
+│   ├── gaming/page.tsx      → Gaming (Valorant, autres jeux, clips)
 │   ├── reseaux/page.tsx     → Réseaux
-│   ├── communaute/page.tsx  → Communauté
 │   ├── partenariats/page.tsx→ Partenariats
 │   ├── contact/page.tsx     → Contact
+│   ├── statistiques/page.tsx→ Statistiques (accessible via lien, hors menu principal)
 │   ├── mentions-legales/    → Mentions légales (placeholder à compléter)
 │   ├── confidentialite/     → Politique de confidentialité (placeholder à compléter)
 │   ├── layout.tsx           → structure globale (header/footer partout)
@@ -191,17 +192,18 @@ Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 Comme pour les vidéos, tu réordonnes tout avec les flèches ↑ ↓ — y compris où le Setup et la Timeline apparaissent dans la page.
 
-## Page Valorant
+## Page Gaming
 
-La page `/valorant` (accessible depuis le menu principal) est une vraie page personnelle sur le rapport de Cycy à Valorant :
-- Introduction, rank actuel, objectif de rank
-- Agents et maps favoris, skins/armes favoris
-- Une stat ou note personnelle (optionnelle)
-- Clips marquants (liens vers des clips Twitch)
-- Les moments de la timeline liés à Valorant (détectés automatiquement par mot-clé)
-- News Valorant (liens ajoutés manuellement)
+La page `/gaming` (accessible depuis le menu principal) a remplacé l'ancienne page Valorant — elle regroupe tout l'univers jeux vidéo de Cycylive :
+- **Introduction** générale sur la place du gaming dans la chaîne
+- **Bloc Valorant** (le jeu principal) : intro, rank actuel, objectif, agents/maps/skins favoris, clips marquants, moments de la timeline liés (détectés automatiquement par mot-clé), news
+- **Autres jeux** : cartes ajoutables librement (Palworld, soirées horreur, etc.)
+- **Jeux du moment** : section facultative, masquée automatiquement si vide
+- **Clips gaming** : galerie des clips marquants
 
-Tout se gère depuis `/admin`, onglet "Valorant".
+L'ancienne URL `/valorant` redirige automatiquement vers `/gaming`.
+
+Tout se gère depuis `/admin`, onglet "Gaming".
 
 ## Statistiques et compteur Discord
 

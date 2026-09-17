@@ -8,6 +8,7 @@ export type StatutTwitchLive = {
   titre?: string;
   categorie?: string;
   viewers?: number;
+  debutLe?: string;
   miniature?: string;
 };
 

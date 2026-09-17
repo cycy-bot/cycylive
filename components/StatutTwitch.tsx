@@ -33,7 +33,7 @@ function formaterDateProchainLive(timestamp: string): string {
 }
 
 export default function StatutTwitch() {
-  const { enLigne, titre, categorie, viewers, miniature } = useTwitchStatus();
+  const { enLigne, titre, categorie, viewers, debutLe, miniature } = useTwitchStatus();
   const [prochainLive, setProchainLive] = useState<ProchainLive | null>(null);
   const [chargementProchainLive, setChargementProchainLive] = useState(true);
   const [compteARebours, setCompteARebours] = useState<string | null>(null);
@@ -75,9 +75,16 @@ export default function StatutTwitch() {
                 {titre ?? "Live en cours"}
               </h2>
               <p className="text-ink-soft mb-1">{categorie}</p>
-              {viewers !== undefined && (
-                <p className="text-ink-soft text-sm mb-6">{viewers} viewers</p>
-              )}
+              <p className="text-ink-soft text-sm mb-6">
+                {viewers !== undefined && `${viewers} viewers`}
+                {viewers !== undefined && debutLe && " · "}
+                {debutLe &&
+                  `en direct depuis ${new Intl.DateTimeFormat("fr-FR", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/Paris",
+                  }).format(new Date(debutLe))}`}
+              </p>
               <a
                 href={liens.twitch}
                 target="_blank"

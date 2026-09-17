@@ -13,7 +13,11 @@ export default function BarreMobile() {
         href={liens.twitch}
         target="_blank"
         rel="noopener noreferrer"
-        className="flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium border border-violet/40 bg-violet/10 text-ink"
+        className={`flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium transition-all ${
+          enLigne
+            ? "bg-red-500 text-white"
+            : "border border-violet/40 bg-violet/10 text-ink"
+        }`}
       >
         <IconTwitch className="w-5 h-5" />
         {enLigne ? "EN LIVE" : "Twitch"}

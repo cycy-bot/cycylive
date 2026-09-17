@@ -6,6 +6,8 @@ import type { Contenu } from "@/data/contenus";
 import type { EtapeTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
+import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
+import type { DonneesGaming } from "@/lib/gamingStore";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
@@ -83,6 +85,11 @@ export default function AdminPage() {
   const [sectionsApropos, setSectionsApropos] = useState<SectionAPropos[]>([]);
   const [newsValorant, setNewsValorant] = useState<NewsValorant[]>([]);
   const [clipsValorant, setClipsValorant] = useState<ClipValorant[]>([]);
+  const [gaming, setGaming] = useState<DonneesGaming>({
+    intro: "",
+    autresJeux: [],
+    jeuxDuMoment: [],
+  });
   const [profilValorant, setProfilValorant] = useState<ProfilValorant>({
     intro: "",
     rankActuel: "",
@@ -111,8 +118,9 @@ export default function AdminPage() {
       fetch("/api/valorant-news").then((r) => r.json()),
       fetch("/api/valorant-clips").then((r) => r.json()),
       fetch("/api/valorant-profil").then((r) => r.json()),
+      fetch("/api/gaming").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
@@ -121,6 +129,7 @@ export default function AdminPage() {
         setNewsValorant(dataNews.news);
         setClipsValorant(dataClips.clips);
         setProfilValorant(dataProfil.profil);
+        setGaming(dataGaming.gaming);
       })
       .finally(() => setChargement(false));
 
@@ -282,6 +291,58 @@ export default function AdminPage() {
     });
   }
 
+  function modifierAutreJeu(index: number, champs: Partial<AutreJeu>) {
+    setGaming((prev) => ({
+      ...prev,
+      autresJeux: prev.autresJeux.map((j, i) => (i === index ? { ...j, ...champs } : j)),
+    }));
+  }
+
+  function ajouterAutreJeu() {
+    setGaming((prev) => ({
+      ...prev,
+      autresJeux: [...prev.autresJeux, { id: genererId(), nom: "", description: "", lienClip: "" }],
+    }));
+  }
+
+  function supprimerAutreJeu(index: number) {
+    setGaming((prev) => ({
+      ...prev,
+      autresJeux: prev.autresJeux.filter((_, i) => i !== index),
+    }));
+  }
+
+  function deplacerAutreJeu(index: number, direction: -1 | 1) {
+    setGaming((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.autresJeux.length) return prev;
+      const copie = [...prev.autresJeux];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return { ...prev, autresJeux: copie };
+    });
+  }
+
+  function modifierJeuDuMoment(index: number, champs: Partial<JeuDuMoment>) {
+    setGaming((prev) => ({
+      ...prev,
+      jeuxDuMoment: prev.jeuxDuMoment.map((j, i) => (i === index ? { ...j, ...champs } : j)),
+    }));
+  }
+
+  function ajouterJeuDuMoment() {
+    setGaming((prev) => ({
+      ...prev,
+      jeuxDuMoment: [...prev.jeuxDuMoment, { id: genererId(), nom: "", statut: "En ce moment" }],
+    }));
+  }
+
+  function supprimerJeuDuMoment(index: number) {
+    setGaming((prev) => ({
+      ...prev,
+      jeuxDuMoment: prev.jeuxDuMoment.filter((_, i) => i !== index),
+    }));
+  }
+
   async function enregistrer(
     url: string,
     corps: Record<string, unknown>,
@@ -349,7 +410,7 @@ export default function AdminPage() {
             { valeur: "textes", label: "Textes" },
             { valeur: "timeline", label: "Timeline" },
             { valeur: "apropos", label: "À propos" },
-            { valeur: "valorant", label: "Valorant" },
+            { valeur: "valorant", label: "Gaming" },
           ] as const
         ).map((o) => (
           <button
@@ -779,6 +840,154 @@ export default function AdminPage() {
 
       {onglet === "valorant" && (
         <>
+          <h2 className="text-ink font-medium mb-3">Introduction Gaming</h2>
+          <p className="text-ink-soft mb-4 text-sm">
+            Le texte en haut de la page /gaming, avant le bloc Valorant.
+          </p>
+          <div className="mb-4">
+            <EditeurRiche
+              value={gaming.intro}
+              onChange={(html) => setGaming((p) => ({ ...p, intro: html }))}
+              minHeight={70}
+            />
+          </div>
+          <button
+            onClick={() =>
+              enregistrer("/api/gaming", { gaming }, "Données Gaming enregistrées !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-2.5 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer l'introduction"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Autres jeux</h2>
+          <p className="text-ink-soft mb-4 text-sm">
+            Les jeux affichés en cartes sous le bloc Valorant.
+          </p>
+          <div className="space-y-3 mb-4">
+            {gaming.autresJeux.map((jeu, index) => (
+              <div
+                key={jeu.id}
+                className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
+              >
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Nom du jeu"
+                    value={jeu.nom}
+                    onChange={(e) => modifierAutreJeu(index, { nom: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => deplacerAutreJeu(index, -1)}
+                      disabled={index === 0}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerAutreJeu(index, 1)}
+                      disabled={index === gaming.autresJeux.length - 1}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerAutreJeu(index)}
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Courte description"
+                  value={jeu.description}
+                  onChange={(e) => modifierAutreJeu(index, { description: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Lien vers un clip/contenu (optionnel)"
+                  value={jeu.lienClip ?? ""}
+                  onChange={(e) => modifierAutreJeu(index, { lienClip: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={ajouterAutreJeu}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter un jeu
+          </button>
+          <button
+            onClick={() =>
+              enregistrer("/api/gaming", { gaming }, "Données Gaming enregistrées !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les autres jeux"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Jeux du moment</h2>
+          <p className="text-ink-soft mb-4 text-sm">
+            Section facultative : laisse-la vide pour qu'elle n'apparaisse pas du tout sur le site.
+          </p>
+          <div className="space-y-3 mb-4">
+            {gaming.jeuxDuMoment.map((jeu, index) => (
+              <div
+                key={jeu.id}
+                className="carte-holo rounded-2xl p-4 flex gap-2 items-center border border-violet/12"
+              >
+                <input
+                  type="text"
+                  placeholder="Nom du jeu"
+                  value={jeu.nom}
+                  onChange={(e) => modifierJeuDuMoment(index, { nom: e.target.value })}
+                  className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <select
+                  value={jeu.statut}
+                  onChange={(e) =>
+                    modifierJeuDuMoment(index, { statut: e.target.value as JeuDuMoment["statut"] })
+                  }
+                  className="rounded-lg bg-card border border-violet/20 px-2 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                >
+                  <option value="En ce moment">En ce moment</option>
+                  <option value="En pause">En pause</option>
+                  <option value="À venir">À venir</option>
+                </select>
+                <button
+                  onClick={() => supprimerJeuDuMoment(index)}
+                  className="text-ink-soft/60 hover:text-red-300 text-sm px-2 shrink-0"
+                >
+                  Supprimer
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={ajouterJeuDuMoment}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter un jeu du moment
+          </button>
+          <button
+            onClick={() =>
+              enregistrer("/api/gaming", { gaming }, "Données Gaming enregistrées !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les jeux du moment"}
+          </button>
+
           <h2 className="text-ink font-medium mb-3">News Valorant</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Ajoute des liens vers des news Valorant (le site officiel n'a

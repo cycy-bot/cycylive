@@ -36,8 +36,10 @@ export const textesParDefaut = {
   partenariats: {
     titre: "Collaborations & Partenariats",
     intro:
-      "Cycy est streameuse et créatrice de contenu, active sur Twitch, TikTok, Instagram et YouTube, avec une communauté engagée autour du gaming et du lifestyle.",
-    typesTitre: "Types de collaborations",
+      "Je développe Cycylive à la croisée du gaming, du streaming et de la création de contenu, avec une communauté engagée et une identité forte.<br><br>" +
+      "Grâce à mon parcours en communication et webmarketing, j'aborde aussi les collaborations avec une vraie compréhension des enjeux de marque.<br><br>" +
+      "Je privilégie des partenariats naturels, créatifs et cohérents avec mon univers.",
+    typesTitre: "Collaborations possibles",
     cta: "Me contacter",
     mediaKit: "Télécharger le media kit",
   },

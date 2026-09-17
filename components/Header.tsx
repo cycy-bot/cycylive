@@ -10,9 +10,8 @@ import { IconTwitch } from "@/components/Icons";
 const navItems = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
+  { label: "Gaming", href: "/gaming" },
   { label: "Réseaux", href: "/reseaux" },
-  { label: "Valorant", href: "/valorant" },
-  { label: "Communauté", href: "/communaute" },
   { label: "Partenariats", href: "/partenariats" },
   { label: "Contact", href: "/contact" },
 ];
@@ -54,16 +53,20 @@ export default function Header() {
             href={liens.twitch}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium border border-violet/40 bg-violet/10 text-ink hover:bg-violet/20 hover:shadow-glow-sm transition-all"
+            className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              enLigne
+                ? "bg-red-500 text-white hover:bg-red-400 shadow-glow"
+                : "border border-violet/40 bg-violet/10 text-ink hover:bg-violet/20 hover:shadow-glow-sm"
+            }`}
           >
             <IconTwitch className="w-5 h-5" />
             {enLigne ? (
               <>
-                <span className="h-2 w-2 rounded-full bg-red-400 animate-pulse" />
-                EN LIVE
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                Voir le live
               </>
             ) : (
-              "Voir le live"
+              "Voir la chaîne Twitch"
             )}
           </a>
         </div>
@@ -100,10 +103,21 @@ export default function Header() {
             href={liens.twitch}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium border border-violet/40 bg-violet/10 text-ink"
+            className={`mt-1 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all ${
+              enLigne
+                ? "bg-red-500 text-white"
+                : "border border-violet/40 bg-violet/10 text-ink"
+            }`}
           >
             <IconTwitch className="w-5 h-5" />
-            {enLigne ? "EN LIVE" : "Voir le live"}
+            {enLigne ? (
+              <>
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                Voir le live
+              </>
+            ) : (
+              "Voir la chaîne Twitch"
+            )}
           </a>
         </nav>
       )}

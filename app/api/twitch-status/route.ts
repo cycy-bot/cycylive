@@ -58,12 +58,12 @@ export async function GET() {
   }
 
   try {
-    const token = await obtenirToken(clientId, clientSecret);
+    let token = await obtenirToken(clientId, clientSecret);
     if (!token) {
       return NextResponse.json({ enLigne: false, configure: true });
     }
 
-    const reponse = await fetch(
+    let reponse = await fetch(
       `https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(
         channelLogin
       )}`,
@@ -75,6 +75,28 @@ export async function GET() {
         cache: "no-store",
       }
     );
+
+    // Si le token s'avère invalide/expiré (401), on force un renouvellement
+    // et on retente une fois avant de conclure quoi que ce soit.
+    if (reponse.status === 401) {
+      tokenEnCache = null;
+      token = await obtenirToken(clientId, clientSecret);
+      if (!token) {
+        return NextResponse.json({ enLigne: false, configure: true });
+      }
+      reponse = await fetch(
+        `https://api.twitch.tv/helix/streams?user_login=${encodeURIComponent(
+          channelLogin
+        )}`,
+        {
+          headers: {
+            "Client-Id": clientId,
+            Authorization: `Bearer ${token}`,
+          },
+          cache: "no-store",
+        }
+      );
+    }
 
     const data = await reponse.json();
     const stream = data?.data?.[0];
@@ -89,11 +111,15 @@ export async function GET() {
       titre: stream.title,
       categorie: stream.game_name,
       viewers: stream.viewer_count,
+      debutLe: stream.started_at,
       miniature: stream.thumbnail_url
         ?.replace("{width}", "440")
         .replace("{height}", "248"),
     });
   } catch {
+    // Toute erreur (réseau, API Twitch indisponible, réponse malformée...)
+    // retombe systématiquement sur "hors ligne" : on n'affiche jamais
+    // un faux "EN LIVE".
     return NextResponse.json({ enLigne: false, configure: true });
   }
 }

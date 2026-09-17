@@ -9,6 +9,8 @@ import {
   IconTikTok,
   IconInstagram,
   IconYouTube,
+  IconDiscord,
+  IconMail,
 } from "@/components/Icons";
 
 function CarteVideo({ c, largeur }: { c: ContenuAvecMiniature; largeur: string }) {
@@ -42,6 +44,7 @@ function CarteVideo({ c, largeur }: { c: ContenuAvecMiniature; largeur: string }
 }
 
 function BlocPlateforme({
+  id,
   nom,
   description,
   lien,
@@ -49,6 +52,7 @@ function BlocPlateforme({
   ctaLabel,
   children,
 }: {
+  id: string;
   nom: string;
   description: string;
   lien: string;
@@ -57,7 +61,7 @@ function BlocPlateforme({
   children?: React.ReactNode;
 }) {
   return (
-    <section className="py-8 border-t border-violet/10 first:border-t-0 first:pt-0">
+    <section id={id} className="py-8 border-t border-violet/10 first:border-t-0 first:pt-0 scroll-mt-24">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3">
           <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
@@ -106,11 +110,19 @@ export default async function ReseauxPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-12">
       <AccentCosmique variante="fusee" />
-      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
+      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         Réseaux
       </h1>
 
+      <nav className="flex flex-wrap gap-2 mb-10 text-xs">
+        <a href="#twitch" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Twitch</a>
+        <a href="#tiktok" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">TikTok</a>
+        <a href="#instagram" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Instagram</a>
+        <a href="#youtube" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">YouTube</a>
+      </nav>
+
       <BlocPlateforme
+        id="twitch"
         nom="Twitch"
         description="Lives gaming plusieurs fois par semaine, Valorant en tête d'affiche."
         lien={liens.twitch}
@@ -129,6 +141,7 @@ export default async function ReseauxPage() {
       </BlocPlateforme>
 
       <BlocPlateforme
+        id="tiktok"
         nom="TikTok"
         description="Clips, moments forts et coulisses au format court."
         lien={liens.tiktok}
@@ -147,6 +160,7 @@ export default async function ReseauxPage() {
       </BlocPlateforme>
 
       <BlocPlateforme
+        id="instagram"
         nom="Instagram"
         description="Reels, photos et aperçu du quotidien."
         lien={liens.instagram}
@@ -185,6 +199,7 @@ export default async function ReseauxPage() {
       </BlocPlateforme>
 
       <BlocPlateforme
+        id="youtube"
         nom="YouTube"
         description="Best-of, vidéos longues et Shorts."
         lien={liens.youtube}
@@ -201,6 +216,48 @@ export default async function ReseauxPage() {
           <p className="text-ink-soft/50 text-sm">Aucune vidéo pour l'instant.</p>
         )}
       </BlocPlateforme>
+
+      <section className="py-8 border-t border-violet/10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
+              <IconDiscord className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-semibold text-ink">Discord</h2>
+              <p className="text-ink-soft text-sm">La communauté Cycylive au complet.</p>
+            </div>
+          </div>
+          <a
+            href={liens.discord}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-full px-4 py-2 bg-violet text-ink text-sm font-medium hover:bg-violet-light hover:shadow-glow transition-all shrink-0"
+          >
+            Rejoindre le Discord
+          </a>
+        </div>
+      </section>
+
+      <section className="py-8 border-t border-violet/10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
+              <IconMail className="w-5 h-5" />
+            </span>
+            <div>
+              <h2 className="text-xl font-semibold text-ink">Contact pro</h2>
+              <p className="text-ink-soft text-sm">Pour les partenariats et demandes professionnelles.</p>
+            </div>
+          </div>
+          <a
+            href={`mailto:${liens.mailPro}`}
+            className="rounded-full px-4 py-2 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 hover:text-ink transition-all shrink-0"
+          >
+            {liens.mailPro}
+          </a>
+        </div>
+      </section>
     </div>
   );
 }

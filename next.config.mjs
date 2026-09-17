@@ -10,6 +10,12 @@ const nextConfig = {
       { protocol: "https", hostname: "**.cdninstagram.com" },
     ],
   },
+  async redirects() {
+    return [
+      { source: "/valorant", destination: "/gaming", permanent: true },
+      { source: "/communaute", destination: "/#communaute", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
