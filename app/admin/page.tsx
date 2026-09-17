@@ -4,9 +4,12 @@ import { useEffect, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
 import type { EtapeTimeline } from "@/data/timeline";
+import type { SectionAPropos } from "@/data/aproposSections";
+import type { NewsValorant, ProfilValorant } from "@/data/valorant";
 import { textesParDefaut, type Textes } from "@/data/textes";
+import EditeurRiche from "@/components/admin/EditeurRiche";
 
-type Onglet = "planning" | "contenus" | "textes" | "timeline";
+type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant";
 
 const PLATEFORMES: Contenu["plateforme"][] = ["TikTok", "Instagram", "YouTube", "Twitch"];
 
@@ -37,18 +40,6 @@ const SECTIONS_TEXTES: SectionTexte[] = [
       { cle: "texteCourt", label: "Texte court (bloc sur l'accueil)", type: "textarea" },
       { cle: "boutonPlus", label: "Texte du bouton \"en savoir plus\"", type: "input" },
       { cle: "pageTitre", label: "Titre (page \"À propos\" complète)", type: "input" },
-      { cle: "quiSuisJeTitre", label: "Titre section \"Qui est Cycy ?\"", type: "input" },
-      { cle: "quiSuisJeTexte", label: "Texte section \"Qui est Cycy ?\"", type: "textarea" },
-      { cle: "universTitre", label: "Titre section \"Mon univers\"", type: "input" },
-      { cle: "universTexte", label: "Texte section \"Mon univers\"", type: "textarea" },
-      { cle: "setupTitre", label: "Titre section \"Mon setup\"", type: "input" },
-      { cle: "setupTexte", label: "Texte section \"Mon setup\"", type: "textarea" },
-      { cle: "parcoursTitre", label: "Titre section \"Mon parcours\"", type: "input" },
-      { cle: "parcoursTexte", label: "Texte section \"Mon parcours\"", type: "textarea" },
-      { cle: "passionsTitre", label: "Titre section \"Passions & favoris\"", type: "input" },
-      { cle: "passionsTexte", label: "Texte section \"Passions & favoris\"", type: "textarea" },
-      { cle: "collabTitre", label: "Titre section \"Collaborations\"", type: "input" },
-      { cle: "collabTexte", label: "Texte section \"Collaborations\"", type: "textarea" },
     ],
   },
   {
@@ -89,6 +80,15 @@ export default function AdminPage() {
   const [contenus, setContenus] = useState<Contenu[]>([]);
   const [textes, setTextes] = useState<Textes>(textesParDefaut);
   const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
+  const [sectionsApropos, setSectionsApropos] = useState<SectionAPropos[]>([]);
+  const [newsValorant, setNewsValorant] = useState<NewsValorant[]>([]);
+  const [profilValorant, setProfilValorant] = useState<ProfilValorant>({
+    mapFavorite: "",
+    skinFavori: "",
+    mains: "",
+    rankActuel: "",
+    trackerUrl: "",
+  });
   const [chargement, setChargement] = useState(true);
 
   const [enregistrement, setEnregistrement] = useState(false);
@@ -103,12 +103,18 @@ export default function AdminPage() {
       fetch("/api/contenus").then((r) => r.json()),
       fetch("/api/textes").then((r) => r.json()),
       fetch("/api/timeline").then((r) => r.json()),
+      fetch("/api/apropos-sections").then((r) => r.json()),
+      fetch("/api/valorant-news").then((r) => r.json()),
+      fetch("/api/valorant-profil").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataProfil]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
         setTimeline(dataTimeline.timeline);
+        setSectionsApropos(dataSections.sections);
+        setNewsValorant(dataNews.news);
+        setProfilValorant(dataProfil.profil);
       })
       .finally(() => setChargement(false));
 
@@ -195,6 +201,57 @@ export default function AdminPage() {
     }));
   }
 
+  function modifierSection(index: number, champs: Partial<SectionAPropos>) {
+    setSectionsApropos((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, ...champs } : s))
+    );
+  }
+
+  function ajouterSection() {
+    setSectionsApropos((prev) => [
+      ...prev,
+      { id: genererId(), titre: "", texte: "" },
+    ]);
+  }
+
+  function supprimerSection(index: number) {
+    setSectionsApropos((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerSection(index: number, direction: -1 | 1) {
+    setSectionsApropos((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
+  function modifierNews(index: number, champs: Partial<NewsValorant>) {
+    setNewsValorant((prev) =>
+      prev.map((n, i) => (i === index ? { ...n, ...champs } : n))
+    );
+  }
+
+  function ajouterNews() {
+    setNewsValorant((prev) => [...prev, { id: genererId(), titre: "", url: "" }]);
+  }
+
+  function supprimerNews(index: number) {
+    setNewsValorant((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerNews(index: number, direction: -1 | 1) {
+    setNewsValorant((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
   async function enregistrer(
     url: string,
     corps: Record<string, unknown>,
@@ -261,6 +318,8 @@ export default function AdminPage() {
             { valeur: "contenus", label: "Derniers contenus" },
             { valeur: "textes", label: "Textes" },
             { valeur: "timeline", label: "Timeline" },
+            { valeur: "apropos", label: "À propos" },
+            { valeur: "valorant", label: "Valorant" },
           ] as const
         ).map((o) => (
           <button
@@ -461,13 +520,9 @@ export default function AdminPage() {
                       {champ.label}
                     </label>
                     {champ.type === "textarea" ? (
-                      <textarea
-                        rows={3}
+                      <EditeurRiche
                         value={(textes[section.cle] as Record<string, string>)[champ.cle] ?? ""}
-                        onChange={(e) =>
-                          modifierTexte(section.cle, champ.cle, e.target.value)
-                        }
-                        className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
+                        onChange={(html) => modifierTexte(section.cle, champ.cle, html)}
                       />
                     ) : (
                       <input
@@ -580,6 +635,227 @@ export default function AdminPage() {
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer la timeline"}
+          </button>
+        </>
+      )}
+
+      {onglet === "apropos" && (
+        <>
+          <p className="text-ink-soft mb-6 text-sm">
+            Ajoute, modifie et réordonne (↑ ↓) les sections de la page À
+            propos. La première section s'affiche à côté de ta photo, les
+            suivantes en dessous. La timeline (onglet précédent) et le
+            lien vers Partenariats s'affichent automatiquement après.
+          </p>
+
+          <div className="space-y-3 mb-4">
+            {sectionsApropos.map((section, index) => (
+              <div
+                key={section.id}
+                className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
+              >
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Titre de la section"
+                    value={section.titre}
+                    onChange={(e) => modifierSection(index, { titre: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => deplacerSection(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Monter"
+                      title="Monter"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerSection(index, 1)}
+                      disabled={index === sectionsApropos.length - 1}
+                      aria-label="Descendre"
+                      title="Descendre"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerSection(index)}
+                      aria-label="Supprimer"
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <EditeurRiche
+                  value={section.texte}
+                  onChange={(html) => modifierSection(index, { texte: html })}
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={ajouterSection}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-6"
+          >
+            + Ajouter une section
+          </button>
+
+          <button
+            onClick={() =>
+              enregistrer(
+                "/api/apropos-sections",
+                { sections: sectionsApropos },
+                "Sections enregistrées et visibles sur le site !"
+              )
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les sections"}
+          </button>
+        </>
+      )}
+
+      {onglet === "valorant" && (
+        <>
+          <h2 className="text-ink font-medium mb-3">News Valorant</h2>
+          <p className="text-ink-soft mb-4 text-sm">
+            Ajoute des liens vers des news Valorant (le site officiel n'a
+            pas de flux automatique fiable, donc tu les ajoutes toi-même).
+          </p>
+
+          <div className="space-y-3 mb-4">
+            {newsValorant.map((n, index) => (
+              <div
+                key={n.id}
+                className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
+              >
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Titre de la news"
+                    value={n.titre}
+                    onChange={(e) => modifierNews(index, { titre: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => deplacerNews(index, -1)}
+                      disabled={index === 0}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerNews(index, 1)}
+                      disabled={index === newsValorant.length - 1}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerNews(index)}
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Lien (https://...)"
+                  value={n.url}
+                  onChange={(e) => modifierNews(index, { url: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={ajouterNews}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter une news
+          </button>
+
+          <button
+            onClick={() =>
+              enregistrer("/api/valorant-news", { news: newsValorant }, "News enregistrées !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les news"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Favoris & rank</h2>
+          <div className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12 mb-4">
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Map favorite</label>
+              <input
+                type="text"
+                value={profilValorant.mapFavorite}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, mapFavorite: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Skin favori</label>
+              <input
+                type="text"
+                value={profilValorant.skinFavori}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, skinFavori: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">
+                Mes mains (agents séparés par des virgules)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Jett, Reyna, Omen"
+                value={profilValorant.mains}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, mains: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Rank actuel</label>
+              <input
+                type="text"
+                placeholder="Ex: Immortal 2"
+                value={profilValorant.rankActuel}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, rankActuel: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Lien Tracker.gg</label>
+              <input
+                type="text"
+                placeholder="https://tracker.gg/valorant/profile/riot/..."
+                value={profilValorant.trackerUrl}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, trackerUrl: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={() =>
+              enregistrer("/api/valorant-profil", { profil: profilValorant }, "Favoris & rank enregistrés !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer favoris & rank"}
           </button>
         </>
       )}

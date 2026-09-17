@@ -11,6 +11,7 @@ const navItems = [
   { label: "Accueil", href: "/" },
   { label: "À propos", href: "/a-propos" },
   { label: "Réseaux", href: "/reseaux" },
+  { label: "Valorant", href: "/valorant" },
   { label: "Communauté", href: "/communaute" },
   { label: "Partenariats", href: "/partenariats" },
   { label: "Contact", href: "/contact" },

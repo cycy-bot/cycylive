@@ -2,6 +2,7 @@ import Link from "next/link";
 import { lireTextes } from "@/lib/textesStore";
 import AccentCosmique from "@/components/AccentCosmique";
 import FollowersTwitch from "@/components/FollowersTwitch";
+import TexteRiche from "@/components/TexteRiche";
 import {
   IconCrystal,
   IconStar4,
@@ -26,9 +27,10 @@ export default async function PartenariatsPage() {
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.partenariats.titre}
       </h1>
-      <p className="text-ink-soft leading-relaxed mb-4 max-w-2xl">
-        {textes.partenariats.intro}
-      </p>
+      <TexteRiche
+        html={textes.partenariats.intro}
+        className="text-ink-soft leading-relaxed mb-4 max-w-2xl"
+      />
 
       <div className="mb-8">
         <FollowersTwitch />

@@ -1,6 +1,7 @@
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import AccentCosmique from "@/components/AccentCosmique";
+import TexteRiche from "@/components/TexteRiche";
 import { IconDiscord, IconCrystal, IconStar4, IconOrbit } from "@/components/Icons";
 
 const piliers = [
@@ -17,9 +18,7 @@ export default async function CommunautePage() {
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         {textes.communaute.titre}
       </h1>
-      <p className="text-ink-soft leading-relaxed mb-10">
-        {textes.communaute.pageTexte}
-      </p>
+      <TexteRiche html={textes.communaute.pageTexte} className="text-ink-soft leading-relaxed mb-10" />
 
       <div className="grid md:grid-cols-3 gap-4 mb-10 text-left">
         {piliers.map(({ titre, texte, icon: Icon }) => (

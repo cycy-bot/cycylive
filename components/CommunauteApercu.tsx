@@ -1,5 +1,6 @@
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
+import TexteRiche from "@/components/TexteRiche";
 import { IconDiscord, IconStar4 } from "@/components/Icons";
 
 export default async function CommunauteApercu() {
@@ -11,9 +12,10 @@ export default async function CommunauteApercu() {
         <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">
           {textes.communaute.titre}
         </h2>
-        <p className="text-ink-soft max-w-xl mx-auto mb-7 leading-relaxed">
-          {textes.communaute.texte}
-        </p>
+        <TexteRiche
+          html={textes.communaute.texte}
+          className="text-ink-soft max-w-xl mx-auto mb-7 leading-relaxed"
+        />
         <a
           href={liens.discord}
           target="_blank"

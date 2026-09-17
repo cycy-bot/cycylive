@@ -184,6 +184,15 @@ Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 **Onglet "Timeline"** : ajoute les étapes marquantes de ton parcours (date + titre + description optionnelle). Elles s'affichent en entier sur la page À propos, et les 3 dernières en aperçu sur l'accueil avec un bouton vers le parcours complet.
 
+## Page Valorant
+
+La page `/valorant` (accessible depuis le menu principal) a 3 sous-onglets :
+- **News** : des liens vers des actus Valorant que tu ajoutes toi-même via `/admin` (Riot n'offre pas de flux d'actus automatique fiable à intégrer).
+- **Mes favoris** : map favorite, skin favori, et tes agents "mains".
+- **Mon rank** : ton rank actuel (texte libre, à mettre à jour toi-même) + un lien vers ton profil Tracker.gg pour le détail complet et à jour.
+
+Tout se gère depuis `/admin`, onglet "Valorant".
+
 ## Statistiques et compteur Discord
 
 - Le nombre de **followers Twitch** utilise la même connexion que le compteur de live (voir plus haut).

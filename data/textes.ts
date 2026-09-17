@@ -24,31 +24,7 @@ export const textesParDefaut = {
     texteCourt:
       "Streameuse et créatrice de contenu, je passe mes lives entre gaming, discussions et bonne humeur. Ce que j'aime le plus : construire une communauté où on se sent bien, jouer sérieusement sans se prendre trop au sérieux, et partager ça avec vous chaque semaine.",
     boutonPlus: "En savoir plus",
-    pageTitre: "À propos de Cycy",
-
-    quiSuisJeTitre: "Qui est Cycy ?",
-    quiSuisJeTexte:
-      "Je suis Cycy — streameuse et créatrice de contenu. Je fais du live sur Twitch plusieurs fois par semaine, principalement autour du gaming, avec quelques incursions dans le lifestyle et les discussions communautaires.",
-
-    universTitre: "Mon univers",
-    universTexte:
-      "Du FPS compétitif, des soirées jeux d'horreur entre ami·es, des sessions plus tranquilles, et beaucoup d'échanges avec la communauté. Ce que je ne fais pas : du contenu formaté à l'excès. Je préfère que ça reste vivant.",
-
-    setupTitre: "Mon setup",
-    setupTexte:
-      "Mon setup évolue régulièrement — je le détaillerai bientôt ici (PC, périphériques, éclairage, déco). Reviens jeter un œil !",
-
-    parcoursTitre: "Mon parcours",
-    parcoursTexte:
-      "En dehors du live, je crée du contenu court pour TikTok, Instagram et YouTube — des extraits, des moments marquants, et des formats pensés spécifiquement pour chaque plateforme.",
-
-    passionsTitre: "Mes passions & favoris",
-    passionsTexte:
-      "Jeux du moment, créateurs que je suis, contenus qui m'inspirent : cette section arrive bientôt avec mes vrais coups de cœur.",
-
-    collabTitre: "Collaborations",
-    collabTexte:
-      "Marques, événements, créateurs : je suis ouverte à différents types de collaborations. Retrouve tous les détails sur la page Partenariats.",
+    pageTitre: "Qui est Cycy ?",
   },
   communaute: {
     titre: "La communauté avant tout",

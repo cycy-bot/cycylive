@@ -2,27 +2,15 @@ import Image from "next/image";
 import Link from "next/link";
 import { lireTextes } from "@/lib/textesStore";
 import { lireTimeline } from "@/lib/timelineStore";
+import { lireSectionsAPropos } from "@/lib/aproposSectionsStore";
 import AccentCosmique from "@/components/AccentCosmique";
+import TexteRiche from "@/components/TexteRiche";
 import { IconStar4 } from "@/components/Icons";
-
-function Section({
-  titre,
-  children,
-}: {
-  titre: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="py-8 border-t border-violet/10 first:border-t-0 first:pt-0">
-      <h2 className="text-xl md:text-2xl font-semibold text-ink mb-3">{titre}</h2>
-      <div className="text-ink-soft leading-relaxed">{children}</div>
-    </section>
-  );
-}
 
 export default async function AProposPage() {
   const textes = await lireTextes();
   const timeline = await lireTimeline();
+  const sections = await lireSectionsAPropos();
   const a = textes.apropos;
 
   return (
@@ -42,29 +30,29 @@ export default async function AProposPage() {
           />
         </div>
 
-        <div>
-          <Section titre={a.quiSuisJeTitre}>
-            <p>{a.quiSuisJeTexte}</p>
-          </Section>
-        </div>
+        {sections[0] && (
+          <section className="py-2">
+            <h2 className="text-xl md:text-2xl font-semibold text-ink mb-3">
+              {sections[0].titre}
+            </h2>
+            <TexteRiche html={sections[0].texte} className="text-ink-soft" />
+          </section>
+        )}
       </div>
 
-      <Section titre={a.universTitre}>
-        <p>{a.universTexte}</p>
-      </Section>
-
-      <Section titre={a.setupTitre}>
-        <p>{a.setupTexte}</p>
-      </Section>
-
-      <Section titre={a.parcoursTitre}>
-        <p>{a.parcoursTexte}</p>
-      </Section>
+      {sections.slice(1).map((section) => (
+        <section key={section.id} className="py-8 border-t border-violet/10">
+          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-3">
+            {section.titre}
+          </h2>
+          <TexteRiche html={section.texte} className="text-ink-soft" />
+        </section>
+      ))}
 
       {timeline.length > 0 && (
         <section id="timeline" className="py-8 border-t border-violet/10 scroll-mt-24">
           <h2 className="text-xl md:text-2xl font-semibold text-ink mb-6">
-            Ma timeline
+            Les moments qui ont marqué l'aventure
           </h2>
           <div className="space-y-5">
             {timeline.map((etape, index) => (
@@ -92,15 +80,7 @@ export default async function AProposPage() {
         </section>
       )}
 
-      <Section titre={a.passionsTitre}>
-        <p>{a.passionsTexte}</p>
-      </Section>
-
       <section className="py-8 border-t border-violet/10">
-        <h2 className="text-xl md:text-2xl font-semibold text-ink mb-3">
-          {a.collabTitre}
-        </h2>
-        <p className="text-ink-soft leading-relaxed mb-4">{a.collabTexte}</p>
         <Link
           href="/partenariats"
           className="inline-flex items-center gap-1.5 text-violet-light hover:text-lilac transition-colors font-medium"

@@ -127,6 +127,22 @@ export function IconChevronRight({ className }: IconProps) {
   );
 }
 
+export function IconValorant({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path
+        d="M3 5h4.2L17 15.8V19h-4.2L3 8.2V5Z"
+        fill="currentColor"
+      />
+      <path
+        d="M13 5h8v3.2L14 16v-4.4L18.4 7H13V5Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+    </svg>
+  );
+}
+
 /* ---------- Motifs cosmiques décoratifs ---------- */
 
 export function IconStar4({ className, style }: IconProps) {

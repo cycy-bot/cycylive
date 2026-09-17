@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { liens } from "@/data/liens";
 import { useTextes } from "@/components/useTextes";
+import TexteRiche from "@/components/TexteRiche";
 
 const categories = [
   "Partenariat",
@@ -21,7 +22,7 @@ export default function ContactPage() {
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.contact.titre}
       </h1>
-      <p className="text-ink-soft mb-10">{textes.contact.texte}</p>
+      <TexteRiche html={textes.contact.texte} className="text-ink-soft mb-10" />
 
       <form
         className="space-y-5"

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { liens } from "@/data/liens";
 import { useTextes } from "@/components/useTextes";
 import { useTwitchStatus } from "@/components/useTwitchStatus";
+import TexteRiche from "@/components/TexteRiche";
 import {
   IconTikTok,
   IconInstagram,
@@ -33,11 +34,14 @@ export default function Hero() {
           <h1 className="text-4xl md:text-5xl font-semibold text-ink glow-text leading-tight mb-4">
             {enLigne ? "Je suis en live !" : textes.hero.accroche}
           </h1>
-          <p className="text-ink-soft text-lg mb-8 max-w-md">
-            {enLigne
-              ? "Rejoins le live en cours, ça se passe maintenant sur Twitch."
-              : textes.hero.description}
-          </p>
+          <TexteRiche
+            html={
+              enLigne
+                ? "Rejoins le live en cours, ça se passe maintenant sur Twitch."
+                : textes.hero.description
+            }
+            className="text-ink-soft text-lg mb-8 max-w-md"
+          />
 
           <div className="flex flex-wrap gap-3 mb-9">
             <a
