@@ -1,5 +1,5 @@
 // ============================================================
-// VALORANT — news, favoris et rank
+// VALORANT — news, clips, favoris et rank
 // ============================================================
 // ⚠️ Tu n'as normalement plus besoin de modifier ce fichier.
 // Gère tout ça depuis /admin, onglet "Valorant".
@@ -10,11 +10,20 @@ export type NewsValorant = {
   url: string;
 };
 
+export type ClipValorant = {
+  id: string;
+  titre: string;
+  url: string;
+};
+
 export type ProfilValorant = {
-  mapFavorite: string;
-  skinFavori: string;
-  mains: string; // agents, séparés par des virgules
+  intro: string; // courte intro sur la place de Valorant dans la chaîne
   rankActuel: string;
+  objectifRank: string;
+  agents: string; // séparés par des virgules
+  maps: string; // séparées par des virgules
+  skinsArmes: string;
+  statsPerso: string; // optionnel : un chiffre ou une note du moment (laisser vide sinon)
   trackerUrl: string; // lien vers le profil Tracker.gg
 };
 
@@ -26,10 +35,16 @@ export const newsValorantParDefaut: NewsValorant[] = [
   },
 ];
 
+export const clipsValorantParDefaut: ClipValorant[] = [];
+
 export const profilValorantParDefaut: ProfilValorant = {
-  mapFavorite: "À définir",
-  skinFavori: "À définir",
-  mains: "À définir",
+  intro:
+    "Valorant, c'est devenu le cœur de mes lives — ranked, clutchs, fails et beaucoup de cris avec la communauté.",
   rankActuel: "À définir",
+  objectifRank: "À définir",
+  agents: "À définir",
+  maps: "À définir",
+  skinsArmes: "À définir",
+  statsPerso: "",
   trackerUrl: "",
 };

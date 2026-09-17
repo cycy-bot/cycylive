@@ -1,4 +1,6 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import AccentCosmique from "@/components/AccentCosmique";
 import FollowersTwitch from "@/components/FollowersTwitch";
@@ -8,16 +10,55 @@ import {
   IconStar4,
   IconPlanetRing,
   IconOrbit,
+  IconMoonCrescent,
   IconMail,
+  IconTwitch,
+  IconTikTok,
+  IconInstagram,
+  IconYouTube,
+  IconDiscord,
 } from "@/components/Icons";
 
-const typesCollab = [
-  { label: "Gaming", icon: IconCrystal },
-  { label: "Événements", icon: IconStar4 },
-  { label: "Marques", icon: IconPlanetRing },
-  { label: "Sponsoring", icon: IconOrbit },
-  { label: "Collaborations créateurs", icon: IconCrystal },
+const univers = ["Gaming", "Streaming", "Création de contenu", "Communauté"];
+
+const presence = [
+  { nom: "Twitch", href: liens.twitch, icon: IconTwitch },
+  { nom: "TikTok", href: liens.tiktok, icon: IconTikTok },
+  { nom: "Instagram", href: liens.instagram, icon: IconInstagram },
+  { nom: "YouTube", href: liens.youtube, icon: IconYouTube },
+  { nom: "Discord", href: liens.discord, icon: IconDiscord },
 ];
+
+const typesCollab = [
+  { label: "Campagnes gaming", icon: IconCrystal },
+  { label: "Sponsoring", icon: IconOrbit },
+  { label: "Événements", icon: IconStar4 },
+  { label: "Tests / découvertes", icon: IconMoonCrescent },
+  { label: "Création de contenu", icon: IconCrystal },
+  { label: "Collaborations créateurs", icon: IconPlanetRing },
+  { label: "Activations sur-mesure", icon: IconStar4 },
+];
+
+function Tag({ label }: { label: string }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-white/[0.04] px-3.5 py-1.5 text-xs text-ink-soft/80">
+      {label}
+    </span>
+  );
+}
+
+export const metadata: Metadata = {
+  title: "Collaborations & Partenariats | Cycylive",
+  description:
+    "Marques, événements, créateurs : découvre les collaborations possibles avec Cycylive.",
+  alternates: { canonical: "/partenariats" },
+  openGraph: {
+    title: "Collaborations & Partenariats | Cycylive",
+    description:
+      "Marques, événements, créateurs : découvre les collaborations possibles avec Cycylive.",
+    url: "/partenariats",
+  },
+};
 
 export default async function PartenariatsPage() {
   const textes = await lireTextes();
@@ -29,13 +70,40 @@ export default async function PartenariatsPage() {
       </h1>
       <TexteRiche
         html={textes.partenariats.intro}
-        className="text-ink-soft leading-relaxed mb-4 max-w-2xl"
+        className="text-ink-soft leading-relaxed mb-6 max-w-2xl"
       />
 
+      {/* Chiffres clés : masqué automatiquement tant qu'aucune donnée n'est disponible */}
       <div className="mb-8">
         <FollowersTwitch />
       </div>
 
+      {/* Univers */}
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Univers</p>
+      <div className="flex flex-wrap gap-2 mb-8">
+        {univers.map((u) => (
+          <Tag key={u} label={u} />
+        ))}
+      </div>
+
+      {/* Présence */}
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Présence</p>
+      <div className="flex flex-wrap gap-2 mb-8">
+        {presence.map(({ nom, href, icon: Icon }) => (
+          <a
+            key={nom}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-full border border-violet/20 px-3.5 py-1.5 text-xs text-ink-soft hover:text-ink hover:border-violet/40 transition-all"
+          >
+            <Icon className="w-3.5 h-3.5 text-violet-light/80" />
+            {nom}
+          </a>
+        ))}
+      </div>
+
+      {/* Collaborations possibles */}
       <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
         {textes.partenariats.typesTitre}
       </p>

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { lireTextes } from "@/lib/textesStore";
@@ -6,6 +7,19 @@ import { lireSectionsAPropos } from "@/lib/aproposSectionsStore";
 import AccentCosmique from "@/components/AccentCosmique";
 import TexteRiche from "@/components/TexteRiche";
 import SetupCards from "@/components/SetupCards";
+
+export const metadata: Metadata = {
+  title: "À propos de Cycy | Cycylive",
+  description:
+    "Qui est Cycy, son univers, son setup et son parcours sur Twitch.",
+  alternates: { canonical: "/a-propos" },
+  openGraph: {
+    title: "À propos de Cycy | Cycylive",
+    description:
+      "Qui est Cycy, son univers, son setup et son parcours sur Twitch.",
+    url: "/a-propos",
+  },
+};
 
 export default async function AProposPage() {
   const textes = await lireTextes();

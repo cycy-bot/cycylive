@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import AccentCosmique from "@/components/AccentCosmique";
@@ -9,6 +10,19 @@ const piliers = [
   { titre: "Événements", texte: "Annonces en avant-première et moments spéciaux.", icon: IconStar4 },
   { titre: "Discussions", texte: "Un espace pour échanger au quotidien, entre deux lives.", icon: IconOrbit },
 ];
+
+export const metadata: Metadata = {
+  title: "Communauté | Cycylive",
+  description:
+    "Rejoins la communauté Cycylive sur Discord : soirées, événements et bonne ambiance.",
+  alternates: { canonical: "/communaute" },
+  openGraph: {
+    title: "Communauté | Cycylive",
+    description:
+      "Rejoins la communauté Cycylive sur Discord : soirées, événements et bonne ambiance.",
+    url: "/communaute",
+  },
+};
 
 export default async function CommunautePage() {
   const textes = await lireTextes();

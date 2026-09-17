@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { liens } from "@/data/liens";
 import { lireContenus } from "@/lib/contenusStore";
 import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
@@ -8,91 +9,99 @@ import {
   IconTikTok,
   IconInstagram,
   IconYouTube,
-  IconDiscord,
 } from "@/components/Icons";
 
-const plateformes: {
+function CarteVideo({ c, largeur }: { c: ContenuAvecMiniature; largeur: string }) {
+  return (
+    <a
+      href={c.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={`snap-start shrink-0 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm hover:border-violet/30 transition-all ${largeur}`}
+    >
+      <div
+        className={`relative bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden ${
+          c.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
+        }`}
+      >
+        {c.miniature ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={c.miniature}
+            alt={c.titre}
+            loading="lazy"
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        ) : (
+          <span>{c.plateforme}</span>
+        )}
+      </div>
+      <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
+    </a>
+  );
+}
+
+function BlocPlateforme({
+  nom,
+  description,
+  lien,
+  icon: Icon,
+  ctaLabel,
+  children,
+}: {
   nom: string;
   description: string;
   lien: string;
   icon: typeof IconTwitch;
-  accent?: boolean;
-}[] = [
-  {
-    nom: "Twitch",
-    description: "Lives gaming plusieurs fois par semaine.",
-    lien: liens.twitch,
-    icon: IconTwitch,
-    accent: true,
-  },
-  {
-    nom: "TikTok",
-    description: "Clips, moments forts et coulisses au format court.",
-    lien: liens.tiktok,
-    icon: IconTikTok,
-  },
-  {
-    nom: "Instagram",
-    description: "Reels, photos et aperçu du quotidien.",
-    lien: liens.instagram,
-    icon: IconInstagram,
-  },
-  {
-    nom: "YouTube",
-    description: "Best-of, vidéos longues et Shorts.",
-    lien: liens.youtube,
-    icon: IconYouTube,
-  },
-  {
-    nom: "Discord",
-    description: "La communauté Cycylive au complet.",
-    lien: liens.discord,
-    icon: IconDiscord,
-  },
-];
-
-function GalerieClips({ titre, items }: { titre: string; items: ContenuAvecMiniature[] }) {
-  if (items.length === 0) return null;
+  ctaLabel: string;
+  children?: React.ReactNode;
+}) {
   return (
-    <>
-      <h2 className="text-2xl font-semibold text-ink mt-10 mb-6">{titre}</h2>
-      <CarouselFleches>
-        {items.map((c) => (
-          <a
-            key={c.id}
-            href={c.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`snap-start shrink-0 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all ${
-              c.format === "vertical" ? "w-40" : "w-64"
-            }`}
-          >
-            <div
-              className={`relative bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden ${
-                c.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
-              }`}
-            >
-              {c.miniature ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={c.miniature}
-                  alt={c.titre}
-                  className="absolute inset-0 w-full h-full object-cover"
-                />
-              ) : (
-                <span>{c.plateforme}</span>
-              )}
-            </div>
-            <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
-          </a>
-        ))}
-      </CarouselFleches>
-    </>
+    <section className="py-8 border-t border-violet/10 first:border-t-0 first:pt-0">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3">
+          <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
+            <Icon className="w-5 h-5" />
+          </span>
+          <div>
+            <h2 className="text-xl font-semibold text-ink">{nom}</h2>
+            <p className="text-ink-soft text-sm">{description}</p>
+          </div>
+        </div>
+        <a
+          href={lien}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full px-4 py-2 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 hover:text-ink transition-all shrink-0"
+        >
+          {ctaLabel}
+        </a>
+      </div>
+      {children}
+    </section>
   );
 }
 
+export const metadata: Metadata = {
+  title: "Réseaux & contenus | Cycylive",
+  description:
+    "Retrouve Cycy sur Twitch, TikTok, Instagram et YouTube, avec les derniers contenus mis en avant.",
+  alternates: { canonical: "/reseaux" },
+  openGraph: {
+    title: "Réseaux & contenus | Cycylive",
+    description:
+      "Retrouve Cycy sur Twitch, TikTok, Instagram et YouTube, avec les derniers contenus mis en avant.",
+    url: "/reseaux",
+  },
+};
+
 export default async function ReseauxPage() {
   const contenus = await ajouterMiniatures(await lireContenus());
+
+  const clipsTwitch = contenus.filter((c) => c.plateforme === "Twitch");
+  const tiktoks = contenus.filter((c) => c.plateforme === "TikTok");
+  const reels = contenus.filter((c) => c.plateforme === "Instagram");
+  const videosYoutube = contenus.filter((c) => c.plateforme === "YouTube");
 
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-12">
@@ -101,44 +110,97 @@ export default async function ReseauxPage() {
         Réseaux
       </h1>
 
-      <div className="grid md:grid-cols-2 gap-5">
-        {plateformes.map(({ nom, description, lien, icon: Icon, accent }) => (
-          <a
-            key={nom}
-            href={lien}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`carte-holo rounded-2xl p-6 flex items-start gap-4 hover:shadow-glow-sm transition-all border ${
-              accent ? "border-violet/40" : "border-violet/12"
-            }`}
-          >
-            <span className="h-12 w-12 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
-              <Icon className="w-6 h-6" />
-            </span>
-            <div>
-              <h2 className="text-xl font-semibold text-ink mb-1.5">{nom}</h2>
-              <p className="text-ink-soft text-sm">{description}</p>
-            </div>
-          </a>
-        ))}
-      </div>
+      <BlocPlateforme
+        nom="Twitch"
+        description="Lives gaming plusieurs fois par semaine, Valorant en tête d'affiche."
+        lien={liens.twitch}
+        icon={IconTwitch}
+        ctaLabel="Voir la chaîne"
+      >
+        {clipsTwitch.length > 0 ? (
+          <CarouselFleches>
+            {clipsTwitch.map((c) => (
+              <CarteVideo key={c.id} c={c} largeur="w-40" />
+            ))}
+          </CarouselFleches>
+        ) : (
+          <p className="text-ink-soft/50 text-sm">Aucun clip pour l'instant.</p>
+        )}
+      </BlocPlateforme>
 
-      <GalerieClips
-        titre="Derniers clips Twitch"
-        items={contenus.filter((c) => c.plateforme === "Twitch")}
-      />
-      <GalerieClips
-        titre="Derniers TikTok"
-        items={contenus.filter((c) => c.plateforme === "TikTok")}
-      />
-      <GalerieClips
-        titre="Derniers Reels Instagram"
-        items={contenus.filter((c) => c.plateforme === "Instagram")}
-      />
-      <GalerieClips
-        titre="Dernières vidéos YouTube"
-        items={contenus.filter((c) => c.plateforme === "YouTube")}
-      />
+      <BlocPlateforme
+        nom="TikTok"
+        description="Clips, moments forts et coulisses au format court."
+        lien={liens.tiktok}
+        icon={IconTikTok}
+        ctaLabel="Voir le profil"
+      >
+        {tiktoks.length > 0 ? (
+          <CarouselFleches>
+            {tiktoks.map((c) => (
+              <CarteVideo key={c.id} c={c} largeur="w-40" />
+            ))}
+          </CarouselFleches>
+        ) : (
+          <p className="text-ink-soft/50 text-sm">Aucune vidéo pour l'instant.</p>
+        )}
+      </BlocPlateforme>
+
+      <BlocPlateforme
+        nom="Instagram"
+        description="Reels, photos et aperçu du quotidien."
+        lien={liens.instagram}
+        icon={IconInstagram}
+        ctaLabel="Voir le profil"
+      >
+        {reels.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {reels.map((c) => (
+              <a
+                key={c.id}
+                href={c.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm hover:border-violet/30 transition-all"
+              >
+                <div className="relative aspect-square bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden">
+                  {c.miniature ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={c.miniature}
+                      alt={c.titre}
+                      loading="lazy"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>Instagram</span>
+                  )}
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p className="text-ink-soft/50 text-sm">Aucun contenu pour l'instant.</p>
+        )}
+      </BlocPlateforme>
+
+      <BlocPlateforme
+        nom="YouTube"
+        description="Best-of, vidéos longues et Shorts."
+        lien={liens.youtube}
+        icon={IconYouTube}
+        ctaLabel="Voir la chaîne"
+      >
+        {videosYoutube.length > 0 ? (
+          <CarouselFleches>
+            {videosYoutube.map((c) => (
+              <CarteVideo key={c.id} c={c} largeur="w-72 md:w-96" />
+            ))}
+          </CarouselFleches>
+        ) : (
+          <p className="text-ink-soft/50 text-sm">Aucune vidéo pour l'instant.</p>
+        )}
+      </BlocPlateforme>
     </div>
   );
 }

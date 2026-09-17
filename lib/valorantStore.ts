@@ -6,12 +6,15 @@
 import { Redis } from "@upstash/redis";
 import {
   NewsValorant,
+  ClipValorant,
   ProfilValorant,
   newsValorantParDefaut,
+  clipsValorantParDefaut,
   profilValorantParDefaut,
 } from "@/data/valorant";
 
 const CLE_NEWS = "cycylive:valorant-news";
+const CLE_CLIPS = "cycylive:valorant-clips";
 const CLE_PROFIL = "cycylive:valorant-profil";
 
 function obtenirClient(): Redis | null {
@@ -39,6 +42,30 @@ export async function ecrireNewsValorant(
   if (!redis) return { ok: false, erreur: "Le stockage (Upstash) n'est pas encore connecté." };
   try {
     await redis.set(CLE_NEWS, news);
+    return { ok: true };
+  } catch {
+    return { ok: false, erreur: "Erreur inattendue lors de l'enregistrement." };
+  }
+}
+
+export async function lireClipsValorant(): Promise<ClipValorant[]> {
+  const redis = obtenirClient();
+  if (!redis) return clipsValorantParDefaut;
+  try {
+    const enregistre = await redis.get<ClipValorant[]>(CLE_CLIPS);
+    return enregistre ?? clipsValorantParDefaut;
+  } catch {
+    return clipsValorantParDefaut;
+  }
+}
+
+export async function ecrireClipsValorant(
+  clips: ClipValorant[]
+): Promise<{ ok: boolean; erreur?: string }> {
+  const redis = obtenirClient();
+  if (!redis) return { ok: false, erreur: "Le stockage (Upstash) n'est pas encore connecté." };
+  try {
+    await redis.set(CLE_CLIPS, clips);
     return { ok: true };
   } catch {
     return { ok: false, erreur: "Erreur inattendue lors de l'enregistrement." };

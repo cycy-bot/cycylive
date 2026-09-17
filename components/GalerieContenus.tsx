@@ -80,6 +80,7 @@ export default function GalerieContenus({ contenus }: { contenus: ContenuAvecMin
                     <img
                       src={contenu.miniature}
                       alt={contenu.titre}
+                      loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover"
                     />
                   ) : (

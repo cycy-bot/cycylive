@@ -193,10 +193,13 @@ Comme pour les vidéos, tu réordonnes tout avec les flèches ↑ ↓ — y comp
 
 ## Page Valorant
 
-La page `/valorant` (accessible depuis le menu principal) a 3 sous-onglets :
-- **News** : des liens vers des actus Valorant que tu ajoutes toi-même via `/admin` (Riot n'offre pas de flux d'actus automatique fiable à intégrer).
-- **Mes favoris** : map favorite, skin favori, et tes agents "mains".
-- **Mon rank** : ton rank actuel (texte libre, à mettre à jour toi-même) + un lien vers ton profil Tracker.gg pour le détail complet et à jour.
+La page `/valorant` (accessible depuis le menu principal) est une vraie page personnelle sur le rapport de Cycy à Valorant :
+- Introduction, rank actuel, objectif de rank
+- Agents et maps favoris, skins/armes favoris
+- Une stat ou note personnelle (optionnelle)
+- Clips marquants (liens vers des clips Twitch)
+- Les moments de la timeline liés à Valorant (détectés automatiquement par mot-clé)
+- News Valorant (liens ajoutés manuellement)
 
 Tout se gère depuis `/admin`, onglet "Valorant".
 
@@ -301,6 +304,12 @@ Le dossier `data/` a été pensé pour accueillir facilement :
 - **Media kit PDF** : ajoute le fichier dans `public/`, puis remplace le bouton désactivé dans `app/partenariats/page.tsx` par un lien de téléchargement.
 - **Newsletter, boutique, calendrier d'événements, galerie** : nouvelles pages dans `app/`, suivant le même modèle que les pages existantes.
 - **Formulaire de contact avec envoi réel** (au lieu du mailto actuel) : brancher un service comme Formspree, Resend ou EmailJS — aucune base de données nécessaire.
+
+## SEO et partage
+
+Chaque page a son propre titre, sa description et ses métadonnées Open Graph (aperçu de partage sur Discord, WhatsApp, Twitter/X...). `sitemap.xml` et `robots.txt` sont générés automatiquement par Next.js (fichiers `app/sitemap.ts` et `app/robots.ts`) — rien à faire de ton côté. La page `/admin` est volontairement exclue de l'indexation par les moteurs de recherche.
+
+Si tu changes le titre ou la description d'une page, modifie le bloc `export const metadata` en haut du fichier correspondant (ex : `app/valorant/page.tsx`).
 
 ## Notes de design
 

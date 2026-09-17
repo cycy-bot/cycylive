@@ -5,7 +5,7 @@ import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
 import type { EtapeTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
-import type { NewsValorant, ProfilValorant } from "@/data/valorant";
+import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
@@ -82,11 +82,15 @@ export default function AdminPage() {
   const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
   const [sectionsApropos, setSectionsApropos] = useState<SectionAPropos[]>([]);
   const [newsValorant, setNewsValorant] = useState<NewsValorant[]>([]);
+  const [clipsValorant, setClipsValorant] = useState<ClipValorant[]>([]);
   const [profilValorant, setProfilValorant] = useState<ProfilValorant>({
-    mapFavorite: "",
-    skinFavori: "",
-    mains: "",
+    intro: "",
     rankActuel: "",
+    objectifRank: "",
+    agents: "",
+    maps: "",
+    skinsArmes: "",
+    statsPerso: "",
     trackerUrl: "",
   });
   const [chargement, setChargement] = useState(true);
@@ -105,15 +109,17 @@ export default function AdminPage() {
       fetch("/api/timeline").then((r) => r.json()),
       fetch("/api/apropos-sections").then((r) => r.json()),
       fetch("/api/valorant-news").then((r) => r.json()),
+      fetch("/api/valorant-clips").then((r) => r.json()),
       fetch("/api/valorant-profil").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataProfil]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
         setTimeline(dataTimeline.timeline);
         setSectionsApropos(dataSections.sections);
         setNewsValorant(dataNews.news);
+        setClipsValorant(dataClips.clips);
         setProfilValorant(dataProfil.profil);
       })
       .finally(() => setChargement(false));
@@ -244,6 +250,30 @@ export default function AdminPage() {
 
   function deplacerNews(index: number, direction: -1 | 1) {
     setNewsValorant((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
+  function modifierClip(index: number, champs: Partial<ClipValorant>) {
+    setClipsValorant((prev) =>
+      prev.map((c, i) => (i === index ? { ...c, ...champs } : c))
+    );
+  }
+
+  function ajouterClip() {
+    setClipsValorant((prev) => [...prev, { id: genererId(), titre: "", url: "" }]);
+  }
+
+  function supprimerClip(index: number) {
+    setClipsValorant((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerClip(index: number, direction: -1 | 1) {
+    setClipsValorant((prev) => {
       const nouvelIndex = index + direction;
       if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
       const copie = [...prev];
@@ -820,36 +850,82 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les news"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Favoris & rank</h2>
+          <h2 className="text-ink font-medium mb-3">Clips marquants</h2>
+          <div className="space-y-3 mb-4">
+            {clipsValorant.map((c, index) => (
+              <div
+                key={c.id}
+                className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
+              >
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Titre du clip"
+                    value={c.titre}
+                    onChange={(e) => modifierClip(index, { titre: e.target.value })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => deplacerClip(index, -1)}
+                      disabled={index === 0}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerClip(index, 1)}
+                      disabled={index === clipsValorant.length - 1}
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerClip(index)}
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Lien du clip Twitch (https://clips.twitch.tv/...)"
+                  value={c.url}
+                  onChange={(e) => modifierClip(index, { url: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={ajouterClip}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-4"
+          >
+            + Ajouter un clip
+          </button>
+
+          <button
+            onClick={() =>
+              enregistrer("/api/valorant-clips", { clips: clipsValorant }, "Clips enregistrés !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer les clips"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Mon rapport à Valorant</h2>
           <div className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12 mb-4">
             <div>
-              <label className="block text-xs text-ink-soft/70 mb-1">Map favorite</label>
-              <input
-                type="text"
-                value={profilValorant.mapFavorite}
-                onChange={(e) => setProfilValorant((p) => ({ ...p, mapFavorite: e.target.value }))}
-                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-ink-soft/70 mb-1">Skin favori</label>
-              <input
-                type="text"
-                value={profilValorant.skinFavori}
-                onChange={(e) => setProfilValorant((p) => ({ ...p, skinFavori: e.target.value }))}
-                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-              />
-            </div>
-            <div>
               <label className="block text-xs text-ink-soft/70 mb-1">
-                Mes mains (agents séparés par des virgules)
+                Introduction (place de Valorant dans la chaîne)
               </label>
-              <input
-                type="text"
-                placeholder="Ex: Jett, Reyna, Omen"
-                value={profilValorant.mains}
-                onChange={(e) => setProfilValorant((p) => ({ ...p, mains: e.target.value }))}
-                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              <EditeurRiche
+                value={profilValorant.intro}
+                onChange={(html) => setProfilValorant((p) => ({ ...p, intro: html }))}
+                minHeight={70}
               />
             </div>
             <div>
@@ -859,6 +935,61 @@ export default function AdminPage() {
                 placeholder="Ex: Immortal 2"
                 value={profilValorant.rankActuel}
                 onChange={(e) => setProfilValorant((p) => ({ ...p, rankActuel: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Objectif de rank</label>
+              <input
+                type="text"
+                placeholder="Ex: Ascendant"
+                value={profilValorant.objectifRank}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, objectifRank: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">
+                Agents joués/favoris (séparés par des virgules)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Jett, Reyna, Omen"
+                value={profilValorant.agents}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, agents: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">
+                Maps favorites (séparées par des virgules)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Ascent, Bind"
+                value={profilValorant.maps}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, maps: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">Skins / armes favoris</label>
+              <input
+                type="text"
+                value={profilValorant.skinsArmes}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, skinsArmes: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-ink-soft/70 mb-1">
+                Stat ou note personnelle (optionnel — laisse vide pour ne rien afficher)
+              </label>
+              <input
+                type="text"
+                placeholder="Ex: Winrate 55% ce mois-ci"
+                value={profilValorant.statsPerso}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, statsPerso: e.target.value }))}
                 className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
               />
             </div>
@@ -876,12 +1007,12 @@ export default function AdminPage() {
 
           <button
             onClick={() =>
-              enregistrer("/api/valorant-profil", { profil: profilValorant }, "Favoris & rank enregistrés !")
+              enregistrer("/api/valorant-profil", { profil: profilValorant }, "Ton rapport à Valorant est enregistré !")
             }
             disabled={enregistrement}
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
-            {enregistrement ? "Enregistrement..." : "Enregistrer favoris & rank"}
+            {enregistrement ? "Enregistrement..." : "Enregistrer"}
           </button>
         </>
       )}

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { liens } from "@/data/liens";
 import { obtenirNombreFollowers, estConnecteeATwitch } from "@/lib/twitchOAuth";
 import { obtenirMembresDiscordEnLigne } from "@/lib/discordStats";
@@ -8,6 +9,19 @@ function extraireChannelTwitch(url: string): string {
   const correspondance = url.match(/twitch\.tv\/([^/]+)/);
   return correspondance ? correspondance[1] : "cycylive";
 }
+
+export const metadata: Metadata = {
+  title: "Statistiques | Cycylive",
+  description:
+    "Un aperçu en direct de l'activité de Cycylive : followers, communauté et plus.",
+  alternates: { canonical: "/statistiques" },
+  openGraph: {
+    title: "Statistiques | Cycylive",
+    description:
+      "Un aperçu en direct de l'activité de Cycylive : followers, communauté et plus.",
+    url: "/statistiques",
+  },
+};
 
 export default async function StatistiquesPage() {
   const connecte = await estConnecteeATwitch();
