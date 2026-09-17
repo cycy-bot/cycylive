@@ -182,6 +182,18 @@ Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 **Onglet "Textes"** : modifie n'importe quel texte du site (hero, à propos, communauté, partenariats, contact), regroupé par section. Change ce que tu veux, entre ton mot de passe et clique **Enregistrer les textes**.
 
+**Onglet "Timeline"** : ajoute les étapes marquantes de ton parcours (date + titre + description optionnelle). Elles s'affichent en entier sur la page À propos, et les 3 dernières en aperçu sur l'accueil avec un bouton vers le parcours complet.
+
+## Statistiques et compteur Discord
+
+- Le nombre de **followers Twitch** utilise la même connexion que le compteur de live (voir plus haut).
+- Le nombre de **membres en ligne sur Discord** utilise le widget public de ton serveur. Pour l'activer :
+  1. Sur Discord, va dans les paramètres de ton serveur → **Widget**.
+  2. Active "Server Widget".
+  3. Copie l'ID de ton serveur (clic droit sur le nom du serveur → Copier l'ID — active le mode développeur dans Discord si l'option n'apparaît pas : Paramètres utilisateur → Avancés → Mode développeur).
+  4. Ajoute la variable d'environnement `DISCORD_SERVER_ID` (en local dans `.env.local`, et sur Vercel dans Environment Variables) avec cet ID.
+- Ces deux chiffres s'affichent sur l'accueil et sur la page `/statistiques`, qui renvoie aussi vers TwitchTracker pour un historique plus complet (heures streamées, pic de viewers, etc. — des données que Twitch ne fournit pas directement via son API).
+
 Chaque enregistrement est immédiatement visible sur le site, pour tout le monde.
 
 ⚠️ Note importante : TikTok et Instagram n'ont pas d'API publique simple permettant de récupérer automatiquement tes dernières vidéos — c'est pour ça que tu les ajoutes toi-même via cet onglet. YouTube, en revanche, a une API officielle et gratuite ; si un jour tu veux que tes vidéos YouTube apparaissent automatiquement sans avoir à les ajouter à la main, c'est une évolution possible (voir "Évolutions futures").

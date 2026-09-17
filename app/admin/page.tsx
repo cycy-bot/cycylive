@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
+import type { EtapeTimeline } from "@/data/timeline";
 import { textesParDefaut, type Textes } from "@/data/textes";
 
-type Onglet = "planning" | "contenus" | "textes";
+type Onglet = "planning" | "contenus" | "textes" | "timeline";
 
 const PLATEFORMES: Contenu["plateforme"][] = ["TikTok", "Instagram", "YouTube", "Twitch"];
 
@@ -36,9 +37,18 @@ const SECTIONS_TEXTES: SectionTexte[] = [
       { cle: "texteCourt", label: "Texte court (bloc sur l'accueil)", type: "textarea" },
       { cle: "boutonPlus", label: "Texte du bouton \"en savoir plus\"", type: "input" },
       { cle: "pageTitre", label: "Titre (page \"À propos\" complète)", type: "input" },
-      { cle: "pageTexte1", label: "Paragraphe 1 (page complète)", type: "textarea" },
-      { cle: "pageTexte2", label: "Paragraphe 2 (page complète)", type: "textarea" },
-      { cle: "pageTexte3", label: "Paragraphe 3 (page complète)", type: "textarea" },
+      { cle: "quiSuisJeTitre", label: "Titre section \"Qui est Cycy ?\"", type: "input" },
+      { cle: "quiSuisJeTexte", label: "Texte section \"Qui est Cycy ?\"", type: "textarea" },
+      { cle: "universTitre", label: "Titre section \"Mon univers\"", type: "input" },
+      { cle: "universTexte", label: "Texte section \"Mon univers\"", type: "textarea" },
+      { cle: "setupTitre", label: "Titre section \"Mon setup\"", type: "input" },
+      { cle: "setupTexte", label: "Texte section \"Mon setup\"", type: "textarea" },
+      { cle: "parcoursTitre", label: "Titre section \"Mon parcours\"", type: "input" },
+      { cle: "parcoursTexte", label: "Texte section \"Mon parcours\"", type: "textarea" },
+      { cle: "passionsTitre", label: "Titre section \"Passions & favoris\"", type: "input" },
+      { cle: "passionsTexte", label: "Texte section \"Passions & favoris\"", type: "textarea" },
+      { cle: "collabTitre", label: "Titre section \"Collaborations\"", type: "input" },
+      { cle: "collabTexte", label: "Texte section \"Collaborations\"", type: "textarea" },
     ],
   },
   {
@@ -78,6 +88,7 @@ export default function AdminPage() {
   const [planning, setPlanning] = useState<JourPlanning[]>([]);
   const [contenus, setContenus] = useState<Contenu[]>([]);
   const [textes, setTextes] = useState<Textes>(textesParDefaut);
+  const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
   const [chargement, setChargement] = useState(true);
 
   const [enregistrement, setEnregistrement] = useState(false);
@@ -91,11 +102,13 @@ export default function AdminPage() {
       fetch("/api/planning").then((r) => r.json()),
       fetch("/api/contenus").then((r) => r.json()),
       fetch("/api/textes").then((r) => r.json()),
+      fetch("/api/timeline").then((r) => r.json()),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline]) => {
         setPlanning(dataPlanning.planning);
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
+        setTimeline(dataTimeline.timeline);
       })
       .finally(() => setChargement(false));
 
@@ -140,6 +153,33 @@ export default function AdminPage() {
 
   function deplacerContenu(index: number, direction: -1 | 1) {
     setContenus((prev) => {
+      const nouvelIndex = index + direction;
+      if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
+      const copie = [...prev];
+      [copie[index], copie[nouvelIndex]] = [copie[nouvelIndex], copie[index]];
+      return copie;
+    });
+  }
+
+  function modifierEtape(index: number, champs: Partial<EtapeTimeline>) {
+    setTimeline((prev) =>
+      prev.map((e, i) => (i === index ? { ...e, ...champs } : e))
+    );
+  }
+
+  function ajouterEtape() {
+    setTimeline((prev) => [
+      ...prev,
+      { id: genererId(), date: "", titre: "", description: "" },
+    ]);
+  }
+
+  function supprimerEtape(index: number) {
+    setTimeline((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function deplacerEtape(index: number, direction: -1 | 1) {
+    setTimeline((prev) => {
       const nouvelIndex = index + direction;
       if (nouvelIndex < 0 || nouvelIndex >= prev.length) return prev;
       const copie = [...prev];
@@ -220,6 +260,7 @@ export default function AdminPage() {
             { valeur: "planning", label: "Planning" },
             { valeur: "contenus", label: "Derniers contenus" },
             { valeur: "textes", label: "Textes" },
+            { valeur: "timeline", label: "Timeline" },
           ] as const
         ).map((o) => (
           <button
@@ -452,6 +493,93 @@ export default function AdminPage() {
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer les textes"}
+          </button>
+        </>
+      )}
+
+      {onglet === "timeline" && (
+        <>
+          <p className="text-ink-soft mb-6 text-sm">
+            Ajoute les étapes marquantes de ton parcours (dans l'ordre
+            chronologique). Elles s'affichent sur la page À propos, et les
+            3 dernières en aperçu sur l'accueil.
+          </p>
+
+          <div className="space-y-3 mb-4">
+            {timeline.map((etape, index) => (
+              <div
+                key={etape.id}
+                className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
+              >
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="Date (ex: 2024, Juin 2025...)"
+                    value={etape.date}
+                    onChange={(e) => modifierEtape(index, { date: e.target.value })}
+                    className="w-40 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  />
+                  <div className="ml-auto flex items-center gap-1">
+                    <button
+                      onClick={() => deplacerEtape(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Monter"
+                      title="Monter"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => deplacerEtape(index, 1)}
+                      disabled={index === timeline.length - 1}
+                      aria-label="Descendre"
+                      title="Descendre"
+                      className="text-ink-soft/60 hover:text-ink disabled:opacity-25 disabled:hover:text-ink-soft/60 text-sm px-1.5"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => supprimerEtape(index)}
+                      aria-label="Supprimer"
+                      className="text-ink-soft/60 hover:text-red-300 text-sm px-2"
+                    >
+                      Supprimer
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Titre de l'étape"
+                  value={etape.titre}
+                  onChange={(e) => modifierEtape(index, { titre: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <textarea
+                  rows={2}
+                  placeholder="Description (optionnel)"
+                  value={etape.description ?? ""}
+                  onChange={(e) => modifierEtape(index, { description: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
+                />
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={ajouterEtape}
+            className="w-full rounded-full px-6 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 transition-all mb-6"
+          >
+            + Ajouter une étape
+          </button>
+
+          <button
+            onClick={() =>
+              enregistrer("/api/timeline", { timeline }, "Timeline enregistrée et visible sur le site !")
+            }
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-2"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer la timeline"}
           </button>
         </>
       )}
