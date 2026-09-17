@@ -210,7 +210,7 @@ export default function AdminPage() {
   function ajouterSection() {
     setSectionsApropos((prev) => [
       ...prev,
-      { id: genererId(), titre: "", texte: "" },
+      { id: genererId(), type: "texte", titre: "", texte: "" },
     ]);
   }
 
@@ -642,10 +642,10 @@ export default function AdminPage() {
       {onglet === "apropos" && (
         <>
           <p className="text-ink-soft mb-6 text-sm">
-            Ajoute, modifie et réordonne (↑ ↓) les sections de la page À
-            propos. La première section s'affiche à côté de ta photo, les
-            suivantes en dessous. La timeline (onglet précédent) et le
-            lien vers Partenariats s'affichent automatiquement après.
+            Ajoute, modifie et réordonne (↑ ↓) les blocs de la page À
+            propos. La première section (type "Texte") s'affiche à côté de
+            ta photo. Tu peux aussi insérer un bloc "Setup" ou "Timeline" à
+            l'endroit exact où tu veux qu'il apparaisse.
           </p>
 
           <div className="space-y-3 mb-4">
@@ -655,12 +655,26 @@ export default function AdminPage() {
                 className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12"
               >
                 <div className="flex gap-2 items-center">
+                  <select
+                    value={section.type}
+                    onChange={(e) =>
+                      modifierSection(index, {
+                        type: e.target.value as SectionAPropos["type"],
+                      })
+                    }
+                    className="rounded-lg bg-card border border-violet/20 px-2 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  >
+                    <option value="texte">Texte</option>
+                    <option value="setup">Bloc Setup</option>
+                    <option value="timeline">Bloc Timeline</option>
+                  </select>
                   <input
                     type="text"
                     placeholder="Titre de la section"
                     value={section.titre}
                     onChange={(e) => modifierSection(index, { titre: e.target.value })}
                     className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    disabled={section.type === "timeline"}
                   />
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -690,10 +704,22 @@ export default function AdminPage() {
                     </button>
                   </div>
                 </div>
-                <EditeurRiche
-                  value={section.texte}
-                  onChange={(html) => modifierSection(index, { texte: html })}
-                />
+                {section.type === "texte" && (
+                  <EditeurRiche
+                    value={section.texte}
+                    onChange={(html) => modifierSection(index, { texte: html })}
+                  />
+                )}
+                {section.type === "setup" && (
+                  <p className="text-ink-soft/60 text-xs px-1">
+                    Le contenu du setup se modifie dans data/setup.ts (fichier de configuration).
+                  </p>
+                )}
+                {section.type === "timeline" && (
+                  <p className="text-ink-soft/60 text-xs px-1">
+                    Le contenu de la timeline se modifie dans l'onglet "Timeline" ci-dessus.
+                  </p>
+                )}
               </div>
             ))}
           </div>

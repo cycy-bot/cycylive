@@ -9,7 +9,6 @@ import {
   IconInstagram,
   IconYouTube,
   IconDiscord,
-  IconLink,
 } from "@/components/Icons";
 
 const plateformes: {
@@ -49,12 +48,6 @@ const plateformes: {
     description: "La communauté Cycylive au complet.",
     lien: liens.discord,
     icon: IconDiscord,
-  },
-  {
-    nom: "Linktree",
-    description: "Tous mes réseaux réunis au même endroit.",
-    lien: liens.linktree,
-    icon: IconLink,
   },
 ];
 

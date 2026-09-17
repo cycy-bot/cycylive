@@ -17,20 +17,16 @@ export type EtapeTimeline = {
 export const timelineParDefaut: EtapeTimeline[] = [
   {
     id: "1",
-    date: "2023",
+    date: "30 mars 2026",
     titre: "Premier live",
-    description: "Le tout premier stream, avec une poignée de viewers et beaucoup de trac.",
+    description:
+      "Le tout premier. Quelques viewers, beaucoup de trac, énormément de choses à découvrir… et absolument aucune idée de jusqu'où cette aventure allait m'emmener. Il fallait bien commencer quelque part.",
   },
   {
     id: "2",
-    date: "2024",
-    titre: "Cap symbolique atteint",
-    description: "Une belle communauté commence à se former autour des lives réguliers.",
-  },
-  {
-    id: "3",
-    date: "2026",
-    titre: "Lancement de cycylive.fr",
-    description: "Le site officiel voit le jour, avec planning, réseaux et communauté réunis au même endroit.",
+    date: "5 avril 2026",
+    titre: "Premier live Valorant",
+    description:
+      "Je lançais simplement un live sur Valorant. Je ne savais pas encore que ce jeu allait devenir le cœur de ma chaîne, rythmer une grande partie de mes lives et surtout rassembler autour de moi une communauté entière. Depuis, il y a eu des ranked, des clutchs, des fails, des rencontres, beaucoup trop de cris… et énormément de souvenirs. Valorant a complètement changé mon aventure sur Twitch.",
   },
 ];

@@ -12,10 +12,10 @@
 
 export const textesParDefaut = {
   hero: {
-    ligneCourte: "Streaming · Gaming · Création de contenu",
+    ligneCourte: "Streaming · Gaming · Valorant (surtout)",
     accroche: "Bienvenue dans mon univers.",
     description:
-      "Lives, gaming, contenus et communauté réunis au même endroit.",
+      "Du gaming, des échanges, parfois un peu de chaos — et une communauté qui grandit live après live.",
     boutonPrincipal: "Voir le live sur Twitch",
     boutonSecondaire: "Rejoindre le Discord",
   },

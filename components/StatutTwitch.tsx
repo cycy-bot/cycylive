@@ -21,16 +21,29 @@ function formaterCompteARebours(msRestant: number): string {
   return `dans ${sec}s`;
 }
 
+function formaterDateProchainLive(timestamp: string): string {
+  const date = new Date(timestamp);
+  const formatte = new Intl.DateTimeFormat("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(date);
+  // Majuscule en début de phrase ("jeudi 17 septembre" -> "Jeudi 17 septembre")
+  return formatte.charAt(0).toUpperCase() + formatte.slice(1);
+}
+
 export default function StatutTwitch() {
   const { enLigne, titre, categorie, viewers, miniature } = useTwitchStatus();
   const [prochainLive, setProchainLive] = useState<ProchainLive | null>(null);
+  const [chargementProchainLive, setChargementProchainLive] = useState(true);
   const [compteARebours, setCompteARebours] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/prochain-live")
       .then((r) => r.json())
       .then((data) => setProchainLive(data.prochainLive))
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setChargementProchainLive(false));
   }, []);
 
   useEffect(() => {
@@ -99,14 +112,18 @@ export default function StatutTwitch() {
             {prochainLive ? (
               <>
                 <p className="text-ink-soft mb-1">
-                  {prochainLive.estAujourdhui ? "Ce soir" : prochainLive.jour} ·{" "}
-                  {prochainLive.heure} ·{" "}
+                  {prochainLive.estAujourdhui
+                    ? "Ce soir"
+                    : formaterDateProchainLive(prochainLive.timestamp)}{" "}
+                  · {prochainLive.heure} ·{" "}
                   <span className="text-lilac">{prochainLive.jeu}</span>
                 </p>
                 {compteARebours && (
                   <p className="text-violet-light text-sm mb-6">{compteARebours}</p>
                 )}
               </>
+            ) : chargementProchainLive ? (
+              <p className="text-ink-soft/40 mb-6">Chargement...</p>
             ) : (
               <p className="text-ink-soft mb-6">
                 Planning à venir, reste connecté·e !

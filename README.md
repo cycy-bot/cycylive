@@ -184,6 +184,13 @@ Va sur `tonsite.vercel.app/admin`. Trois onglets sont disponibles :
 
 **Onglet "Timeline"** : ajoute les étapes marquantes de ton parcours (date + titre + description optionnelle). Elles s'affichent en entier sur la page À propos, et les 3 dernières en aperçu sur l'accueil avec un bouton vers le parcours complet.
 
+**Onglet "À propos"** : gère les blocs de la page À propos. Chaque bloc a un **type** :
+- **Texte** : un titre + un texte que tu rédiges (avec l'éditeur riche).
+- **Bloc Setup** : insère automatiquement ton setup matériel à cet endroit précis de la page. Le contenu (liste PC/Matériel) se modifie dans `data/setup.ts` — un simple fichier de configuration, pas besoin de repasser par `/admin` pour ça.
+- **Bloc Timeline** : insère ta timeline à cet endroit précis. Le contenu se gère dans l'onglet "Timeline" juste au-dessus.
+
+Comme pour les vidéos, tu réordonnes tout avec les flèches ↑ ↓ — y compris où le Setup et la Timeline apparaissent dans la page.
+
 ## Page Valorant
 
 La page `/valorant` (accessible depuis le menu principal) a 3 sous-onglets :

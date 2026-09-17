@@ -4,6 +4,7 @@ import { useState } from "react";
 import { liens } from "@/data/liens";
 import { useTextes } from "@/components/useTextes";
 import TexteRiche from "@/components/TexteRiche";
+import { IconMail } from "@/components/Icons";
 
 const categories = [
   "Partenariat",
@@ -15,6 +16,7 @@ const categories = [
 
 export default function ContactPage() {
   const [categorie, setCategorie] = useState(categories[0]);
+  const [envoye, setEnvoye] = useState(false);
   const textes = useTextes();
 
   return (
@@ -22,7 +24,15 @@ export default function ContactPage() {
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.contact.titre}
       </h1>
-      <TexteRiche html={textes.contact.texte} className="text-ink-soft mb-10" />
+      <TexteRiche html={textes.contact.texte} className="text-ink-soft mb-4" />
+
+      <a
+        href={`mailto:${liens.mailPro}`}
+        className="inline-flex items-center gap-2 text-violet-light hover:text-lilac transition-colors font-medium mb-10"
+      >
+        <IconMail className="w-4 h-4" />
+        {liens.mailPro}
+      </a>
 
       <form
         className="space-y-5"
@@ -38,6 +48,7 @@ export default function ContactPage() {
           window.location.href = `mailto:${liens.mailPro}?subject=${encodeURIComponent(
             `[Cycylive] ${sujet}`
           )}&body=${corps}`;
+          setEnvoye(true);
         }}
       >
         <div>
@@ -104,6 +115,15 @@ export default function ContactPage() {
         >
           Envoyer le message
         </button>
+
+        {envoye && (
+          <p className="text-sm text-lilac text-center pt-1">
+            Ton logiciel mail devrait s'ouvrir avec le message pré-rempli. Si rien ne se passe, écris directement à{" "}
+            <a href={`mailto:${liens.mailPro}`} className="underline hover:text-violet-light">
+              {liens.mailPro}
+            </a>.
+          </p>
+        )}
       </form>
     </div>
   );
