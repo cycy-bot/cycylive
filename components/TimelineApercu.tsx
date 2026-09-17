@@ -9,7 +9,7 @@ export default async function TimelineApercu() {
   if (dernieresEtapes.length === 0) return null;
 
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-6 md:py-10">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl md:text-3xl font-semibold text-ink">Mon parcours</h2>
         <Link

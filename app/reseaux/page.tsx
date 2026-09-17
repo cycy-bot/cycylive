@@ -61,7 +61,7 @@ function BlocPlateforme({
   children?: React.ReactNode;
 }) {
   return (
-    <section id={id} className="py-8 border-t border-violet/10 first:border-t-0 first:pt-0 scroll-mt-24">
+    <section id={id} className="py-6 md:py-8 border-t border-violet/10 first:border-t-0 first:pt-0 scroll-mt-24">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
         <div className="flex items-center gap-3">
           <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
@@ -108,7 +108,7 @@ export default async function ReseauxPage() {
   const videosYoutube = contenus.filter((c) => c.plateforme === "YouTube");
 
   return (
-    <div className="mx-auto max-w-5xl px-5 md:px-8 py-12">
+    <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
         Réseaux
@@ -217,7 +217,7 @@ export default async function ReseauxPage() {
         )}
       </BlocPlateforme>
 
-      <section className="py-8 border-t border-violet/10">
+      <section className="py-6 md:py-8 border-t border-violet/10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">
@@ -239,7 +239,7 @@ export default async function ReseauxPage() {
         </div>
       </section>
 
-      <section className="py-8 border-t border-violet/10">
+      <section className="py-6 md:py-8 border-t border-violet/10">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="h-11 w-11 shrink-0 flex items-center justify-center rounded-full bg-violet/10 border border-violet/25 text-violet-light">

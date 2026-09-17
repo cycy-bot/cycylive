@@ -65,7 +65,7 @@ export default async function GamingPage() {
   );
 
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         Gaming
@@ -199,7 +199,7 @@ export default async function GamingPage() {
       </section>
 
       {gaming.autresJeux.length > 0 && (
-        <section id="autres-jeux" className="py-8 border-t border-violet/10 scroll-mt-24">
+        <section id="autres-jeux" className="py-6 md:py-8 border-t border-violet/10 scroll-mt-24">
           <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Autres jeux</h2>
           <div className="grid sm:grid-cols-2 gap-4">
             {gaming.autresJeux.map((jeu) => (
@@ -226,7 +226,7 @@ export default async function GamingPage() {
       )}
 
       {gaming.jeuxDuMoment.length > 0 && (
-        <section className="py-8 border-t border-violet/10">
+        <section className="py-6 md:py-8 border-t border-violet/10">
           <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Jeux du moment</h2>
           <div className="flex flex-wrap gap-2">
             {gaming.jeuxDuMoment.map((jeu) => (
@@ -243,7 +243,7 @@ export default async function GamingPage() {
       )}
 
       {clipsAvecMiniatures.length > 0 && (
-        <section id="clips" className="py-8 border-t border-violet/10 scroll-mt-24">
+        <section id="clips" className="py-6 md:py-8 border-t border-violet/10 scroll-mt-24">
           <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Clips gaming</h2>
           <CarouselFleches>
             {clipsAvecMiniatures.map((c) => (

@@ -5,7 +5,7 @@ import TexteRiche from "@/components/TexteRiche";
 export default async function AProposCourt() {
   const textes = await lireTextes();
   return (
-    <section className="mx-auto max-w-3xl px-5 md:px-8 py-10 text-center">
+    <section className="mx-auto max-w-3xl px-5 md:px-8 py-6 md:py-10 text-center">
       <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">
         {textes.apropos.titreAccueil}
       </h2>

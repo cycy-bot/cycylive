@@ -15,7 +15,7 @@ export type StatutTwitchLive = {
 // Interroge /api/twitch-status au chargement, puis toutes les
 // `intervalleMs` millisecondes, pour refléter le vrai statut Twitch
 // sans jamais avoir besoin d'y toucher à la main.
-export function useTwitchStatus(intervalleMs = 60000): StatutTwitchLive {
+export function useTwitchStatus(intervalleMs = 30000): StatutTwitchLive {
   const [statut, setStatut] = useState<StatutTwitchLive>({ enLigne: false });
 
   useEffect(() => {

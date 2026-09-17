@@ -63,22 +63,15 @@ export const metadata: Metadata = {
 export default async function PartenariatsPage() {
   const textes = await lireTextes();
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="planete" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         {textes.partenariats.titre}
       </h1>
       <TexteRiche
         html={textes.partenariats.intro}
-        className="text-ink-soft leading-relaxed mb-6 max-w-2xl"
+        className="text-ink-soft leading-relaxed mb-8 max-w-2xl"
       />
-
-      <nav className="flex flex-wrap gap-2 mb-8 text-xs">
-        <a href="#univers" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Mon univers</a>
-        <a href="#plateformes" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Plateformes</a>
-        <a href="#collaborations" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Collaborations</a>
-        <a href="#contact" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Contact</a>
-      </nav>
 
       {/* Chiffres clés : masqué automatiquement tant qu'aucune donnée n'est disponible */}
       <div className="mb-8">
@@ -86,7 +79,7 @@ export default async function PartenariatsPage() {
       </div>
 
       {/* Univers */}
-      <p id="univers" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">Mon univers</p>
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Mon univers</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {univers.map((u) => (
           <Tag key={u} label={u} />
@@ -94,7 +87,7 @@ export default async function PartenariatsPage() {
       </div>
 
       {/* Mes plateformes */}
-      <p id="plateformes" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">Mes plateformes</p>
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Mes plateformes</p>
       <div className="flex flex-wrap gap-2 mb-8">
         {presence.map(({ nom, href, icon: Icon }) => (
           <a
@@ -111,7 +104,7 @@ export default async function PartenariatsPage() {
       </div>
 
       {/* Collaborations possibles */}
-      <p id="collaborations" className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3 scroll-mt-24">
+      <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
         {textes.partenariats.typesTitre}
       </p>
       <div className="flex flex-wrap gap-2 mb-10">
@@ -126,7 +119,7 @@ export default async function PartenariatsPage() {
         ))}
       </div>
 
-      <div id="contact" className="flex flex-wrap gap-3 scroll-mt-24">
+      <div className="flex flex-wrap gap-3">
         <Link
           href="/contact"
           className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"

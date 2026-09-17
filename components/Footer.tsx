@@ -18,8 +18,8 @@ const reseaux = [
 
 export default function Footer() {
   return (
-    <footer className="hidden md:block border-t border-violet/10 mt-24">
-      <div className="mx-auto max-w-6xl px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+    <footer className="border-t border-violet/10 mt-16 md:mt-24">
+      <div className="hidden md:flex mx-auto max-w-6xl px-8 py-10 flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <Image
             src="/logo/cycylive-wordmark.png"
@@ -49,9 +49,10 @@ export default function Footer() {
           ))}
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-8 pb-8 text-xs text-ink-soft/60 flex gap-4">
+      <div className="mx-auto max-w-6xl px-8 py-6 md:py-0 md:pb-8 pb-24 text-xs text-ink-soft/60 flex flex-wrap gap-4 justify-center md:justify-start">
         <a href="/mentions-legales" className="hover:text-ink-soft">Mentions légales</a>
         <a href="/confidentialite" className="hover:text-ink-soft">Politique de confidentialité</a>
+        <span className="md:hidden">© {new Date().getFullYear()} Cycylive</span>
       </div>
     </footer>
   );

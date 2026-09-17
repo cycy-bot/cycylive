@@ -6,7 +6,7 @@ export default async function DerniersContenus() {
   const contenus = await ajouterMiniatures(await lireContenus());
 
   return (
-    <section className="py-10">
+    <section className="py-6 md:py-10">
       <div className="mx-auto max-w-6xl px-5 md:px-8 mb-8">
         <h2 className="text-2xl md:text-3xl font-semibold text-ink">
           Derniers contenus

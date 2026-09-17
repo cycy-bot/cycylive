@@ -19,7 +19,7 @@ const typesCollab = [
 export default async function PartenariatsApercu() {
   const textes = await lireTextes();
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-6 md:py-10">
       <div className="grid md:grid-cols-2 gap-8 items-center">
         <div>
           <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-4">

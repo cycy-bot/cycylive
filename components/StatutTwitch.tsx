@@ -60,7 +60,7 @@ export default function StatutTwitch() {
   }, [prochainLive]);
 
   return (
-    <section className="mx-auto max-w-6xl px-5 md:px-8 py-10">
+    <section className="mx-auto max-w-6xl px-5 md:px-8 py-6 md:py-10">
       <div className="relative carte-holo liseret-glow rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 overflow-hidden">
         <IconStar4 className="hidden md:block absolute top-6 right-8 w-5 h-5 text-violet-light/40" aria-hidden />
 

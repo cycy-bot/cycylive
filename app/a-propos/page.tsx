@@ -30,7 +30,7 @@ export default async function AProposPage() {
   function BlocTimeline() {
     if (timeline.length === 0) return null;
     return (
-      <section id="timeline" className="py-8 border-t border-violet/10 scroll-mt-24">
+      <section id="timeline" className="py-6 md:py-8 border-t border-violet/10 scroll-mt-24">
         <h2 className="text-xl md:text-2xl font-semibold text-ink mb-6">
           Les moments qui ont marqué l'aventure
         </h2>
@@ -62,7 +62,7 @@ export default async function AProposPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="lune" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-10">
         {textes.apropos.pageTitre}
@@ -94,7 +94,7 @@ export default async function AProposPage() {
         }
         if (section.type === "setup") {
           return (
-            <section key={section.id} className="py-8 border-t border-violet/10">
+            <section key={section.id} className="py-6 md:py-8 border-t border-violet/10">
               <h2 className="text-xl md:text-2xl font-semibold text-ink mb-6">
                 {section.titre}
               </h2>
@@ -103,7 +103,7 @@ export default async function AProposPage() {
           );
         }
         return (
-          <section key={section.id} className="py-8 border-t border-violet/10">
+          <section key={section.id} className="py-6 md:py-8 border-t border-violet/10">
             <h2 className="text-xl md:text-2xl font-semibold text-ink mb-3">
               {section.titre}
             </h2>
@@ -112,7 +112,7 @@ export default async function AProposPage() {
         );
       })}
 
-      <section className="py-8 border-t border-violet/10">
+      <section className="py-6 md:py-8 border-t border-violet/10">
         <Link
           href="/partenariats"
           className="inline-flex rounded-full px-6 py-3 border border-violet/40 bg-violet/10 text-ink font-medium hover:bg-violet/20 transition-all"

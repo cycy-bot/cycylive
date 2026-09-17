@@ -30,7 +30,7 @@ export default async function StatistiquesPage() {
   const channel = extraireChannelTwitch(liens.twitch);
 
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-12">
+    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="constellation" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         Statistiques
