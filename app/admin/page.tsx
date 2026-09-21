@@ -103,6 +103,9 @@ export default function AdminPage() {
     skinsArmes: "",
     statsPerso: "",
     trackerUrl: "",
+    riotName: "",
+    riotTag: "",
+    riotRegion: "eu",
   });
   const [chargement, setChargement] = useState(true);
 
