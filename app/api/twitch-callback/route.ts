@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { echangerCodeContreToken } from "@/lib/twitchOAuth";
 
+// Voir la note dans app/api/twitch-connect/route.ts : on reconstruit
+// l'origine depuis les en-têtes du proxy, pas depuis request.url.
+function obtenirOrigine(request: NextRequest): string {
+  const hote = request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  const protocole = request.headers.get("x-forwarded-proto") ?? "https";
+  return `${protocole}://${hote}`;
+}
+
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const origin = url.origin;
+  const origin = obtenirOrigine(request);
 
   if (!code) {
     return NextResponse.redirect(`${origin}/admin?twitch=erreur`);
