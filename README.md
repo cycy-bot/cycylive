@@ -224,6 +224,27 @@ La page `/partenariats` (renommée "Partenaires & Bons plans" dans le menu) a 3 
 
 Tout se gère depuis `/admin`, onglet "Partenaires" (décoche "Actif" pour masquer sans supprimer).
 
+## Rank Valorant automatique
+
+Ton rank peut s'actualiser tout seul (plus besoin d'y retoucher à chaque changement de rank), via [HenrikDev API](https://docs.henrikdev.xyz) — une API communautaire gratuite (Tracker.gg lui-même n'a pas d'API publique).
+
+### Étape 1 — Renseigner ton Riot ID
+
+1. Va sur `/admin`, onglet "Gaming", section "Mon rapport à Valorant".
+2. Dans le bloc "⚡ Rank automatique", renseigne :
+   - **Pseudo** : la partie avant le # de ton Riot ID (ex: "Cycy")
+   - **Tag** : la partie après le # (ex: "EUW")
+   - **Région** : Europe, Amérique du Nord, Asie-Pacifique ou Corée
+3. Enregistre. Le rank affiché sur `/gaming` vient maintenant automatiquement de ce Riot ID, avec le RR actuel.
+
+Tant que ces champs sont vides, le rank reste celui que tu tapes toi-même dans "Rank actuel" (comportement par défaut, rien ne casse).
+
+### Étape 2 (recommandé) — Une clé API gratuite pour plus de fiabilité
+
+Sans clé, l'API fonctionne mais avec un quota limité. Pour un usage plus confortable :
+1. Rejoins le [Discord HenrikDev](https://discord.com/invite/X3GaVkX2YN) et demande une clé API gratuite dans le salon dédié (suis leurs instructions, c'est rapide).
+2. Ajoute la variable d'environnement `HENRIK_API_KEY` (en local dans `.env.local`, et sur Vercel).
+
 ## Page Gaming
 
 La page `/gaming` (accessible depuis le menu principal) a remplacé l'ancienne page Valorant — elle regroupe tout l'univers jeux vidéo de Cycylive :

@@ -1205,7 +1205,9 @@ export default function AdminPage() {
               />
             </div>
             <div>
-              <label className="block text-xs text-ink-soft/70 mb-1">Rank actuel</label>
+              <label className="block text-xs text-ink-soft/70 mb-1">
+                Rank actuel (utilisé seulement si le Riot ID ci-dessous est vide)
+              </label>
               <input
                 type="text"
                 placeholder="Ex: Immortal 2"
@@ -1213,6 +1215,41 @@ export default function AdminPage() {
                 onChange={(e) => setProfilValorant((p) => ({ ...p, rankActuel: e.target.value }))}
                 className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
               />
+            </div>
+
+            <div className="rounded-lg border border-violet/15 bg-void/30 p-3 space-y-2.5">
+              <p className="text-xs text-violet-light font-medium">
+                ⚡ Rank automatique (recommandé)
+              </p>
+              <p className="text-ink-soft/60 text-xs">
+                Renseigne ton Riot ID pour que le rank s'actualise tout seul, sans jamais y retoucher.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Pseudo (avant le #)"
+                  value={profilValorant.riotName}
+                  onChange={(e) => setProfilValorant((p) => ({ ...p, riotName: e.target.value }))}
+                  className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="text"
+                  placeholder="Tag (après le #)"
+                  value={profilValorant.riotTag}
+                  onChange={(e) => setProfilValorant((p) => ({ ...p, riotTag: e.target.value }))}
+                  className="w-28 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </div>
+              <select
+                value={profilValorant.riotRegion}
+                onChange={(e) => setProfilValorant((p) => ({ ...p, riotRegion: e.target.value }))}
+                className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+              >
+                <option value="eu">Europe (eu)</option>
+                <option value="na">Amérique du Nord (na)</option>
+                <option value="ap">Asie-Pacifique (ap)</option>
+                <option value="kr">Corée (kr)</option>
+              </select>
             </div>
             <div>
               <label className="block text-xs text-ink-soft/70 mb-1">Objectif de rank</label>

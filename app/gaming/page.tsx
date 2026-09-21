@@ -8,6 +8,7 @@ import {
   lireProfilValorant,
 } from "@/lib/valorantStore";
 import { ajouterMiniatures } from "@/lib/miniatures";
+import { obtenirRankValorant } from "@/lib/henrikApi";
 import AccentCosmique from "@/components/AccentCosmique";
 import TexteRiche from "@/components/TexteRiche";
 import CarouselFleches from "@/components/CarouselFleches";
@@ -64,6 +65,13 @@ export default async function GamingPage() {
     `${e.titre} ${e.description ?? ""}`.toLowerCase().includes("valorant")
   );
 
+  const rankEnDirect = await obtenirRankValorant(
+    profil.riotName,
+    profil.riotTag,
+    profil.riotRegion
+  );
+  const rankAffiche = rankEnDirect ? rankEnDirect.rank : profil.rankActuel;
+
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
@@ -104,7 +112,12 @@ export default async function GamingPage() {
         <div className="grid sm:grid-cols-2 gap-4 mb-6">
           <div className="rounded-2xl p-5 bg-void/40 border border-violet/10">
             <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-1.5">Rank actuel</p>
-            <p className="text-2xl font-semibold text-ink">{profil.rankActuel}</p>
+            <p className="text-2xl font-semibold text-ink">{rankAffiche}</p>
+            {rankEnDirect && (
+              <p className="text-ink-soft/60 text-xs mt-1">
+                {rankEnDirect.rr} RR · actualisé automatiquement
+              </p>
+            )}
           </div>
           <div className="rounded-2xl p-5 bg-void/40 border border-violet/10">
             <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-1.5">Objectif</p>
