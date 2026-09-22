@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
   const redirectUri = `${origin}/api/twitch-callback`;
   const resultat = await echangerCodeContreToken(code, redirectUri);
 
-  return NextResponse.redirect(
-    `${origin}/admin?twitch=${resultat.ok ? "connecte" : "erreur"}`
-  );
+  if (resultat.ok) {
+    return NextResponse.redirect(`${origin}/admin?twitch=connecte`);
+  }
+
+  // Détail temporaire dans l'URL pour diagnostiquer facilement (à retirer une fois résolu).
+  const detail = encodeURIComponent(resultat.erreur ?? "erreur inconnue");
+  return NextResponse.redirect(`${origin}/admin?twitch=erreur&detail=${detail}`);
 }

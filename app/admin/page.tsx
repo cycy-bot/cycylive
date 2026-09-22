@@ -156,7 +156,13 @@ export default function AdminPage() {
     if (params.get("twitch") === "connecte") {
       setMessage({ type: "ok", texte: "Compte Twitch connecté avec succès !" });
     } else if (params.get("twitch") === "erreur") {
-      setMessage({ type: "erreur", texte: "La connexion à Twitch a échoué, réessaie." });
+      const detail = params.get("detail");
+      setMessage({
+        type: "erreur",
+        texte: detail
+          ? `La connexion à Twitch a échoué : ${detail}`
+          : "La connexion à Twitch a échoué, réessaie.",
+      });
     }
   }, []);
 

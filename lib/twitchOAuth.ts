@@ -64,7 +64,10 @@ export async function echangerCodeContreToken(
         redirect_uri: redirectUri,
       }),
     });
-    if (!reponse.ok) return { ok: false, erreur: "Échange du code refusé par Twitch." };
+    if (!reponse.ok) {
+      const detail = await reponse.text().catch(() => "");
+      return { ok: false, erreur: `Échange du code refusé par Twitch : ${detail}` };
+    }
     const data = await reponse.json();
 
     // Récupère l'identifiant de la chaîne (broadcaster_id) associée à ce token
