@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { liens } from "@/data/liens";
 import { obtenirNombreFollowers, estConnecteeATwitch } from "@/lib/twitchOAuth";
-import { obtenirMembresDiscordEnLigne } from "@/lib/discordStats";
 import AccentCosmique from "@/components/AccentCosmique";
 import DiscordEnLigne from "@/components/DiscordEnLigne";
-import { IconTwitch, IconDiscord } from "@/components/Icons";
+import AnnoncesDiscord from "@/components/AnnoncesDiscord";
+import { IconTwitch } from "@/components/Icons";
 
 function extraireChannelTwitch(url: string): string {
   const correspondance = url.match(/twitch\.tv\/([^/]+)/);
@@ -27,7 +27,6 @@ export const metadata: Metadata = {
 export default async function StatistiquesPage() {
   const connecte = await estConnecteeATwitch();
   const followers = connecte ? await obtenirNombreFollowers() : null;
-  const discordEnLigne = await obtenirMembresDiscordEnLigne();
   const channel = extraireChannelTwitch(liens.twitch);
 
   return (
@@ -40,25 +39,23 @@ export default async function StatistiquesPage() {
         Un aperçu en direct de l'activité de Cycylive.
       </p>
 
-      <div className="grid sm:grid-cols-2 gap-4 mb-10">
-        <div className="carte-holo rounded-2xl p-6 border border-violet/12">
-          <IconTwitch className="w-6 h-6 text-violet-light mb-3" />
-          <p className="text-3xl font-semibold text-ink">
-            {followers ? followers.toLocaleString("fr-FR") : "—"}
-          </p>
-          <p className="text-ink-soft text-sm mt-1">Followers Twitch</p>
-        </div>
-        <div className="carte-holo rounded-2xl p-6 border border-violet/12">
-          <IconDiscord className="w-6 h-6 text-violet-light mb-3" />
-          <p className="text-3xl font-semibold text-ink">
-            {discordEnLigne ? discordEnLigne.toLocaleString("fr-FR") : "—"}
-          </p>
-          <p className="text-ink-soft text-sm mt-1">Membres en ligne sur Discord</p>
-        </div>
+      <div className="carte-holo rounded-2xl p-6 border border-violet/12 mb-6">
+        <IconTwitch className="w-6 h-6 text-violet-light mb-3" />
+        <p className="text-3xl font-semibold text-ink">
+          {followers ? followers.toLocaleString("fr-FR") : "—"}
+        </p>
+        <p className="text-ink-soft text-sm mt-1">Followers Twitch</p>
+      </div>
+
+      <div className="mb-6">
+        <DiscordEnLigne />
       </div>
 
       <div className="mb-10">
-        <DiscordEnLigne />
+        <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
+          Dernières annonces Discord
+        </p>
+        <AnnoncesDiscord limite={5} />
       </div>
 
       <div className="carte-holo rounded-2xl p-6 border border-violet/12">

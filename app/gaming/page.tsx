@@ -78,17 +78,7 @@ export default async function GamingPage() {
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
         Gaming
       </h1>
-      <TexteRiche html={gaming.intro} className="text-ink-soft leading-relaxed mb-6 max-w-2xl" />
-
-      <nav className="flex flex-wrap gap-2 mb-10 text-xs">
-        <a href="#valorant" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Valorant</a>
-        {gaming.autresJeux.length > 0 && (
-          <a href="#autres-jeux" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Autres jeux</a>
-        )}
-        {clipsAvecMiniatures.length > 0 && (
-          <a href="#clips" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Clips</a>
-        )}
-      </nav>
+      <TexteRiche html={gaming.intro} className="text-ink-soft leading-relaxed mb-10 max-w-2xl" />
 
       <section id="valorant" className="carte-holo rounded-3xl p-6 md:p-8 border border-violet/15 scroll-mt-24 mb-10">
         <div className="flex items-center gap-3 mb-4">

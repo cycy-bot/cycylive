@@ -2,6 +2,7 @@ import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import TexteRiche from "@/components/TexteRiche";
 import DiscordEnLigne from "@/components/DiscordEnLigne";
+import AnnoncesDiscord from "@/components/AnnoncesDiscord";
 import { IconDiscord, IconStar4 } from "@/components/Icons";
 
 export default async function CommunauteApercu() {
@@ -27,8 +28,15 @@ export default async function CommunauteApercu() {
           Rejoindre le Discord
         </a>
 
-        <div className="max-w-2xl mx-auto text-left">
-          <DiscordEnLigne />
+        <div className="max-w-2xl mx-auto text-left space-y-4">
+          <DiscordEnLigne afficherBouton={false} />
+
+          <div>
+            <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
+              Dernières annonces
+            </p>
+            <AnnoncesDiscord limite={3} />
+          </div>
         </div>
       </div>
     </section>

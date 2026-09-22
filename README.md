@@ -266,7 +266,39 @@ Tout se gère depuis `/admin`, onglet "Gaming".
   2. Active "Server Widget".
   3. Copie l'ID de ton serveur (clic droit sur le nom du serveur → Copier l'ID — active le mode développeur dans Discord si l'option n'apparaît pas : Paramètres utilisateur → Avancés → Mode développeur).
   4. Ajoute la variable d'environnement `DISCORD_SERVER_ID` (en local dans `.env.local`, et sur Vercel dans Environment Variables) avec cet ID.
-- Ces deux chiffres s'affichent sur l'accueil et sur la page `/statistiques`, qui renvoie aussi vers TwitchTracker pour un historique plus complet (heures streamées, pic de viewers, etc. — des données que Twitch ne fournit pas directement via son API).
+- Le nombre **total de membres** utilise l'API publique des invitations Discord — pas besoin de configuration en plus, ça part directement de ton lien d'invitation dans `data/liens.ts`. Fonctionne dès que `DISCORD_SERVER_ID` (ci-dessus) est renseigné.
+- Ces chiffres s'affichent sur l'accueil et sur la page `/statistiques`, qui renvoie aussi vers TwitchTracker pour un historique plus complet (heures streamées, pic de viewers, etc. — des données que Twitch ne fournit pas directement via son API).
+
+## Annonces Discord sur le site
+
+Les dernières annonces de ton salon #annonces (texte, image, sondages avec leurs votes) s'affichent automatiquement sur l'accueil, dans le bloc Communauté. Contrairement aux stats ci-dessus, ça demande un vrai bot Discord (juste pour LIRE ce salon, aucune permission d'écriture).
+
+### Étape 1 — Créer un bot Discord
+
+1. Va sur [discord.com/developers/applications](https://discord.com/developers/applications), clique **New Application**, donne-lui un nom (ex: "Cycylive Site").
+2. Dans le menu de gauche, va dans **Bot**. Clique **Reset Token** (ou il apparaît directement), puis copie ce token — comme pour Twitch, il ne sera affiché qu'une fois.
+3. Toujours dans l'onglet Bot, désactive les intentions que tu n'utilises pas ; tu n'as besoin d'aucune "Privileged Gateway Intent" pour cette fonctionnalité.
+
+### Étape 2 — Inviter le bot sur ton serveur
+
+1. Dans le menu de gauche, va dans **OAuth2** → **URL Generator**.
+2. Coche uniquement **bot** dans "Scopes".
+3. Dans "Bot Permissions" qui apparaît, coche uniquement **View Channels** et **Read Message History**.
+4. Copie l'URL générée en bas de page, ouvre-la dans ton navigateur, choisis ton serveur Cycylive, autorise.
+
+### Étape 3 — Récupérer l'ID du salon annonces
+
+1. Sur Discord (mode développeur activé, voir plus haut), clic droit sur ton salon #annonces → **Copier l'ID du salon**.
+
+### Étape 4 — Variables d'environnement
+
+Ajoute (en local dans `.env.local`, et sur Vercel) :
+```
+DISCORD_BOT_TOKEN=le_token_copié_à_l'étape_1
+DISCORD_ANNOUNCE_CHANNEL_ID=l'id_copié_à_l'étape_3
+```
+
+Tant que ces deux variables ne sont pas renseignées, le bloc "Dernières annonces" reste simplement masqué (rien ne casse).
 
 Chaque enregistrement est immédiatement visible sur le site, pour tout le monde.
 

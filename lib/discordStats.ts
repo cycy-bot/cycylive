@@ -1,35 +1,71 @@
 // ============================================================
-// STATISTIQUES DISCORD — via le widget public du serveur
+// STATISTIQUES DISCORD — via les API publiques (aucun bot requis)
 // ============================================================
-// Ne nécessite aucun bot ni token : juste que le "Widget du
-// serveur" soit activé dans Discord (Paramètres du serveur →
-// Widget) et l'ID du serveur en variable d'environnement
-// DISCORD_SERVER_ID.
-//
-// ⚠️ Le widget ne donne que le nombre de membres EN LIGNE, pas le
-// nombre total de membres (Discord ne fournit pas ce total sans
-// un bot dédié avec des permissions spécifiques).
+// Deux sources publiques, gratuites, sans bot :
+// 1. Le widget du serveur (Paramètres → Widget → à activer,
+//    DISCORD_SERVER_ID en variable d'environnement) → membres EN
+//    LIGNE + leurs avatars/pseudos.
+// 2. L'API des invitations Discord (à partir de ton lien
+//    d'invitation, data/liens.ts → discord) → nombre TOTAL de
+//    membres du serveur.
+
+import { liens } from "@/data/liens";
 
 export type MembreDiscordEnLigne = {
   id: string;
   pseudo: string;
   avatar: string | null;
   statut: "online" | "idle" | "dnd" | string;
-  activite: string | null; // ex: "League of Legends"
+  activite: string | null;
 };
 
-export type WidgetDiscord = {
-  enLigne: number;
+export type StatsDiscord = {
+  totalMembres: number | null;
+  enLigne: number | null;
   membres: MembreDiscordEnLigne[];
-  lienInvitation: string | null;
 };
 
-export async function obtenirMembresDiscordEnLigne(): Promise<number | null> {
-  const widget = await obtenirWidgetDiscord();
-  return widget?.enLigne ?? null;
+function extraireCodeInvitation(url: string): string | null {
+  const correspondance = url.match(/discord(?:\.gg|\.com\/invite)\/([^/?]+)/);
+  return correspondance ? correspondance[1] : null;
 }
 
-export async function obtenirWidgetDiscord(): Promise<WidgetDiscord | null> {
+export async function obtenirStatsDiscord(): Promise<StatsDiscord> {
+  const [total, widget] = await Promise.all([
+    obtenirTotalMembres(),
+    obtenirWidgetDiscord(),
+  ]);
+
+  return {
+    totalMembres: total,
+    enLigne: widget?.enLigne ?? null,
+    membres: widget?.membres ?? [],
+  };
+}
+
+async function obtenirTotalMembres(): Promise<number | null> {
+  const code = extraireCodeInvitation(liens.discord);
+  if (!code) return null;
+
+  try {
+    const reponse = await fetch(
+      `https://discord.com/api/v10/invites/${code}?with_counts=true`,
+      { cache: "no-store" }
+    );
+    if (!reponse.ok) return null;
+    const data = await reponse.json();
+    return typeof data.approximate_member_count === "number"
+      ? data.approximate_member_count
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+async function obtenirWidgetDiscord(): Promise<{
+  enLigne: number;
+  membres: MembreDiscordEnLigne[];
+} | null> {
   const serverId = process.env.DISCORD_SERVER_ID;
   if (!serverId) return null;
 
@@ -54,7 +90,6 @@ export async function obtenirWidgetDiscord(): Promise<WidgetDiscord | null> {
     return {
       enLigne: typeof data.presence_count === "number" ? data.presence_count : 0,
       membres,
-      lienInvitation: data.instant_invite ?? null,
     };
   } catch {
     return null;

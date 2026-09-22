@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { liens } from "@/data/liens";
+import { IconDiscord } from "@/components/Icons";
 import type { MembreDiscordEnLigne } from "@/lib/discordStats";
 
 const COULEUR_STATUT: Record<string, string> = {
@@ -11,7 +13,12 @@ const COULEUR_STATUT: Record<string, string> = {
 
 const NOMBRE_AFFICHE = 18;
 
-export default function DiscordEnLigne() {
+export default function DiscordEnLigne({
+  afficherBouton = true,
+}: {
+  afficherBouton?: boolean;
+}) {
+  const [totalMembres, setTotalMembres] = useState<number | null>(null);
   const [enLigne, setEnLigne] = useState<number | null>(null);
   const [membres, setMembres] = useState<MembreDiscordEnLigne[]>([]);
 
@@ -19,24 +26,51 @@ export default function DiscordEnLigne() {
     fetch("/api/discord-stats")
       .then((r) => r.json())
       .then((d) => {
+        setTotalMembres(d.totalMembres);
         setEnLigne(d.enLigne);
         setMembres(d.membres ?? []);
       })
       .catch(() => {});
   }, []);
 
-  if (enLigne === null) return null;
+  if (totalMembres === null && enLigne === null) return null;
 
   const visibles = membres.slice(0, NOMBRE_AFFICHE);
   const restants = membres.length - visibles.length;
 
   return (
     <div className="carte-holo rounded-2xl p-5 border border-violet/12">
-      <div className="flex items-center gap-2 mb-4">
-        <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-        <p className="text-sm text-ink font-medium">
-          {enLigne} {enLigne === 1 ? "membre en ligne" : "membres en ligne"}
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+        <div className="flex items-center gap-5">
+          {totalMembres !== null && (
+            <div>
+              <p className="text-xl font-semibold text-ink">
+                {totalMembres.toLocaleString("fr-FR")}
+              </p>
+              <p className="text-ink-soft/60 text-xs">Membres</p>
+            </div>
+          )}
+          {enLigne !== null && (
+            <div>
+              <p className="text-xl font-semibold text-ink flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                {enLigne.toLocaleString("fr-FR")}
+              </p>
+              <p className="text-ink-soft/60 text-xs">En ligne</p>
+            </div>
+          )}
+        </div>
+        {afficherBouton && (
+          <a
+            href={liens.discord}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full px-4 py-2 bg-violet text-ink text-sm font-medium hover:bg-violet-light hover:shadow-glow transition-all"
+          >
+            <IconDiscord className="w-4 h-4" />
+            Rejoindre le Discord
+          </a>
+        )}
       </div>
 
       {visibles.length > 0 && (
