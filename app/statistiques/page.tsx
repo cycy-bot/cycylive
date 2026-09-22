@@ -3,6 +3,7 @@ import { liens } from "@/data/liens";
 import { obtenirNombreFollowers, estConnecteeATwitch } from "@/lib/twitchOAuth";
 import { obtenirMembresDiscordEnLigne } from "@/lib/discordStats";
 import AccentCosmique from "@/components/AccentCosmique";
+import DiscordEnLigne from "@/components/DiscordEnLigne";
 import { IconTwitch, IconDiscord } from "@/components/Icons";
 
 function extraireChannelTwitch(url: string): string {
@@ -54,6 +55,10 @@ export default async function StatistiquesPage() {
           </p>
           <p className="text-ink-soft text-sm mt-1">Membres en ligne sur Discord</p>
         </div>
+      </div>
+
+      <div className="mb-10">
+        <DiscordEnLigne />
       </div>
 
       <div className="carte-holo rounded-2xl p-6 border border-violet/12">

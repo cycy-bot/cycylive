@@ -1,6 +1,7 @@
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import TexteRiche from "@/components/TexteRiche";
+import DiscordEnLigne from "@/components/DiscordEnLigne";
 import { IconDiscord, IconStar4 } from "@/components/Icons";
 
 export default async function CommunauteApercu() {
@@ -20,11 +21,15 @@ export default async function CommunauteApercu() {
           href={liens.discord}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
+          className="inline-flex items-center gap-2 rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all mb-7"
         >
           <IconDiscord className="w-5 h-5" />
           Rejoindre le Discord
         </a>
+
+        <div className="max-w-2xl mx-auto text-left">
+          <DiscordEnLigne />
+        </div>
       </div>
     </section>
   );

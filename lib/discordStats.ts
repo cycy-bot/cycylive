@@ -10,7 +10,26 @@
 // nombre total de membres (Discord ne fournit pas ce total sans
 // un bot dédié avec des permissions spécifiques).
 
+export type MembreDiscordEnLigne = {
+  id: string;
+  pseudo: string;
+  avatar: string | null;
+  statut: "online" | "idle" | "dnd" | string;
+  activite: string | null; // ex: "League of Legends"
+};
+
+export type WidgetDiscord = {
+  enLigne: number;
+  membres: MembreDiscordEnLigne[];
+  lienInvitation: string | null;
+};
+
 export async function obtenirMembresDiscordEnLigne(): Promise<number | null> {
+  const widget = await obtenirWidgetDiscord();
+  return widget?.enLigne ?? null;
+}
+
+export async function obtenirWidgetDiscord(): Promise<WidgetDiscord | null> {
   const serverId = process.env.DISCORD_SERVER_ID;
   if (!serverId) return null;
 
@@ -21,7 +40,22 @@ export async function obtenirMembresDiscordEnLigne(): Promise<number | null> {
     );
     if (!reponse.ok) return null;
     const data = await reponse.json();
-    return typeof data.presence_count === "number" ? data.presence_count : null;
+
+    const membres: MembreDiscordEnLigne[] = Array.isArray(data.members)
+      ? data.members.map((m: any) => ({
+          id: String(m.id),
+          pseudo: m.username ?? "Membre",
+          avatar: m.avatar_url ?? null,
+          statut: m.status ?? "online",
+          activite: m.game?.name ?? null,
+        }))
+      : [];
+
+    return {
+      enLigne: typeof data.presence_count === "number" ? data.presence_count : 0,
+      membres,
+      lienInvitation: data.instant_invite ?? null,
+    };
   } catch {
     return null;
   }
