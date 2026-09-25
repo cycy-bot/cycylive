@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { liens } from "@/data/liens";
-import { lireCycyBot, CYCYBOT_URL } from "@/lib/cycybot";
+import { lireCycyBot } from "@/lib/cycybot";
 import AccentCosmique from "@/components/AccentCosmique";
 import CommandesCycyBot from "@/components/CommandesCycyBot";
 import { IconDiscord, IconTwitch } from "@/components/Icons";
@@ -161,12 +161,8 @@ export default async function CycyBotPage() {
           />
         ) : (
           <p className="carte-holo rounded-2xl p-6 text-ink-soft">
-            Cycy_Bot fait une petite pause technique, la liste des commandes revient dans un instant. Tu peux
-            aussi la consulter sur{" "}
-            <a href={CYCYBOT_URL} className="text-lilac hover:text-ink underline underline-offset-4">
-              bot.cycylive.fr
-            </a>
-            .
+            Cycy_Bot fait une petite pause technique, la liste des commandes revient dans un instant. En
+            attendant, tape <code className="text-lilac">!commandes</code> dans le chat Twitch.
           </p>
         )}
       </section>
