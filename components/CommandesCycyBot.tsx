@@ -14,17 +14,10 @@ function lisible(texte: string): string {
     .replace(/\{game\}/g, "le jeu en cours");
 }
 
-export default function CommandesCycyBot({
-  toutLeMonde,
-  moderateurs,
-}: {
-  toutLeMonde: CommandeCycyBot[];
-  moderateurs: CommandeCycyBot[];
-}) {
-  const [onglet, setOnglet] = useState<"tous" | "modos">("tous");
+export default function CommandesCycyBot({ toutLeMonde }: { toutLeMonde: CommandeCycyBot[] }) {
   const [recherche, setRecherche] = useState("");
 
-  const liste = onglet === "tous" ? toutLeMonde : moderateurs;
+  const liste = toutLeMonde;
   const terme = recherche.trim().toLowerCase().replace(/^!/, "");
 
   const filtrees = useMemo(
@@ -50,32 +43,8 @@ export default function CommandesCycyBot({
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher une commande, par exemple discord"
           autoComplete="off"
-          className="flex-1 min-w-[220px] rounded-full bg-card border border-violet/20 px-5 py-3 text-sm text-ink placeholder:text-ink-soft/50 focus:outline-none focus:border-violet/60 transition-colors"
+          className="w-full rounded-full bg-card border border-violet/20 px-5 py-3 text-sm text-ink placeholder:text-ink-soft/50 focus:outline-none focus:border-violet/60 transition-colors"
         />
-        <div
-          role="group"
-          aria-label="Filtrer par public"
-          className="inline-flex rounded-full border border-violet/20 bg-card p-1 text-sm"
-        >
-          {(
-            [
-              ["tous", `Tout le monde (${toutLeMonde.length})`],
-              ["modos", `Modérateurs (${moderateurs.length})`],
-            ] as const
-          ).map(([valeur, label]) => (
-            <button
-              key={valeur}
-              type="button"
-              aria-pressed={onglet === valeur}
-              onClick={() => setOnglet(valeur)}
-              className={`rounded-full px-4 py-2 transition-all whitespace-nowrap ${
-                onglet === valeur ? "bg-violet text-white shadow-glow-sm" : "text-ink-soft hover:text-ink"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       </div>
 
       {filtrees.length === 0 ? (

@@ -155,10 +155,7 @@ export default async function CycyBotPage() {
         </p>
 
         {donnees ? (
-          <CommandesCycyBot
-            toutLeMonde={donnees.commands.everyone}
-            moderateurs={donnees.commands.mods}
-          />
+          <CommandesCycyBot toutLeMonde={donnees.commands.everyone} />
         ) : (
           <p className="carte-holo rounded-2xl p-6 text-ink-soft">
             Cycy_Bot fait une petite pause technique, la liste des commandes revient dans un instant. En
