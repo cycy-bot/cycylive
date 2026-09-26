@@ -30,7 +30,15 @@ const navItems: (LienNav | GroupeNav)[] = [
     ],
   },
   { type: "lien", label: "Réseaux", href: "/reseaux" },
-  { type: "lien", label: "Cycy_Bot", href: "/cycybot" },
+  {
+    type: "groupe",
+    label: "Cycy_Bot",
+    items: [
+      { label: "Présentation", href: "/cycybot" },
+      { label: "Commandes", href: "/cycybot/commandes" },
+      { label: "Leaderboard", href: "/cycybot/leaderboard" },
+    ],
+  },
   { type: "lien", label: "Partenaires & Bons plans", href: "/partenariats" },
 ];
 
