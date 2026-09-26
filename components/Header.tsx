@@ -17,6 +17,7 @@ const navItems: (LienNav | GroupeNav)[] = [
     label: "Découvrir",
     items: [
       { label: "À propos", href: "/a-propos" },
+      { label: "Réseaux", href: "/reseaux" },
       { label: "Statistiques", href: "/statistiques" },
     ],
   },
@@ -29,7 +30,6 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "Clips", href: "/gaming#clips" },
     ],
   },
-  { type: "lien", label: "Réseaux", href: "/reseaux" },
   {
     type: "groupe",
     label: "Cycy_Bot",
@@ -39,7 +39,15 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "Leaderboard", href: "/cycybot/leaderboard" },
     ],
   },
-  { type: "lien", label: "Partenaires & Bons plans", href: "/partenariats" },
+  {
+    type: "groupe",
+    label: "Soutenir",
+    items: [
+      { label: "Faire un don", href: "/soutenir#don" },
+      { label: "S'abonner & Prime Gaming", href: "/soutenir#abonnement" },
+      { label: "Partenaires & bons plans", href: "/partenariats" },
+    ],
+  },
 ];
 
 function IconChevronBas({ className }: { className?: string }) {
