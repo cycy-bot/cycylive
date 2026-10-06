@@ -12,10 +12,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/partenariats",
     "/contact",
     "/statistiques",
-    "/cycybot",
-    "/cycybot/commandes",
-    "/cycybot/leaderboard",
-    "/soutenir",
     "/mentions-legales",
     "/confidentialite",
   ];

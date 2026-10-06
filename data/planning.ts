@@ -72,6 +72,64 @@ function parseHeure(heure?: string): { heures: number; minutes: number } {
   return { heures: parseInt(h, 10) || 0, minutes: parseInt(m, 10) || 0 };
 }
 
+const FUSEAU_CYCYLIVE = "Europe/Paris";
+
+// Le serveur (Vercel) tourne en UTC, pas en heure française. "21h" dans
+// le planning veut dire 21h à Paris, pas 21h UTC — sans cette
+// conversion, tout le compte à rebours est décalé (1h en hiver, 2h en
+// été à cause du changement d'heure).
+function decalageMinutes(date: Date, fuseau: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: fuseau,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+
+  const valeur = (type: string) => parts.find((p) => p.type === type)?.value ?? "0";
+  const commeUTC = Date.UTC(
+    parseInt(valeur("year")),
+    parseInt(valeur("month")) - 1,
+    parseInt(valeur("day")),
+    parseInt(valeur("hour")),
+    parseInt(valeur("minute")),
+    parseInt(valeur("second"))
+  );
+  return (commeUTC - date.getTime()) / 60000;
+}
+
+function anneeMoisJourAParis(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: FUSEAU_CYCYLIVE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date); // "2026-09-24"
+}
+
+// Jour de la semaine (0 = dimanche) selon le calendrier de Paris —
+// important autour de minuit, où le jour côté serveur (UTC) et côté
+// Paris peuvent différer.
+function jourSemaineAParis(date: Date): number {
+  const ymd = anneeMoisJourAParis(date);
+  return new Date(`${ymd}T00:00:00Z`).getUTCDay();
+}
+
+// Construit l'instant exact (UTC) correspondant à "heures:minutes" à
+// Paris, pour le jour calendaire de `date` (vu depuis Paris).
+function dateLiveAParis(date: Date, heures: number, minutes: number): Date {
+  const anneeMoisJour = anneeMoisJourAParis(date);
+  const essai = new Date(
+    `${anneeMoisJour}T${String(heures).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00Z`
+  );
+  const decalage = decalageMinutes(essai, FUSEAU_CYCYLIVE);
+  return new Date(essai.getTime() - decalage * 60000);
+}
+
 export type ProchainLive = {
   jour: string;
   heure: string;
@@ -90,14 +148,13 @@ export function calculerProchainLive(
   for (let decalage = 0; decalage < 8; decalage++) {
     const date = new Date(maintenant);
     date.setDate(maintenant.getDate() + decalage);
-    const nomJour = JOURS_ORDRE[date.getDay()];
+    const nomJour = JOURS_ORDRE[jourSemaineAParis(date)];
 
     const jourPlanning = planning.find((p) => p.jour === nomJour);
     if (!jourPlanning || jourPlanning.off) continue;
 
     const { heures, minutes } = parseHeure(jourPlanning.heure);
-    const dateLive = new Date(date);
-    dateLive.setHours(heures, minutes, 0, 0);
+    const dateLive = dateLiveAParis(date, heures, minutes);
 
     if (decalage === 0 && dateLive.getTime() < maintenant.getTime()) continue;
 
