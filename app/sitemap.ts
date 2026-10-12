@@ -14,6 +14,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/cycybot",
     "/cycybot/commandes",
     "/cycybot/leaderboard",
+    "/arcade",
     "/soutenir",
     "/mentions-legales",
     "/confidentialite",

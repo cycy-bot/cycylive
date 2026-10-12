@@ -79,6 +79,16 @@ export default function ConfidentialitePage() {
         lui-même n'en stocke aucune. Pour retirer ton pseudo du classement,
         écris à {liens.mailPro}.
       </p>
+      <p className="mb-4">
+        Sur la borne d'arcade (/arcade), le pseudo que tu choisis librement
+        est enregistré avec ton meilleur score et sa date, pour l'afficher
+        au tableau des records (stockage Upstash). Aucun compte n'est créé.
+        Pour limiter les abus, ton adresse IP sert à compter les parties et
+        les envois pendant une heure, puis ce compteur est effacé. Ton
+        pseudo et ton record sont aussi gardés dans ton navigateur pour
+        pré-remplir le champ. Pour retirer un pseudo du classement, écris à{" "}
+        {liens.mailPro}.
+      </p>
 
       <h2 className="text-xl font-semibold text-ink mt-10 mb-3">5. Hébergement et transfert de données</h2>
       <p className="mb-4">

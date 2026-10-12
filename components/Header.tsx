@@ -41,6 +41,7 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "Leaderboard", href: "/cycybot/leaderboard" },
     ],
   },
+  { type: "lien", label: "Arcade", href: "/arcade" },
   {
     type: "groupe",
     label: "Soutenir",

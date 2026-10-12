@@ -9,12 +9,13 @@ import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
 import type { DonneesGaming } from "@/lib/gamingStore";
 import { AFFICHAGES_PARTENAIRE, type Partenaire } from "@/data/partners";
+import AdminArcade from "@/components/admin/AdminArcade";
 import ChampImage from "@/components/admin/ChampImage";
 import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
-type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires";
+type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires" | "arcade";
 
 const PLATEFORMES: Contenu["plateforme"][] = ["TikTok", "Instagram", "YouTube", "Twitch"];
 
@@ -488,6 +489,7 @@ export default function AdminPage() {
             { valeur: "apropos", label: "À propos" },
             { valeur: "valorant", label: "Gaming" },
             { valeur: "partenaires", label: "Partenaires" },
+            { valeur: "arcade", label: "Arcade" },
           ] as const
         ).map((o) => (
           <button
@@ -1339,6 +1341,8 @@ export default function AdminPage() {
           </button>
         </>
       )}
+
+      {onglet === "arcade" && <AdminArcade motDePasse={motDePasse} />}
 
       {onglet === "partenaires" && (
         <>
