@@ -51,7 +51,7 @@ export default function ClassementArcade() {
   }, [charger]);
 
   return (
-    <section aria-labelledby="classement-arcade" className="carte-holo rounded-2xl border border-violet/12 p-5">
+    <section aria-labelledby="classement-arcade" className="carte-holo rounded-2xl border border-violet/12 p-5 md:p-6">
       <h2 id="classement-arcade" className="text-lg font-semibold text-ink mb-1">🏆 Tableau des records</h2>
       <p className="text-xs text-ink-soft/60 mb-4">Le meilleur score de chaque pseudo, mis à jour en direct.</p>
       {scores === null ? (
@@ -61,13 +61,13 @@ export default function ClassementArcade() {
       ) : scores.length === 0 ? (
         <p className="text-sm text-ink-soft">Aucun record pour l&apos;instant : à toi l&apos;honneur !</p>
       ) : (
-        <ol className="space-y-1.5">
+        <ol className="md:columns-2 md:gap-x-8">
           {scores.map((s) => {
             const estMoi = moi && s.nom.toLowerCase() === moi;
             return (
               <li
                 key={s.rang + s.nom}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm ${
+                className={`mb-1.5 break-inside-avoid flex items-center gap-3 rounded-xl px-3 py-2 text-sm ${
                   estMoi ? "bg-violet/20 border border-violet/40" : s.rang <= 3 ? "bg-white/[0.04]" : ""
                 }`}
               >

@@ -414,14 +414,19 @@ export default function BorneArcade() {
     let raf = 0;
     let avant = performance.now();
 
+    // Image nette à toutes les tailles : la résolution suit la largeur réelle affichée
     const ajuster = () => {
-      const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = L * ratio;
-      canvas.height = H * ratio;
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const largeur = Math.max(300, canvas.clientWidth || L);
+      const echelle = (largeur * dpr) / L;
+      canvas.width = Math.round(L * echelle);
+      canvas.height = Math.round(H * echelle);
+      ctx.setTransform(echelle, 0, 0, echelle, 0, 0);
     };
     ajuster();
     window.addEventListener("resize", ajuster);
+    const observateur = typeof ResizeObserver !== "undefined" ? new ResizeObserver(ajuster) : null;
+    observateur?.observe(canvas);
 
     const image = (maintenant: number) => {
       const dt = Math.min(0.05, (maintenant - avant) / 1000);
@@ -508,6 +513,7 @@ export default function BorneArcade() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", ajuster);
+      observateur?.disconnect();
       document.removeEventListener("visibilitychange", visibilite);
     };
   }, [setPhase]);
@@ -579,6 +585,7 @@ export default function BorneArcade() {
           role="img"
           aria-label="Cycy Runner : fais sauter le robot au-dessus des obstacles"
           className="block w-full aspect-[3/1] touch-none select-none cursor-pointer"
+          style={{ width: "100%", aspectRatio: "3 / 1" }}
           onPointerDown={(e) => {
             departToucher.current = { y: e.clientY };
             sauter();
