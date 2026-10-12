@@ -43,6 +43,13 @@ export const textesParDefaut = {
     cta: "Me contacter",
     mediaKit: "Télécharger le media kit",
   },
+  // Bandeau des partenaires en bas de l'accueil (réglé dans /admin, onglet Partenaires)
+  bandeauPartenaires: {
+    mode: "fixe", // "fixe" (centré) · "defilant" (défile en boucle) · "masque" (caché)
+    titre: "Ils accompagnent la chaîne",
+    lien: "Voir les partenaires",
+    reductions: "oui", // "oui" : affiche la réduction sous le nom
+  },
   contact: {
     titre: "Me contacter",
     texte:

@@ -19,6 +19,7 @@ export type Partenaire = {
   affichage?: AffichagePartenaire; // style de la carte (par défaut : "carte")
   affilie?: boolean; // lien affilié : mention « Lien affilié » affichée
   miseEnAvant?: boolean; // affiché en grand, en haut de la liste
+  dansBandeau?: boolean; // visible dans le bandeau de l'accueil (par défaut : oui)
 };
 
 // carte : logo + texte + bouton · banniere : grande image cliquable avec le texte dessous

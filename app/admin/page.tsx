@@ -1402,6 +1402,10 @@ export default function AdminPage() {
                     <input type="checkbox" checked={Boolean(p.miseEnAvant)} onChange={(e) => modifierPartenaire(index, { miseEnAvant: e.target.checked })} className="accent-violet" />
                     Mettre en avant (en grand, en haut)
                   </label>
+                  <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                    <input type="checkbox" checked={p.dansBandeau !== false} onChange={(e) => modifierPartenaire(index, { dansBandeau: e.target.checked })} className="accent-violet" />
+                    Dans le bandeau de l'accueil
+                  </label>
                   <select
                     value={p.affichage ?? (p.image ? "banniere" : "carte")}
                     onChange={(e) => modifierPartenaire(index, { affichage: e.target.value as Partenaire["affichage"] })}
@@ -1455,6 +1459,70 @@ export default function AdminPage() {
             className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer les partenaires"}
+          </button>
+
+          <h2 className="text-ink font-medium mb-3">Bandeau de l'accueil</h2>
+          <div className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12 mb-4">
+            <p className="text-ink-soft text-sm">
+              Le bandeau en bas de la page d'accueil montre le logo et le nom de tes partenaires actifs. Un clic mène à leur fiche sur la page partenaires. Décoche « Dans le bandeau de l'accueil » sur un partenaire pour l'en retirer.
+            </p>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Style du bandeau">
+              {[
+                { valeur: "fixe", label: "Fixe et centré" },
+                { valeur: "defilant", label: "Défilant (en boucle)" },
+                { valeur: "masque", label: "Masqué" },
+              ].map((o) => (
+                <button
+                  key={o.valeur}
+                  type="button"
+                  aria-pressed={textes.bandeauPartenaires.mode === o.valeur}
+                  onClick={() => modifierTexte("bandeauPartenaires", "mode", o.valeur)}
+                  className={`rounded-full px-4 py-1.5 text-sm transition-all ${
+                    textes.bandeauPartenaires.mode === o.valeur
+                      ? "bg-violet text-ink"
+                      : "border border-violet/25 text-ink-soft hover:bg-violet/10"
+                  }`}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <div className="grid sm:grid-cols-2 gap-2">
+              <label className="text-xs text-ink-soft">
+                Titre (laisser vide pour ne pas en mettre)
+                <input
+                  type="text"
+                  value={textes.bandeauPartenaires.titre}
+                  onChange={(e) => modifierTexte("bandeauPartenaires", "titre", e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </label>
+              <label className="text-xs text-ink-soft">
+                Texte du lien vers la page partenaires (vide = pas de lien)
+                <input
+                  type="text"
+                  value={textes.bandeauPartenaires.lien}
+                  onChange={(e) => modifierTexte("bandeauPartenaires", "lien", e.target.value)}
+                  className="mt-1 w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+              </label>
+            </div>
+            <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+              <input
+                type="checkbox"
+                checked={textes.bandeauPartenaires.reductions !== "non"}
+                onChange={(e) => modifierTexte("bandeauPartenaires", "reductions", e.target.checked ? "oui" : "non")}
+                className="accent-violet"
+              />
+              Afficher la réduction sous le nom (ex. -15 %)
+            </label>
+          </div>
+          <button
+            onClick={() => enregistrer("/api/textes", { textes }, "Bandeau enregistré et visible sur l'accueil !")}
+            disabled={enregistrement}
+            className="w-full rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50 mb-8"
+          >
+            {enregistrement ? "Enregistrement..." : "Enregistrer le bandeau"}
           </button>
 
           <h2 className="text-ink font-medium mb-3">Bons plans</h2>
