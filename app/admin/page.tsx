@@ -1403,7 +1403,7 @@ export default function AdminPage() {
                     Mettre en avant (en grand, en haut)
                   </label>
                   <select
-                    value={p.affichage ?? "carte"}
+                    value={p.affichage ?? (p.image ? "banniere" : "carte")}
                     onChange={(e) => modifierPartenaire(index, { affichage: e.target.value as Partenaire["affichage"] })}
                     className="rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-xs text-ink outline-none focus:border-violet/60"
                     aria-label="Style d'affichage"

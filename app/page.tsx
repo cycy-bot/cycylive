@@ -8,6 +8,7 @@ import TimelineApercu from "@/components/TimelineApercu";
 import DerniersContenus from "@/components/DerniersContenus";
 import CommunauteApercu from "@/components/CommunauteApercu";
 import PartenariatsApercu from "@/components/PartenariatsApercu";
+import BandeauPartenaires from "@/components/BandeauPartenaires";
 
 export const metadata: Metadata = {
   title: "Cycylive | Stream, gaming & création de contenu",
@@ -34,6 +35,7 @@ export default function AccueilPage() {
       <DerniersContenus />
       <CommunauteApercu />
       <PartenariatsApercu />
+      <BandeauPartenaires />
     </>
   );
 }

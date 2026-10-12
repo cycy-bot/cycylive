@@ -30,6 +30,13 @@ export const AFFICHAGES_PARTENAIRE: { valeur: AffichagePartenaire; label: string
   { valeur: "image", label: "Image seule cliquable" },
 ];
 
+// Style réellement utilisé : sans choix explicite, un partenaire qui a une image
+// s'affiche en bannière (sinon l'image ajoutée dans /admin n'apparaîtrait pas).
+export function affichageDe(p: Pick<Partenaire, "image" | "affichage">): AffichagePartenaire {
+  if (!p.image) return "carte";
+  return p.affichage ?? "banniere";
+}
+
 // Aucun partenaire par défaut : la page reste élégante même vide
 // (voir composant PartenairesListe) tant que rien n'est renseigné.
 export const partenairesParDefaut: Partenaire[] = [];

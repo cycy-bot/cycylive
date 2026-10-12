@@ -3,6 +3,7 @@ import Link from "next/link";
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import { lirePartenaires, lireBonsPlans } from "@/lib/partnersStore";
+import { affichageDe } from "@/data/partners";
 import AccentCosmique from "@/components/AccentCosmique";
 import FollowersTwitch from "@/components/FollowersTwitch";
 import TexteRiche from "@/components/TexteRiche";
@@ -250,7 +251,8 @@ function CartePartenaire({
   partenaire: import("@/data/partners").Partenaire;
   grande?: boolean;
 }) {
-  const affichage = p.image ? p.affichage ?? "carte" : "carte";
+  const affichage = affichageDe(p);
+  const ancre = `partenaire-${p.id}`;
 
   // Image seule : tout le visuel est cliquable
   if (affichage === "image" && p.image) {
@@ -259,7 +261,8 @@ function CartePartenaire({
         href={p.url}
         target="_blank"
         rel={relLien(p.affilie)}
-        className="group relative block carte-holo rounded-3xl overflow-hidden border border-violet/15 hover:shadow-glow transition-all"
+        id={ancre}
+        className="group relative block carte-holo rounded-3xl overflow-hidden border border-violet/15 hover:shadow-glow transition-all scroll-mt-28"
         aria-label={`${p.nom}${p.reduction ? ` · ${p.reduction}` : ""}`}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -304,7 +307,7 @@ function CartePartenaire({
   // Bannière : grande image cliquable, texte et bouton dessous
   if (affichage === "banniere" && p.image) {
     return (
-      <div className="carte-holo rounded-3xl border border-violet/15 overflow-hidden">
+      <div id={ancre} className="carte-holo rounded-3xl border border-violet/15 overflow-hidden scroll-mt-28">
         <a href={p.url} target="_blank" rel={relLien(p.affilie)} className="group block overflow-hidden" tabIndex={-1} aria-hidden>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -325,7 +328,7 @@ function CartePartenaire({
 
   // Carte classique
   return (
-    <div className={`carte-holo rounded-3xl border border-violet/15 ${grande ? "p-8 md:p-10" : "p-6"}`}>
+    <div id={ancre} className={`carte-holo rounded-3xl border border-violet/15 scroll-mt-28 ${grande ? "p-8 md:p-10" : "p-6"}`}>
       <div className={`flex ${grande ? "flex-col sm:flex-row sm:items-center gap-6" : "flex-col gap-3"}`}>
         {p.logo && (
           // eslint-disable-next-line @next/next/no-img-element
