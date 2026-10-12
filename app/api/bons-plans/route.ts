@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { lienValide } from "@/lib/imagesStore";
 import { lireBonsPlans, ecrireBonsPlans } from "@/lib/partnersStore";
 import { BonPlan } from "@/data/deals";
 
@@ -36,6 +37,9 @@ export async function POST(request: NextRequest) {
         { ok: false, erreur: "Chaque bon plan doit avoir une marque et une offre." },
         { status: 400 }
       );
+    }
+    if (!lienValide(b.url) || !lienValide(b.image, { image: true })) {
+      return NextResponse.json({ ok: false, erreur: `${b.marque} : le lien doit commencer par https:// (et l'image aussi, ou être envoyée en fichier).` }, { status: 400 });
     }
   }
 

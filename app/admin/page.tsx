@@ -8,7 +8,8 @@ import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
 import type { DonneesGaming } from "@/lib/gamingStore";
-import type { Partenaire } from "@/data/partners";
+import { AFFICHAGES_PARTENAIRE, type Partenaire } from "@/data/partners";
+import ChampImage from "@/components/admin/ChampImage";
 import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
@@ -1343,7 +1344,7 @@ export default function AdminPage() {
         <>
           <h2 className="text-ink font-medium mb-3">Mes partenaires</h2>
           <p className="text-ink-soft mb-4 text-sm">
-            Décoche "Actif" pour masquer un partenaire sans le supprimer. Avec un seul partenaire actif, il s'affiche en grande carte mise en avant.
+            Décoche "Actif" pour masquer un partenaire sans le supprimer. Tu peux coller l'adresse d'une image ou envoyer un fichier : il est compressé automatiquement. Coche « Lien affilié » pour que la mention s'affiche (obligatoire pour les liens d'affiliation).
           </p>
           <div className="space-y-3 mb-4">
             {partenaires.map((p, index) => (
@@ -1387,18 +1388,35 @@ export default function AdminPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Lien du site (https://...)"
+                  placeholder="Lien de redirection : site du partenaire ou ton lien d'affilié (https://...)"
                   value={p.url}
                   onChange={(e) => modifierPartenaire(index, { url: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
-                <input
-                  type="text"
-                  placeholder="Lien du logo (URL image, optionnel)"
-                  value={p.logo ?? ""}
-                  onChange={(e) => modifierPartenaire(index, { logo: e.target.value })}
-                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-                />
+                <div className="flex flex-wrap gap-x-4 gap-y-2 items-center">
+                  <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                    <input type="checkbox" checked={Boolean(p.affilie)} onChange={(e) => modifierPartenaire(index, { affilie: e.target.checked })} className="accent-violet" />
+                    Lien affilié
+                  </label>
+                  <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                    <input type="checkbox" checked={Boolean(p.miseEnAvant)} onChange={(e) => modifierPartenaire(index, { miseEnAvant: e.target.checked })} className="accent-violet" />
+                    Mettre en avant (en grand, en haut)
+                  </label>
+                  <select
+                    value={p.affichage ?? "carte"}
+                    onChange={(e) => modifierPartenaire(index, { affichage: e.target.value as Partenaire["affichage"] })}
+                    className="rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-xs text-ink outline-none focus:border-violet/60"
+                    aria-label="Style d'affichage"
+                  >
+                    {AFFICHAGES_PARTENAIRE.map((a) => (
+                      <option key={a.valeur} value={a.valeur}>{a.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  <ChampImage label="Logo (carré)" valeur={p.logo ?? ""} onChange={(url) => modifierPartenaire(index, { logo: url })} motDePasse={motDePasse} largeurMax={400} forme="carre" />
+                  <ChampImage label="Image / bannière cliquable" valeur={p.image ?? ""} onChange={(url) => modifierPartenaire(index, { image: url })} motDePasse={motDePasse} largeurMax={1400} />
+                </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
@@ -1475,11 +1493,16 @@ export default function AdminPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Lien de l'offre (https://...)"
+                  placeholder="Lien de l'offre ou ton lien d'affilié (https://...)"
                   value={b.url}
                   onChange={(e) => modifierBonPlan(index, { url: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
+                <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+                  <input type="checkbox" checked={Boolean(b.affilie)} onChange={(e) => modifierBonPlan(index, { affilie: e.target.checked })} className="accent-violet" />
+                  Lien affilié
+                </label>
+                <ChampImage label="Logo ou visuel (optionnel)" valeur={b.image ?? ""} onChange={(url) => modifierBonPlan(index, { image: url })} motDePasse={motDePasse} largeurMax={600} forme="carre" />
                 <div className="flex gap-2">
                   <input
                     type="text"

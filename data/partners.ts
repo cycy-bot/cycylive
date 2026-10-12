@@ -15,7 +15,20 @@ export type Partenaire = {
   reduction?: string; // ex: "-10%"
   ctaLabel: string; // ex: "Découvrir", "Profiter du bon plan"
   active: boolean;
+  image?: string; // visuel / bannière cliquable (URL ou image envoyée depuis /admin)
+  affichage?: AffichagePartenaire; // style de la carte (par défaut : "carte")
+  affilie?: boolean; // lien affilié : mention « Lien affilié » affichée
+  miseEnAvant?: boolean; // affiché en grand, en haut de la liste
 };
+
+// carte : logo + texte + bouton · banniere : grande image cliquable avec le texte dessous
+// image : uniquement l'image cliquable (idéal pour un visuel fourni par la marque)
+export type AffichagePartenaire = "carte" | "banniere" | "image";
+export const AFFICHAGES_PARTENAIRE: { valeur: AffichagePartenaire; label: string }[] = [
+  { valeur: "carte", label: "Carte (logo + texte + bouton)" },
+  { valeur: "banniere", label: "Bannière (grande image cliquable + texte)" },
+  { valeur: "image", label: "Image seule cliquable" },
+];
 
 // Aucun partenaire par défaut : la page reste élégante même vide
 // (voir composant PartenairesListe) tant que rien n'est renseigné.

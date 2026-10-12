@@ -14,6 +14,8 @@ export type BonPlan = {
   dateFin?: string; // libre, ex: "31 décembre 2026"
   conditions?: string;
   active: boolean;
+  image?: string; // logo ou visuel (URL ou image envoyée depuis /admin)
+  affilie?: boolean; // lien affilié : mention « Lien affilié » affichée
 };
 
 export const bonsPlansParDefaut: BonPlan[] = [];

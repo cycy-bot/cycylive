@@ -226,20 +226,14 @@ export default async function CycyBotPage() {
               aria-hidden
               className="absolute -inset-3 rounded-full border border-lilac/25 rotate-[-18deg] scale-y-[0.42]"
             />
-            {donnees?.bot.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={donnees.bot.avatar}
-                alt="Avatar de Cycy_Bot"
-                width={112}
-                height={112}
-                className="relative w-28 h-28 rounded-full object-cover shadow-glow ring-4 ring-void"
-              />
-            ) : (
-              <span className="relative w-28 h-28 rounded-full bg-card flex items-center justify-center text-5xl shadow-glow">
-                🤖
-              </span>
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/images/cycybot/avatar.webp"
+              alt="Avatar de Cycy_Bot"
+              width={112}
+              height={112}
+              className="relative w-28 h-28 rounded-full object-cover shadow-glow ring-4 ring-void"
+            />
           </div>
 
           {/* leading + pb : laisse la place aux jambages du « y » */}

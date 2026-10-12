@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { lirePartenaires, ecrirePartenaires } from "@/lib/partnersStore";
 import { Partenaire } from "@/data/partners";
+import { lienValide } from "@/lib/imagesStore";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,16 @@ export async function POST(request: NextRequest) {
         { ok: false, erreur: "Chaque partenaire doit avoir un nom et un lien." },
         { status: 400 }
       );
+    }
+    if (!lienValide(p.url)) {
+      return NextResponse.json({ ok: false, erreur: `Lien invalide pour ${p.nom} : il doit commencer par https://` }, { status: 400 });
+    }
+    if (!lienValide(p.logo, { image: true }) || !lienValide(p.image, { image: true })) {
+      return NextResponse.json({ ok: false, erreur: `Image invalide pour ${p.nom} : colle une adresse https:// ou envoie un fichier.` }, { status: 400 });
+    }
+    if (p.affichage && !["carte", "banniere", "image"].includes(p.affichage)) p.affichage = "carte";
+    if ((p.affichage === "banniere" || p.affichage === "image") && !p.image) {
+      return NextResponse.json({ ok: false, erreur: `${p.nom} : ajoute une image pour l'affichage « ${p.affichage === "image" ? "image seule" : "bannière"} ».` }, { status: 400 });
     }
   }
 

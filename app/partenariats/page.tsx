@@ -70,6 +70,9 @@ export default async function PartenariatsPage() {
   ]);
   const partenaires = partenairesTous.filter((p) => p.active);
   const bonsPlans = bonsPlansTous.filter((b) => b.active);
+  const enGrand = partenaires.length === 1 ? partenaires : partenaires.filter((p) => p.miseEnAvant);
+  const enGrille = partenaires.filter((p) => !enGrand.includes(p));
+  const avecAffilie = partenaires.some((p) => p.affilie) || bonsPlans.some((b) => b.affilie);
 
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
@@ -88,12 +91,17 @@ export default async function PartenariatsPage() {
       {partenaires.length > 0 && (
         <section className="mb-12">
           <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Mes partenaires</h2>
-
-          {partenaires.length === 1 ? (
-            <CartePartenaire partenaire={partenaires[0]} grande />
-          ) : (
+          {/* Mis en avant (ou partenaire unique) en grand, puis les autres en grille */}
+          {enGrand.length > 0 && (
+            <div className="space-y-4 mb-4">
+              {enGrand.map((p) => (
+                <CartePartenaire key={p.id} partenaire={p} grande />
+              ))}
+            </div>
+          )}
+          {enGrille.length > 0 && (
             <div className="grid sm:grid-cols-2 gap-4">
-              {partenaires.map((p) => (
+              {enGrille.map((p) => (
                 <CartePartenaire key={p.id} partenaire={p} />
               ))}
             </div>
@@ -110,8 +118,15 @@ export default async function PartenariatsPage() {
                 key={b.id}
                 className="carte-holo rounded-2xl p-5 border border-violet/12 flex flex-col sm:flex-row sm:items-center gap-4"
               >
+                {b.image && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={b.image} alt={b.marque} loading="lazy" className="h-14 w-14 rounded-xl object-cover shrink-0" />
+                )}
                 <div className="flex-1">
-                  <p className="text-xs uppercase tracking-wide text-violet-light mb-1">{b.marque}</p>
+                  <p className="text-xs uppercase tracking-wide text-violet-light mb-1">
+                    {b.marque}
+                    {b.affilie && <BadgeAffilie />}
+                  </p>
                   <p className="text-ink font-medium mb-1">{b.offre}</p>
                   {b.conditions && (
                     <p className="text-ink-soft/60 text-xs">{b.conditions}</p>
@@ -125,7 +140,7 @@ export default async function PartenariatsPage() {
                   <a
                     href={b.url}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel={relLien(b.affilie)}
                     className="rounded-full px-4 py-2 bg-violet text-ink text-sm font-medium hover:bg-violet-light hover:shadow-glow transition-all whitespace-nowrap"
                   >
                     Voir l'offre
@@ -135,6 +150,12 @@ export default async function PartenariatsPage() {
             ))}
           </div>
         </section>
+      )}
+
+      {avecAffilie && (
+        <p className="text-xs text-ink-soft/60 -mt-6 mb-12">
+          Les liens marqués « Lien affilié » peuvent me rapporter une petite commission si tu achètes, sans aucun surcoût pour toi. Merci de soutenir la chaîne 💜
+        </p>
       )}
 
       <section className="carte-holo rounded-3xl p-6 md:p-8 border border-violet/15">
@@ -209,52 +230,115 @@ export default async function PartenariatsPage() {
   );
 }
 
+// Les liens affiliés sont signalés aux moteurs de recherche (rel="sponsored")
+function relLien(affilie?: boolean) {
+  return affilie ? "sponsored noopener noreferrer" : "noopener noreferrer";
+}
+
+function BadgeAffilie() {
+  return (
+    <span className="ml-2 align-middle rounded-full border border-lilac/30 px-2 py-0.5 text-[10px] normal-case tracking-normal text-lilac/90">
+      Lien affilié
+    </span>
+  );
+}
+
 function CartePartenaire({
-  partenaire,
+  partenaire: p,
   grande = false,
 }: {
   partenaire: import("@/data/partners").Partenaire;
   grande?: boolean;
 }) {
+  const affichage = p.image ? p.affichage ?? "carte" : "carte";
+
+  // Image seule : tout le visuel est cliquable
+  if (affichage === "image" && p.image) {
+    return (
+      <a
+        href={p.url}
+        target="_blank"
+        rel={relLien(p.affilie)}
+        className="group relative block carte-holo rounded-3xl overflow-hidden border border-violet/15 hover:shadow-glow transition-all"
+        aria-label={`${p.nom}${p.reduction ? ` · ${p.reduction}` : ""}`}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={p.image} alt={p.nom} loading="lazy" className="w-full h-auto block group-hover:scale-[1.01] transition-transform" />
+        {p.affilie && (
+          <span className="absolute top-3 right-3 rounded-full bg-void/80 px-2.5 py-1 text-[10px] text-lilac backdrop-blur">Lien affilié</span>
+        )}
+      </a>
+    );
+  }
+
+  const enTete = (
+    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+      {affichage !== "carte" && p.logo && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={p.logo} alt="" className="h-8 w-8 rounded-lg object-cover" />
+      )}
+      <h3 className={grande ? "text-2xl font-semibold text-ink" : "text-lg font-semibold text-ink"}>{p.nom}</h3>
+      {p.typePartenariat && (
+        <span className="rounded-full bg-white/[0.05] px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-soft/70">
+          {p.typePartenariat}
+        </span>
+      )}
+      {p.affilie && <BadgeAffilie />}
+    </div>
+  );
+  const actions = (
+    <div className="flex flex-wrap items-center gap-3">
+      {p.promoCode && <BoutonCopierCode code={p.promoCode} />}
+      {p.reduction && <span className="text-lilac text-sm font-medium">{p.reduction}</span>}
+      <a
+        href={p.url}
+        target="_blank"
+        rel={relLien(p.affilie)}
+        className="rounded-full px-5 py-2.5 bg-violet text-ink text-sm font-medium hover:bg-violet-light hover:shadow-glow transition-all"
+      >
+        {p.ctaLabel || "Découvrir"}
+      </a>
+    </div>
+  );
+
+  // Bannière : grande image cliquable, texte et bouton dessous
+  if (affichage === "banniere" && p.image) {
+    return (
+      <div className="carte-holo rounded-3xl border border-violet/15 overflow-hidden">
+        <a href={p.url} target="_blank" rel={relLien(p.affilie)} className="group block overflow-hidden" tabIndex={-1} aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={p.image}
+            alt=""
+            loading="lazy"
+            className={`w-full object-cover group-hover:scale-[1.02] transition-transform duration-500 ${grande ? "max-h-[340px]" : "max-h-[200px]"}`}
+          />
+        </a>
+        <div className={grande ? "p-7 md:p-8" : "p-5"}>
+          {enTete}
+          {p.description && <p className="text-ink-soft text-sm leading-relaxed mb-4">{p.description}</p>}
+          {actions}
+        </div>
+      </div>
+    );
+  }
+
+  // Carte classique
   return (
-    <div
-      className={`carte-holo rounded-3xl border border-violet/15 ${
-        grande ? "p-8 md:p-10" : "p-6"
-      }`}
-    >
+    <div className={`carte-holo rounded-3xl border border-violet/15 ${grande ? "p-8 md:p-10" : "p-6"}`}>
       <div className={`flex ${grande ? "flex-col sm:flex-row sm:items-center gap-6" : "flex-col gap-3"}`}>
-        {partenaire.logo && (
+        {p.logo && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={partenaire.logo}
-            alt={partenaire.nom}
+            src={p.logo}
+            alt={p.nom}
             className={grande ? "h-20 w-20 rounded-2xl object-cover shrink-0" : "h-14 w-14 rounded-xl object-cover"}
           />
         )}
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1.5">
-            <h3 className={grande ? "text-2xl font-semibold text-ink" : "text-lg font-semibold text-ink"}>
-              {partenaire.nom}
-            </h3>
-            <span className="rounded-full bg-white/[0.05] px-2.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-soft/70">
-              {partenaire.typePartenariat}
-            </span>
-          </div>
-          <p className="text-ink-soft text-sm leading-relaxed mb-4">{partenaire.description}</p>
-          <div className="flex flex-wrap items-center gap-3">
-            {partenaire.promoCode && <BoutonCopierCode code={partenaire.promoCode} />}
-            {partenaire.reduction && (
-              <span className="text-lilac text-sm font-medium">{partenaire.reduction}</span>
-            )}
-            <a
-              href={partenaire.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full px-5 py-2.5 bg-violet text-ink text-sm font-medium hover:bg-violet-light hover:shadow-glow transition-all"
-            >
-              {partenaire.ctaLabel}
-            </a>
-          </div>
+          {enTete}
+          {p.description && <p className="text-ink-soft text-sm leading-relaxed mb-4">{p.description}</p>}
+          {actions}
         </div>
       </div>
     </div>
