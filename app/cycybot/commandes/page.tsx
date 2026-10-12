@@ -6,11 +6,11 @@ import CommandesCycyBot from "@/components/CommandesCycyBot";
 
 export const metadata: Metadata = {
   title: "Commandes de Cycy_Bot | Cycylive",
-  description: "Toutes les commandes de Cycy_Bot à taper dans le chat Twitch de Cycylive.",
+  description: "Toutes les commandes de Cycy_Bot : le chat Twitch de Cycylive et le Discord (passeport, jeux, Cartes Astrales, Éclats, expéditions, Marché noir, musique…).",
   alternates: { canonical: "/cycybot/commandes" },
   openGraph: {
     title: "Commandes de Cycy_Bot | Cycylive",
-    description: "Toutes les commandes de Cycy_Bot à taper dans le chat Twitch de Cycylive.",
+    description: "Toutes les commandes de Cycy_Bot, sur Twitch et sur Discord.",
     url: "/cycybot/commandes",
   },
 };
@@ -31,12 +31,12 @@ export default async function CommandesPage() {
         Commandes
       </h1>
       <p className="text-ink-soft text-lg mb-10 max-w-2xl">
-        À taper dans le chat Twitch pendant les lives. Les éléments entre crochets sont facultatifs, et cette liste
-        se met à jour automatiquement.
+        Dans le chat Twitch pendant les lives, et sur le Discord tout le temps. Cette liste se met à jour
+        automatiquement avec Cycy_Bot.
       </p>
 
       {donnees ? (
-        <CommandesCycyBot toutLeMonde={donnees.commands.everyone} />
+        <CommandesCycyBot toutLeMonde={donnees.commands.everyone} discord={donnees.discord?.commands ?? []} />
       ) : (
         <p className="carte-holo rounded-2xl p-6 text-ink-soft">
           Cycy_Bot fait une petite pause technique, la liste revient dans un instant. En attendant, tape{" "}

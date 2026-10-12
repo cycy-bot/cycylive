@@ -34,24 +34,31 @@ export default function ConfidentialitePage() {
 
       <h2 className="text-xl font-semibold text-ink mt-10 mb-3">3. Formulaire de contact</h2>
       <p className="mb-4">
-        La page Contact te permet d'envoyer un message via ta propre
-        messagerie électronique (le formulaire ouvre directement ton
-        logiciel ou application mail, pré-rempli avec ton nom, ton email,
-        ta catégorie de demande, le sujet et ton message).
+        La page Contact te permet d'envoyer un message à Cycy (ton nom, ton
+        email, la catégorie de ta demande, le sujet et ton message). Le
+        message est transmis par email grâce au service d'envoi{" "}
+        <a
+          href="https://resend.com/legal/privacy-policy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-lilac hover:text-ink underline underline-offset-4"
+        >
+          Resend
+        </a>
+        , qui l'achemine jusqu'à {liens.mailPro}.
       </p>
       <p className="mb-4">
         <strong className="text-ink">
-          Aucune de ces informations n'est enregistrée ni stockée sur un
-          serveur ou une base de données.
+          Le site n'enregistre pas ton message dans une base de données.
         </strong>{" "}
-        Elles transitent uniquement par email, exactement comme si tu
-        écrivais directement à {liens.mailPro}. Elles sont ensuite
-        conservées dans la messagerie de Cycy le temps nécessaire au
+        Il est conservé dans la messagerie de Cycy le temps nécessaire au
         traitement de ta demande (partenariat, collaboration, question,
-        etc.), puis supprimées ou archivées selon les pratiques habituelles
-        de gestion d'une boîte mail.
+        etc.), puis supprimé ou archivé selon les pratiques habituelles de
+        gestion d'une boîte mail. Resend agit comme prestataire technique
+        d'envoi et ne conserve les informations que le temps nécessaire à
+        l'acheminement et au suivi de l'envoi.
       </p>
-      <p className="mb-4">
+            <p className="mb-4">
         La base légale de ce traitement est l'intérêt légitime de Cycy à
         répondre aux demandes qui lui sont adressées, avec ton consentement
         explicite au moment où tu choisis d'envoyer le message.
@@ -63,6 +70,14 @@ export default function ConfidentialitePage() {
         actuellement en live et afficher le titre, la catégorie et le
         nombre de spectateurs. Cette fonctionnalité ne collecte ni ne
         traite aucune donnée personnelle des visiteurs du site.
+      </p>
+      <p className="mb-4">
+        Les pages Cycy_Bot affichent des informations publiques fournies par
+        le bot de la chaîne : la liste des commandes, des compteurs
+        (cartes, expéditions…) et, sur le leaderboard, le pseudo et
+        l'avatar Twitch des viewers les plus actifs dans le chat. Le site
+        lui-même n'en stocke aucune. Pour retirer ton pseudo du classement,
+        écris à {liens.mailPro}.
       </p>
 
       <h2 className="text-xl font-semibold text-ink mt-10 mb-3">5. Hébergement et transfert de données</h2>

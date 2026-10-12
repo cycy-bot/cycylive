@@ -80,6 +80,12 @@ export async function echangerCodeContreToken(
     const dataUser = await reponseUser.json();
     const broadcasterId = dataUser?.data?.[0]?.id;
     if (!broadcasterId) return { ok: false, erreur: "Impossible de récupérer le compte Twitch." };
+    // Sécurité : seul le compte de la chaîne peut être connecté. Sans cette vérification,
+    // n'importe qui pouvait passer par /api/twitch-connect et remplacer le jeton par le sien.
+    const loginAttendu = (process.env.TWITCH_CHANNEL_LOGIN || "cycylive").toLowerCase();
+    if (String(dataUser?.data?.[0]?.login || "").toLowerCase() !== loginAttendu) {
+      return { ok: false, erreur: `Ce compte Twitch n'est pas celui de la chaîne (${loginAttendu}).` };
+    }
 
     const oauth: TwitchOAuth = {
       access_token: data.access_token,

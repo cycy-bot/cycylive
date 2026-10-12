@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { liens } from "@/data/liens";
 import { useTwitchStatus } from "@/components/useTwitchStatus";
 import { IconTwitch, IconDiscord, IconInstagram } from "@/components/Icons";
@@ -31,15 +32,13 @@ export default function BarreMobile() {
         <IconDiscord className="w-5 h-5" />
         Discord
       </a>
-      <a
-        href={liens.instagram}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        href="/reseaux"
         className="flex-1 flex items-center justify-center gap-1.5 rounded-full py-2 text-sm font-medium border border-violet/20 text-ink-soft"
       >
         <IconInstagram className="w-5 h-5" />
         Réseaux
-      </a>
+      </Link>
     </div>
   );
 }

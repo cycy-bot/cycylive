@@ -35,6 +35,8 @@ const navItems: (LienNav | GroupeNav)[] = [
     label: "Cycy_Bot",
     items: [
       { label: "Présentation", href: "/cycybot" },
+      { label: "L'univers Discord", href: "/cycybot#discord" },
+      { label: "Éclats & Marché noir", href: "/cycybot#galaxie" },
       { label: "Commandes", href: "/cycybot/commandes" },
       { label: "Leaderboard", href: "/cycybot/leaderboard" },
     ],
