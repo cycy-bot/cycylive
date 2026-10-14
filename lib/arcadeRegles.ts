@@ -7,26 +7,33 @@
 
 export const ARCADE = {
   nom: "Cycy Runner",
-  vitesseDepart: 420, // px / s
-  acceleration: 7, // px / s²
-  vitesseMax: 1150, // px / s
+  vitesseDepart: 430, // px / s
+  acceleration: 8, // px / s² (au début)
+  accelerationCroissante: 0.06, // l'accélération augmente avec le temps : la course s'emballe
+  vitesseMax: 1400, // px / s
   pxParPoint: 10, // 10 px parcourus = 1 point
   tailleClassement: 20,
   pseudoMin: 2,
   pseudoMax: 16,
 };
 
-/** Vitesse du jeu après t secondes de course. */
+/** Vitesse du jeu après t secondes de course (de plus en plus vite). */
 export function vitesseA(t: number): number {
-  return Math.min(ARCADE.vitesseMax, ARCADE.vitesseDepart + ARCADE.acceleration * t);
+  const { vitesseDepart: v0, acceleration: a, accelerationCroissante: b, vitesseMax } = ARCADE;
+  return Math.min(vitesseMax, v0 + a * t + b * t * t);
+}
+
+/** Progression de la difficulté (0 au départ, 1 après ~100 s) : obstacles plus serrés et plus variés. */
+export function intensite(t: number): number {
+  return Math.max(0, Math.min(1, t / 100));
 }
 
 /** Score maximum atteignable en t secondes (course parfaite, sans pause). */
 export function scoreMaxPour(t: number): number {
-  const { vitesseDepart: v0, acceleration: a, vitesseMax: vmax, pxParPoint } = ARCADE;
-  const tMax = (vmax - v0) / a;
-  const distance = t <= tMax ? v0 * t + (a * t * t) / 2 : v0 * tMax + (a * tMax * tMax) / 2 + vmax * (t - tMax);
-  return Math.floor(distance / pxParPoint);
+  const pas = 0.05;
+  let distance = 0;
+  for (let x = 0; x < t; x += pas) distance += vitesseA(x + pas / 2) * Math.min(pas, t - x);
+  return Math.floor(distance / ARCADE.pxParPoint);
 }
 
 // Lettres (accents compris), chiffres, espace, tiret, point, tiret bas

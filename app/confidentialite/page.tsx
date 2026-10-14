@@ -89,6 +89,12 @@ export default function ConfidentialitePage() {
         pré-remplir le champ. Pour retirer un pseudo du classement, écris à{" "}
         {liens.mailPro}.
       </p>
+      <p className="mb-4">
+        Pour le ticket à gratter, CycyBot (bot.cycylive.fr) garde une empreinte
+        chiffrée de ton adresse IP pendant la journée, uniquement pour limiter à
+        un ticket par jour. Le gain est lié à ton compte Discord seulement quand
+        tu tapes /gratter sur le serveur.
+      </p>
 
       <h2 className="text-xl font-semibold text-ink mt-10 mb-3">5. Hébergement et transfert de données</h2>
       <p className="mb-4">

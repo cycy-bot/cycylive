@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ARCADE, vitesseA } from "@/lib/arcadeRegles";
+import { ARCADE, vitesseA, intensite } from "@/lib/arcadeRegles";
 
 // ============================================================
 // CYCY RUNNER — jeu de course façon « dinosaure de Google »
@@ -84,31 +84,40 @@ function rand(a: number, b: number) {
 function creerObstacle(j: Jeu) {
   const score = Math.floor(j.distance / ARCADE.pxParPoint);
   const v = vitesseA(j.t);
+  const k = intensite(j.t); // 0 → 1 : la difficulté monte petit à petit
   const x = L + 30;
   const tirage = Math.random();
-  if (score > 250 && tirage < 0.22) {
+  let largeur = 22; // largeur du groupe posé (pour garder un écart franchissable)
+  const chanceComete = score > 200 ? 0.18 + 0.14 * k : 0;
+  if (tirage < chanceComete) {
     // Comète : basse (il faut se baisser) ou haute (il ne faut pas sauter)
     const basse = Math.random() < 0.65;
     const h = 22;
     const y = basse ? SOL - 58 : SOL - 112;
     j.obstacles.push({ type: "comete", x, y, l: 54, h, graine: Math.random() });
-  } else if (tirage < 0.55) {
-    const n = score > 400 && Math.random() < 0.35 ? (Math.random() < 0.5 ? 2 : 3) : 1;
+    largeur = 54;
+  } else if (tirage < chanceComete + 0.36) {
+    // Groupes d'astéroïdes de plus en plus fréquents (et jusqu'à 4 à la fin)
+    const groupe = score > 350 && Math.random() < 0.25 + 0.35 * k;
+    const n = groupe ? (Math.random() < 0.5 ? 2 : k > 0.6 && Math.random() < 0.4 ? 4 : 3) : 1;
     let dx = 0;
     for (let i = 0; i < n; i++) {
       const l = rand(26, 38);
-      const h = rand(30, 50);
+      const h = rand(30, 46 + 8 * k);
       j.obstacles.push({ type: "rocher", x: x + dx, y: SOL - h, l, h, graine: Math.random() });
       dx += l + 4;
     }
+    largeur = dx;
   } else {
-    const h = rand(44, 62);
+    const h = rand(44, 60 + 6 * k);
     j.obstacles.push({ type: "cristal", x, y: SOL - h, l: 22, h, graine: Math.random() });
+    // En fin de course : parfois un cristal double
+    if (k > 0.5 && Math.random() < 0.25) { j.obstacles.push({ type: "cristal", x: x + 26, y: SOL - h * 0.8, l: 22, h: h * 0.8, graine: Math.random() }); largeur = 48; }
   }
-  // Écart jusqu'au suivant : toujours franchissable, de plus en plus serré
-  // Un saut dure ~0,68 s : l'écart minimum laisse le temps d'atterrir et de réagir
-  const ecartMin = 150 + v * 0.74;
-  j.prochain = ecartMin + Math.random() * v * 0.65;
+  // Écart jusqu'au suivant : un saut dure ~0,68 s, l'écart minimum laisse toujours le temps
+  // d'atterrir et de ressauter, mais il se resserre avec l'intensité
+  const ecartMin = largeur + (125 - 35 * k) + v * 0.72;
+  j.prochain = ecartMin + Math.random() * v * (0.65 - 0.3 * k);
 }
 
 function collision(j: Jeu): boolean {
@@ -429,6 +438,12 @@ export default function BorneArcade() {
     observateur?.observe(canvas);
 
     const image = (maintenant: number) => {
+      // Onglet « Ticket à gratter » affiché : le jeu caché se met en pause
+      if (!canvas.offsetParent) {
+        avant = maintenant;
+        raf = requestAnimationFrame(image);
+        return;
+      }
       const dt = Math.min(0.05, (maintenant - avant) / 1000);
       avant = maintenant;
       const j = jeuRef.current;
@@ -525,7 +540,7 @@ export default function BorneArcade() {
       return Boolean(t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "BUTTON" || t.isContentEditable));
     };
     const bas = (e: KeyboardEvent) => {
-      if (dansChamp(e)) return;
+      if (dansChamp(e) || !canvasRef.current?.offsetParent) return;
       if (e.code === "Space" || e.code === "ArrowUp" || e.code === "KeyW") {
         e.preventDefault();
         if (!e.repeat) sauter();
