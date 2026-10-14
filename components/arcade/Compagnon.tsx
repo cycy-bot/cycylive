@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Creature, { ESPECES, Oeuf, especeInfo, type Espece, type Humeur } from "@/components/arcade/Creature";
+import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 
 // ============================================================
 // COMPAGNON GALACTIQUE — façon Tamagotchi, sans compte
@@ -35,6 +35,11 @@ type Etat = {
   quetes: Quetes;
   joursParfaits: number;
   dernierJourParfait: string;
+  // Boutique : bonbons cosmiques gagnés en s'occupant de lui, accessoires achetés et portés
+  bonbons: number;
+  possedes: string[];
+  tenue: Tenue;
+  gains: { jour: string; calins: number; visite: boolean };
 };
 
 const OBJECTIFS: { key: keyof Omit<Quetes, "jour" | "recompense">; emoji: string; label: string; but: number }[] = [
@@ -44,6 +49,14 @@ const OBJECTIFS: { key: keyof Omit<Quetes, "jour" | "recompense">; emoji: string
   { key: "calins", emoji: "💜", label: "Le caresser", but: 15 },
   { key: "jeux", emoji: "⭐", label: "Jouer avec lui", but: 2 },
 ];
+
+// Bonbons cosmiques 🍬 : ce que rapporte chaque soin (les câlins sont plafonnés chaque jour)
+const BONBONS = { repas: 2, bain: 3, caca: 2, calinsParBonbon: 3, calinsMaxJour: 10, jeu: 6, visite: 5, journeeParfaite: 25 };
+
+/** Ajoute des bonbons (en tenant le compteur du jour). */
+function avecBonbons(e: Etat, n: number): Etat {
+  return { ...e, bonbons: Math.max(0, (e.bonbons || 0) + n) };
+}
 
 // Baisse des jauges par heure
 const BAISSE = { faim: 12, proprete: 7, bonheur: 9, energie: 6 };
@@ -62,6 +75,7 @@ function etatVide(): Etat {
   return {
     espece: null, nom: "", neLe: 0, stats: { faim: 40, proprete: 60, bonheur: 50, energie: 80 }, maj: Date.now(),
     cacas: [], cacasEnAttente: [], dort: false, quetes: quetesVides(), joursParfaits: 0, dernierJourParfait: "",
+    bonbons: 0, possedes: [], tenue: {}, gains: { jour: "", calins: 0, visite: false },
   };
 }
 
@@ -70,6 +84,10 @@ function lireEtat(): Etat {
     const brut = localStorage.getItem(CLE);
     if (!brut) return etatVide();
     const e = { ...etatVide(), ...JSON.parse(brut) } as Etat;
+    e.possedes = Array.isArray(e.possedes) ? e.possedes.filter((k) => ACCESSOIRES.some((a) => a.key === k)) : [];
+    e.tenue = e.tenue && typeof e.tenue === "object" ? e.tenue : {};
+    e.gains = e.gains && typeof e.gains === "object" ? e.gains : { jour: "", calins: 0, visite: false };
+    e.bonbons = Number(e.bonbons) || 0;
     if (!ESPECES.some((x) => x.key === e.espece)) e.espece = null;
     return e;
   } catch {
@@ -98,7 +116,8 @@ function vieillir(e: Etat, maintenant = Date.now()): Etat {
     cacas.push({ id: idCourt(), x, y: hasard(72, 82) });
   }
   const quetes = e.quetes.jour === jourDe(maintenant) ? e.quetes : quetesVides();
-  return { ...e, stats: s, cacas, cacasEnAttente: e.cacasEnAttente.filter((t) => t > maintenant), quetes, maj: maintenant, dort: e.dort && s.energie < 100 };
+  const gains = e.gains?.jour === jourDe(maintenant) ? e.gains : { jour: jourDe(maintenant), calins: 0, visite: false };
+  return { ...e, gains, stats: s, cacas, cacasEnAttente: e.cacasEnAttente.filter((t) => t > maintenant), quetes, maj: maintenant, dort: e.dort && s.energie < 100 };
 }
 
 function stadeDe(e: Etat): 0 | 1 | 2 {
@@ -250,6 +269,7 @@ export default function Compagnon() {
       stats: { ...x.stats, faim: borne(x.stats.faim + 18), bonheur: borne(x.stats.bonheur + 3) },
       cacasEnAttente: [...x.cacasEnAttente, Date.now() + hasard(12, 25) * 1000],
       quetes: compter(x.quetes, "repas"),
+      bonbons: (x.bonbons || 0) + BONBONS.repas,
     }));
     effet(["🍖", "🍩", "🌮", "🍓", "🍬"][Math.floor(Math.random() * 5)], "miam");
     sauter();
@@ -260,13 +280,13 @@ export default function Compagnon() {
     if (!etat) return;
     if (etat.dort) return dire("Chut… il dort 🌙");
     if (etat.stats.proprete >= 97) return dire("Il est déjà tout propre ✨");
-    setEtat((x) => ({ ...x, stats: { ...x.stats, proprete: 100, bonheur: borne(x.stats.bonheur + 4) }, quetes: compter(x.quetes, "bains") }));
+    setEtat((x) => avecBonbons({ ...x, stats: { ...x.stats, proprete: 100, bonheur: borne(x.stats.bonheur + 4) }, quetes: compter(x.quetes, "bains") }, BONBONS.bain));
     for (let i = 0; i < 9; i++) setTimeout(() => effet("🫧", "bulle", hasard(28, 72), hasard(30, 65)), i * 120);
     dire("Splash ! Tout propre 🛁");
   };
 
   const nettoyer = (id: string) => {
-    setEtat((x) => (x.cacas.some((c) => c.id === id) ? { ...x, cacas: x.cacas.filter((c) => c.id !== id), stats: { ...x.stats, proprete: borne(x.stats.proprete + 5) }, quetes: compter(x.quetes, "cacas") } : x));
+    setEtat((x) => (x.cacas.some((c) => c.id === id) ? avecBonbons({ ...x, cacas: x.cacas.filter((c) => c.id !== id), stats: { ...x.stats, proprete: borne(x.stats.proprete + 5) }, quetes: compter(x.quetes, "cacas") }, BONBONS.caca) : x));
     effet("✨", "bulle");
   };
 
@@ -280,7 +300,11 @@ export default function Compagnon() {
       effet("💤", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
       return;
     }
-    setEtat((x) => ({ ...x, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 2) }, quetes: compter(x.quetes, "calins") }));
+    setEtat((x) => {
+      const n = (x.gains?.calins || 0) + 1;
+      const bonus = n % BONBONS.calinsParBonbon === 0 && n / BONBONS.calinsParBonbon <= BONBONS.calinsMaxJour ? 1 : 0;
+      return avecBonbons({ ...x, gains: { ...x.gains, calins: n }, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 2) }, quetes: compter(x.quetes, "calins") }, bonus);
+    });
     effet("💜", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
   };
 
@@ -319,7 +343,7 @@ export default function Compagnon() {
       const attrapees = j.attrapees + 1;
       if (attrapees >= 5) {
         partieGagnee.current = true;
-        setEtat((x) => ({ ...x, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 15), energie: borne(x.stats.energie - 8) }, quetes: compter(x.quetes, "jeux") }));
+        setEtat((x) => avecBonbons({ ...x, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 15), energie: borne(x.stats.energie - 8) }, quetes: compter(x.quetes, "jeux") }, BONBONS.jeu));
         sauter();
         dire("Bravo ! On s'est bien amusés 🎉");
         return null;
@@ -347,8 +371,38 @@ export default function Compagnon() {
   // Journée parfaite : la créature grandit
   useEffect(() => {
     if (!etat || !toutFait || etat.dernierJourParfait === etat.quetes.jour) return;
-    setEtat((x) => ({ ...x, joursParfaits: x.joursParfaits + 1, dernierJourParfait: x.quetes.jour }));
-  }, [toutFait, etat, setEtat]);
+    setEtat((x) => avecBonbons({ ...x, joursParfaits: x.joursParfaits + 1, dernierJourParfait: x.quetes.jour }, BONBONS.journeeParfaite));
+    dire(`Journée parfaite ! +${BONBONS.journeeParfaite} 🍬`);
+  }, [toutFait, etat, setEtat]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Bonbons de la visite du jour
+  useEffect(() => {
+    if (!etat?.neLe || etat.gains?.visite) return;
+    setEtat((x) => (x.gains?.visite ? x : avecBonbons({ ...x, gains: { ...x.gains, visite: true } }, BONBONS.visite)));
+  }, [etat?.neLe, etat?.gains?.visite, setEtat]);
+
+  // ── Boutique ──
+  const [rayon, setRayon] = useState<Emplacement>("tete");
+  const acheter = (k: string) => {
+    const a = ACCESSOIRES.find((x) => x.key === k);
+    if (!a || !etat) return;
+    if (etat.possedes.includes(k)) return;
+    if ((etat.bonbons || 0) < a.prix) return dire(`Il te manque ${a.prix - (etat.bonbons || 0)} 🍬 pour ${a.nom.toLowerCase()}…`);
+    setEtat((x) => (x.possedes.includes(k) || (x.bonbons || 0) < a.prix ? x : { ...x, bonbons: x.bonbons - a.prix, possedes: [...x.possedes, k], tenue: { ...x.tenue, [a.emplacement]: k } }));
+    effet("✨", "coeur");
+    sauter();
+    dire(`Trop stylé ! Merci pour ${a.nom.toLowerCase()} 💜`);
+  };
+  const porter = (k: string) => {
+    const a = ACCESSOIRES.find((x) => x.key === k);
+    if (!a) return;
+    setEtat((x) => {
+      const t: Tenue = { ...x.tenue };
+      if (t[a.emplacement] === k) delete t[a.emplacement];
+      else t[a.emplacement] = k;
+      return { ...x, tenue: t };
+    });
+  };
 
   const recuperer = async () => {
     setEnvoi({ etat: "envoi", texte: "" });
@@ -515,6 +569,9 @@ export default function Compagnon() {
           <h2 className="text-xl md:text-2xl font-semibold text-ink">
             {etat.nom} <span className="text-sm font-normal text-ink-soft">· {info.nom} · {stadeNom}</span>
           </h2>
+          <span className="rounded-full border border-pink-300/30 bg-pink-400/10 px-3 py-1 text-sm font-semibold text-ink" title="Bonbons cosmiques : gagne-les en t'occupant de ton compagnon">
+            🍬 {etat.bonbons || 0} <span className="font-normal text-ink-soft text-xs">bonbons</span>
+          </span>
           <button type="button" onClick={changer} className="text-xs text-ink-soft/60 hover:text-ink-soft underline">
             Adopter une autre créature
           </button>
@@ -547,7 +604,7 @@ export default function Compagnon() {
           <div className="absolute left-1/2 bottom-[46px] -translate-x-1/2 cursor-pointer" onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
             <div key={saut} className={saut ? "cp-saut" : ""}>
               <div className={etat.dort ? "" : "cp-flotte"}>
-                <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} />
+                <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
               </div>
             </div>
             {etat.dort && (
@@ -623,6 +680,72 @@ export default function Compagnon() {
             💜 Clique sur {etat.nom} pour le caresser · 💩 clique sur ses cacas pour les nettoyer
           </div>
         </div>
+
+        {/* Boutique d'accessoires */}
+        <section aria-labelledby="cp-boutique" className="mt-6 rounded-2xl border border-violet/15 bg-white/[0.03] p-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <h3 id="cp-boutique" className="font-semibold text-ink">🛍️ Boutique d&apos;accessoires</h3>
+            <div className="flex gap-1.5" role="tablist" aria-label="Rayons">
+              {(
+                [
+                  ["tete", "🎩 Tête"],
+                  ["yeux", "🕶️ Yeux"],
+                  ["cou", "🧣 Cou"],
+                ] as [Emplacement, string][]
+              ).map(([k, t]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={rayon === k}
+                  onClick={() => setRayon(k)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${rayon === k ? "bg-violet text-ink" : "border border-violet/25 text-ink-soft hover:bg-violet/10"}`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {ACCESSOIRES.filter((a) => a.emplacement === rayon).map((a) => {
+              const possede = etat.possedes.includes(a.key);
+              const porte = etat.tenue[a.emplacement] === a.key;
+              const assez = (etat.bonbons || 0) >= a.prix;
+              return (
+                <div
+                  key={a.key}
+                  className={`flex flex-col items-center rounded-2xl border px-2 pt-3 pb-2 text-center transition-all ${porte ? "border-violet bg-violet/15" : "border-violet/15 bg-white/[0.04]"}`}
+                >
+                  <div className="h-[52px] flex items-center justify-center">
+                    <AccessoireApercu k={a.key} taille={66} />
+                  </div>
+                  <p className="text-xs font-semibold text-ink mt-1 leading-tight min-h-[2rem] flex items-center">{a.nom}</p>
+                  {possede ? (
+                    <button
+                      type="button"
+                      onClick={() => porter(a.key)}
+                      className={`mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold ${porte ? "border border-violet/40 text-ink-soft hover:bg-violet/10" : "bg-violet text-ink hover:bg-violet-light"}`}
+                    >
+                      {porte ? "Retirer" : "Porter"}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => acheter(a.key)}
+                      disabled={!assez}
+                      className="mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold bg-pink-400/20 border border-pink-300/40 text-ink hover:bg-pink-400/30 disabled:opacity-40"
+                    >
+                      🍬 {a.prix}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-ink-soft/60 mt-3">
+            🍬 Gagne des bonbons en t&apos;occupant de {etat.nom} : repas +{BONBONS.repas}, bain +{BONBONS.bain}, caca nettoyé +{BONBONS.caca}, partie gagnée +{BONBONS.jeu}, câlins (+1 tous les {BONBONS.calinsParBonbon}), visite du jour +{BONBONS.visite} et journée parfaite +{BONBONS.journeeParfaite}.
+          </p>
+        </section>
       </div>
 
       {/* Quêtes du jour */}
