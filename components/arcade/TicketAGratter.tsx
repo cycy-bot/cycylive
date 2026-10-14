@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 // TICKET À GRATTER — un ticket gratuit par jour
 // ============================================================
 // Le gain est tiré par CycyBot (bot.cycylive.fr/api/scratch), qui
-// donne aussi un code. On gratte ici, puis on tape /gratter CODE
+// donne aussi un code. On gratte ici, puis on tape /gratter sur Discord et on colle le code
 // sur Discord pour recevoir le gain (XP, Éclats, booster, fragment).
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
@@ -169,7 +169,7 @@ export default function TicketAGratter() {
   }, [ticket]);
 
   const couleur = COULEURS[ticket?.prize.rarity || "commune"] || COULEURS.commune;
-  const commande = ticket ? `/gratter ${ticket.code}` : "";
+  const code = ticket ? ticket.code : "";
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
@@ -235,22 +235,29 @@ export default function TicketAGratter() {
                     <p className="text-ink font-semibold text-lg mb-1">
                       {["legendaire", "mythique"].includes(ticket.prize.rarity) ? "🎉 Incroyable !" : "Bravo !"} Récupère ton gain sur Discord :
                     </p>
-                    <p className="text-ink-soft text-sm mb-4">
-                      Tape cette commande dans le salon CycyBot (le code reste valable 48 h, un gain récupéré par jour).
-                    </p>
+                    {/* Sur ordinateur, une commande collée en entier n'est pas reconnue par Discord : on ne copie que le code */}
+                    <ol className="text-ink-soft text-sm mb-4 mx-auto max-w-md text-left space-y-1 list-decimal list-inside">
+                      <li>Copie ton code avec le bouton <strong className="text-ink">Copier le code</strong>.</li>
+                      <li>
+                        Dans le salon <strong className="text-ink">CycyBot</strong> du Discord, tape <code className="text-lilac">/gratter</code> et choisis la commande.
+                      </li>
+                      <li>
+                        <strong className="text-ink">Colle uniquement le code</strong> dans la case « code », puis valide.
+                      </li>
+                    </ol>
                     <div className="inline-flex flex-wrap items-center justify-center gap-2">
-                      <code className="rounded-xl bg-void/70 border border-violet/30 px-4 py-2.5 font-mono text-lilac text-base md:text-lg">{commande}</code>
+                      <code className="select-all rounded-xl bg-void/70 border border-violet/30 px-4 py-2.5 font-mono text-lilac text-lg md:text-xl tracking-wider">{code}</code>
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard?.writeText(commande).then(() => {
+                          navigator.clipboard?.writeText(code).then(() => {
                             setCopie(true);
                             setTimeout(() => setCopie(false), 2000);
                           }).catch(() => {});
                         }}
-                        className="rounded-full px-4 py-2.5 border border-violet/30 text-ink-soft text-sm hover:bg-violet/10"
+                        className="rounded-full px-5 py-2.5 bg-violet/20 border border-violet/40 text-ink text-sm font-medium hover:bg-violet/30"
                       >
-                        {copie ? "Copié ✓" : "Copier"}
+                        {copie ? "Code copié ✓" : "Copier le code"}
                       </button>
                       <a
                         href={DISCORD}
@@ -261,6 +268,7 @@ export default function TicketAGratter() {
                         Ouvrir Discord
                       </a>
                     </div>
+                    <p className="text-xs text-ink-soft/50 mt-3">Code valable 48 h · un gain récupéré par jour</p>
                   </>
                 )}
               </div>
@@ -276,12 +284,13 @@ export default function TicketAGratter() {
         <ol className="space-y-2 text-sm text-ink-soft mb-5 list-decimal list-inside">
           <li>Prends ton ticket gratuit (1 par jour).</li>
           <li>Gratte la zone argentée pour voir ton gain.</li>
+          <li>Copie ton code avec le bouton « Copier le code ».</li>
           <li>
-            Tape <code className="text-lilac">/gratter CODE</code> dans le salon CycyBot sur{" "}
+            Dans le salon CycyBot du{" "}
             <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="text-lilac underline">
               Discord
-            </a>{" "}
-            : le gain arrive sur ton profil.
+            </a>
+            , tape <code className="text-lilac">/gratter</code> puis colle seulement le code dans la case « code » : le gain arrive sur ton profil.
           </li>
         </ol>
         <h3 className="text-sm font-semibold text-ink mb-2">Gains possibles</h3>
