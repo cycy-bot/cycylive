@@ -44,7 +44,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
     <div>
       <h2 className="text-ink font-medium mb-3">Borne d&apos;arcade · Cycy Runner</h2>
       <p className="text-ink-soft mb-4 text-sm">
-        Le jeu est sur <a href="/arcade" target="_blank" className="text-lilac underline">cycylive.fr/arcade</a>. Chaque pseudo garde son
+        Le jeu est sur <a href="/jeux" target="_blank" className="text-lilac underline">cycylive.fr/jeux</a>. Chaque pseudo garde son
         meilleur score. Les scores impossibles (trop élevés pour la durée de la partie) sont refusés automatiquement. Tu peux retirer un
         pseudo (inapproprié, triche…) ou remettre tout le classement à zéro, par exemple pour lancer une saison.
       </p>

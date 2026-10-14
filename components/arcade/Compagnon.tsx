@@ -1,0 +1,720 @@
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Creature, { ESPECES, Oeuf, especeInfo, type Espece, type Humeur } from "@/components/arcade/Creature";
+
+// ============================================================
+// COMPAGNON GALACTIQUE — façon Tamagotchi, sans compte
+// ============================================================
+// 1. On choisit une créature → un œuf apparaît.
+// 2. On clique vite dessus (une dizaine de secondes) → il éclot.
+// 3. On s'en occupe : nourrir, laver, nettoyer les cacas, caresser, jouer, dormir.
+//    Ses jauges baissent avec le temps, même quand la page est fermée.
+// 4. Les 5 quêtes du jour faites → un code à récupérer sur Discord avec /compagnon.
+// Tout est gardé dans le navigateur (localStorage).
+
+const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
+const DISCORD = "https://discord.gg/sER6tztDSz";
+const CLE = "cycylive-compagnon-v1";
+const MIN = 60 * 1000;
+const HEURE = 60 * MIN;
+
+type Stats = { faim: number; proprete: number; bonheur: number; energie: number };
+type Caca = { id: string; x: number; y: number };
+type Gain = { key: string; emoji: string; label: string; rarity: string; rarityLabel: string };
+type Quetes = { jour: string; repas: number; bains: number; cacas: number; calins: number; jeux: number; recompense: { code: string; prize: Gain } | null };
+type Etat = {
+  espece: Espece | null;
+  nom: string;
+  neLe: number; // 0 = encore dans l'œuf
+  stats: Stats;
+  maj: number;
+  cacas: Caca[];
+  cacasEnAttente: number[]; // moments où un caca va apparaître (après chaque repas)
+  dort: boolean;
+  quetes: Quetes;
+  joursParfaits: number;
+  dernierJourParfait: string;
+};
+
+const OBJECTIFS: { key: keyof Omit<Quetes, "jour" | "recompense">; emoji: string; label: string; but: number }[] = [
+  { key: "repas", emoji: "🍖", label: "Le nourrir", but: 3 },
+  { key: "bains", emoji: "🛁", label: "Le laver", but: 1 },
+  { key: "cacas", emoji: "💩", label: "Nettoyer ses cacas", but: 3 },
+  { key: "calins", emoji: "💜", label: "Le caresser", but: 15 },
+  { key: "jeux", emoji: "⭐", label: "Jouer avec lui", but: 2 },
+];
+
+// Baisse des jauges par heure
+const BAISSE = { faim: 12, proprete: 7, bonheur: 9, energie: 6 };
+
+const JOUR_FMT = typeof Intl !== "undefined" ? new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }) : null;
+const jourDe = (t = Date.now()) => (JOUR_FMT ? JOUR_FMT.format(new Date(t)) : new Date(t).toISOString().slice(0, 10));
+const borne = (n: number) => Math.max(0, Math.min(100, n));
+const hasard = (a: number, b: number) => a + Math.random() * (b - a);
+const idCourt = () => Math.random().toString(36).slice(2, 9);
+
+function quetesVides(): Quetes {
+  return { jour: jourDe(), repas: 0, bains: 0, cacas: 0, calins: 0, jeux: 0, recompense: null };
+}
+
+function etatVide(): Etat {
+  return {
+    espece: null, nom: "", neLe: 0, stats: { faim: 40, proprete: 60, bonheur: 50, energie: 80 }, maj: Date.now(),
+    cacas: [], cacasEnAttente: [], dort: false, quetes: quetesVides(), joursParfaits: 0, dernierJourParfait: "",
+  };
+}
+
+function lireEtat(): Etat {
+  try {
+    const brut = localStorage.getItem(CLE);
+    if (!brut) return etatVide();
+    const e = { ...etatVide(), ...JSON.parse(brut) } as Etat;
+    if (!ESPECES.some((x) => x.key === e.espece)) e.espece = null;
+    return e;
+  } catch {
+    return etatVide();
+  }
+}
+
+/** Fait vivre la créature depuis la dernière visite (jauges, cacas, nouveau jour). */
+function vieillir(e: Etat, maintenant = Date.now()): Etat {
+  if (!e.espece || !e.neLe) return { ...e, maj: maintenant };
+  const h = Math.max(0, (maintenant - e.maj) / HEURE);
+  const s = { ...e.stats };
+  const sale = e.cacas.length;
+  s.faim = borne(s.faim - BAISSE.faim * h);
+  s.proprete = borne(s.proprete - (BAISSE.proprete + sale * 3) * h);
+  s.bonheur = borne(s.bonheur - (BAISSE.bonheur + (s.faim < 25 ? 6 : 0) + sale * 2) * h);
+  s.energie = e.dort ? borne(s.energie + 30 * h) : borne(s.energie - BAISSE.energie * h);
+  // Cacas prévus après les repas
+  const prets = e.cacasEnAttente.filter((t) => t <= maintenant);
+  const cacas = [...e.cacas];
+  // Les cacas se posent sur les côtés (pas sous la créature), sans se chevaucher
+  const places = [6, 16, 26, 68, 78, 88];
+  for (let i = 0; i < prets.length && cacas.length < 6; i++) {
+    const libres = places.filter((px) => !cacas.some((c) => Math.abs(c.x - px) < 6));
+    const x = (libres.length ? libres[Math.floor(Math.random() * libres.length)] : hasard(6, 88)) + hasard(-2, 2);
+    cacas.push({ id: idCourt(), x, y: hasard(72, 82) });
+  }
+  const quetes = e.quetes.jour === jourDe(maintenant) ? e.quetes : quetesVides();
+  return { ...e, stats: s, cacas, cacasEnAttente: e.cacasEnAttente.filter((t) => t > maintenant), quetes, maj: maintenant, dort: e.dort && s.energie < 100 };
+}
+
+function stadeDe(e: Etat): 0 | 1 | 2 {
+  return e.joursParfaits >= 6 ? 2 : e.joursParfaits >= 2 ? 1 : 0;
+}
+
+function humeurDe(e: Etat): Humeur {
+  const s = e.stats;
+  const min = Math.min(s.faim, s.proprete, s.bonheur, s.energie);
+  if (min < 25 || e.cacas.length >= 3) return "triste";
+  if (min >= 55 && e.cacas.length === 0) return "content";
+  return "normal";
+}
+
+function phraseDe(e: Etat): string {
+  const s = e.stats;
+  if (e.dort) return "Zzz… je fais de beaux rêves d'étoiles…";
+  if (s.faim < 25) return "J'ai faiiim… 🍖";
+  if (e.cacas.length >= 2) return "Beurk, ça sent pas très bon par ici… 💩";
+  if (s.proprete < 30) return "Je suis tout sale, un petit bain ? 🛁";
+  if (s.energie < 20) return "Je suis épuisé… je peux faire dodo ? 🌙";
+  if (s.bonheur < 30) return "Je m'ennuie… on joue ? ⭐";
+  const content = ["Je t'aime fort ! 💜", "Quelle belle journée galactique ✨", "On va voir Cycy en live ce soir ?", "Je me sens au top !", "Tu es le meilleur des capitaines 🚀"];
+  return content[Math.floor((Date.now() / 20000) % content.length)];
+}
+
+// ── Petits composants ───────────────────────────────────────
+
+function Jauge({ emoji, label, valeur, couleur }: { emoji: string; label: string; valeur: number; couleur: string }) {
+  const v = Math.round(valeur);
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-ink-soft mb-1">
+        <span>
+          <span aria-hidden>{emoji}</span> {label}
+        </span>
+        <span className={v < 25 ? "text-red-300 font-semibold" : ""}>{v} %</span>
+      </div>
+      <div className="h-2.5 rounded-full bg-white/10 overflow-hidden" role="meter" aria-label={label} aria-valuenow={v} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full rounded-full transition-all duration-500" style={{ width: `${v}%`, background: v < 25 ? "#ff6b8b" : couleur }} />
+      </div>
+    </div>
+  );
+}
+
+type Effet = { id: string; x: number; y: number; texte: string; type: "coeur" | "bulle" | "miam" };
+
+// ── Le jeu ──────────────────────────────────────────────────
+
+export default function Compagnon() {
+  const [etat, setEtatBrut] = useState<Etat | null>(null);
+  const [choix, setChoix] = useState<Espece>("chat");
+  const [eclosion, setEclosion] = useState(0); // 0 → 1
+  const [eclot, setEclot] = useState(false);
+  const [nomTemp, setNomTemp] = useState("");
+  const [effets, setEffets] = useState<Effet[]>([]);
+  const [message, setMessage] = useState("");
+  const [saut, setSaut] = useState(0);
+  const [jeu, setJeu] = useState<{ fin: number; attrapees: number; etoiles: { id: string; x: number; y: number; nee: number }[] } | null>(null);
+  const [envoi, setEnvoi] = useState<{ etat: "libre" | "envoi" | "erreur"; texte: string }>({ etat: "libre", texte: "" });
+  const [copie, setCopie] = useState(false);
+  const dernierCalin = useRef(0);
+  const minuteurMessage = useRef(0);
+  const partieGagnee = useRef(false);
+  const sceneRef = useRef<HTMLDivElement | null>(null);
+
+  const setEtat = useCallback((f: (e: Etat) => Etat) => {
+    setEtatBrut((cur) => {
+      if (!cur) return cur;
+      const suivant = f(vieillir(cur));
+      try {
+        localStorage.setItem(CLE, JSON.stringify(suivant));
+      } catch {
+        /* navigateur sans stockage */
+      }
+      return suivant;
+    });
+  }, []);
+
+  // Chargement + la créature vit chaque seconde
+  useEffect(() => {
+    const e = vieillir(lireEtat());
+    setEtatBrut(e);
+    if (e.espece) setChoix(e.espece);
+    const t = setInterval(() => setEtat((x) => x), 1000);
+    return () => clearInterval(t);
+  }, [setEtat]);
+
+  // L'œuf « refroidit » : il faut cliquer vite pour le faire éclore
+  useEffect(() => {
+    if (!etat?.espece || etat.neLe || eclot) return;
+    const t = setInterval(() => setEclosion((p) => Math.max(0, p - 0.008)), 100);
+    return () => clearInterval(t);
+  }, [etat?.espece, etat?.neLe, eclot]);
+
+  const effet = useCallback((texte: string, type: Effet["type"], x = hasard(35, 65), y = hasard(30, 50)) => {
+    const id = idCourt();
+    setEffets((l) => [...l.slice(-14), { id, x, y, texte, type }]);
+    setTimeout(() => setEffets((l) => l.filter((f) => f.id !== id)), 1700);
+  }, []);
+
+  const dire = useCallback((t: string) => {
+    setMessage(t);
+    window.clearTimeout(minuteurMessage.current);
+    minuteurMessage.current = window.setTimeout(() => setMessage(""), 3200);
+  }, []);
+
+  const sauter = () => setSaut((n) => n + 1);
+
+  // ── Actions ──
+  const adopter = (espece: Espece) => {
+    const e = { ...etatVide(), espece, maj: Date.now() };
+    try {
+      localStorage.setItem(CLE, JSON.stringify(e));
+    } catch {
+      /* rien */
+    }
+    setEtatBrut(e);
+    setEclosion(0);
+    setEclot(false);
+  };
+
+  const cliquerOeuf = () => {
+    if (eclot) return;
+    const n = Math.min(1, eclosion + 0.055);
+    setEclosion(n);
+    if (n >= 1) {
+      setEclot(true);
+      setNomTemp(etat?.espece ? especeInfo(etat.espece).nomParDefaut : "");
+    }
+  };
+
+  const nommer = (e: React.FormEvent) => {
+    e.preventDefault();
+    const nom = nomTemp.trim().slice(0, 18) || (etat?.espece ? especeInfo(etat.espece).nomParDefaut : "Bébé");
+    setEtat((x) => ({ ...x, nom, neLe: Date.now(), maj: Date.now() }));
+    setEclot(false);
+    dire(`Bonjour ! Je m'appelle ${nom} 💜`);
+  };
+
+  const compter = (q: Quetes, key: keyof Omit<Quetes, "jour" | "recompense">) => ({ ...q, [key]: q[key] + 1 });
+
+  const nourrir = () => {
+    if (!etat) return;
+    if (etat.dort) return dire("Chut… il dort 🌙");
+    if (etat.stats.faim >= 97) return dire("Il est rassasié, reviens un peu plus tard !");
+    setEtat((x) => ({
+      ...x,
+      stats: { ...x.stats, faim: borne(x.stats.faim + 18), bonheur: borne(x.stats.bonheur + 3) },
+      cacasEnAttente: [...x.cacasEnAttente, Date.now() + hasard(12, 25) * 1000],
+      quetes: compter(x.quetes, "repas"),
+    }));
+    effet(["🍖", "🍩", "🌮", "🍓", "🍬"][Math.floor(Math.random() * 5)], "miam");
+    sauter();
+    dire("Miam, délicieux !");
+  };
+
+  const laver = () => {
+    if (!etat) return;
+    if (etat.dort) return dire("Chut… il dort 🌙");
+    if (etat.stats.proprete >= 97) return dire("Il est déjà tout propre ✨");
+    setEtat((x) => ({ ...x, stats: { ...x.stats, proprete: 100, bonheur: borne(x.stats.bonheur + 4) }, quetes: compter(x.quetes, "bains") }));
+    for (let i = 0; i < 9; i++) setTimeout(() => effet("🫧", "bulle", hasard(28, 72), hasard(30, 65)), i * 120);
+    dire("Splash ! Tout propre 🛁");
+  };
+
+  const nettoyer = (id: string) => {
+    setEtat((x) => (x.cacas.some((c) => c.id === id) ? { ...x, cacas: x.cacas.filter((c) => c.id !== id), stats: { ...x.stats, proprete: borne(x.stats.proprete + 5) }, quetes: compter(x.quetes, "cacas") } : x));
+    effet("✨", "bulle");
+  };
+
+  const caresser = (ev: React.PointerEvent) => {
+    if (!etat || !sceneRef.current) return;
+    const now = Date.now();
+    if (now - dernierCalin.current < 280) return;
+    dernierCalin.current = now;
+    const r = sceneRef.current.getBoundingClientRect();
+    if (etat.dort) {
+      effet("💤", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
+      return;
+    }
+    setEtat((x) => ({ ...x, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 2) }, quetes: compter(x.quetes, "calins") }));
+    effet("💜", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
+  };
+
+  const jouer = () => {
+    if (!etat || jeu) return;
+    if (etat.dort) return dire("Chut… il dort 🌙");
+    if (etat.stats.energie < 15) return dire("Il est trop fatigué pour jouer… mets-le au lit 🌙");
+    partieGagnee.current = false;
+    setJeu({ fin: Date.now() + 9000, attrapees: 0, etoiles: [] });
+    dire("Attrape 5 étoiles avant qu'elles disparaissent ! ⭐");
+  };
+
+  // Mini-jeu : des étoiles apparaissent, il faut en attraper 5
+  useEffect(() => {
+    if (!jeu) return;
+    const t = setInterval(() => {
+      setJeu((j) => {
+        if (!j) return j;
+        const now = Date.now();
+        if (now >= j.fin) return null;
+        const vivantes = j.etoiles.filter((s) => now - s.nee < 2400);
+        if (vivantes.length < 3 && Math.random() < 0.7) vivantes.push({ id: idCourt(), x: hasard(10, 85), y: hasard(12, 62), nee: now });
+        return { ...j, etoiles: vivantes };
+      });
+    }, 350);
+    return () => clearInterval(t);
+  }, [jeu !== null]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (jeu && Date.now() >= jeu.fin) setJeu(null);
+  }, [jeu]);
+
+  const attraper = (id: string) => {
+    setJeu((j) => {
+      if (!j) return j;
+      const attrapees = j.attrapees + 1;
+      if (attrapees >= 5) {
+        partieGagnee.current = true;
+        setEtat((x) => ({ ...x, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 15), energie: borne(x.stats.energie - 8) }, quetes: compter(x.quetes, "jeux") }));
+        sauter();
+        dire("Bravo ! On s'est bien amusés 🎉");
+        return null;
+      }
+      return { ...j, attrapees, etoiles: j.etoiles.filter((s) => s.id !== id) };
+    });
+  };
+
+  // Partie de jeu ratée (temps écoulé)
+  const jeuEnCours = jeu !== null;
+  const prec = useRef(false);
+  useEffect(() => {
+    if (prec.current && !jeuEnCours && !partieGagnee.current) dire("Raté, les étoiles sont parties… on réessaie ? ⭐");
+    prec.current = jeuEnCours;
+  }, [jeuEnCours, dire]);
+
+  const dormir = () => {
+    if (!etat) return;
+    setEtat((x) => ({ ...x, dort: !x.dort }));
+    dire(etat.dort ? "Debout ! Bien dormi ? ☀️" : "Bonne nuit… 🌙");
+  };
+
+  const toutFait = etat ? OBJECTIFS.every((o) => etat.quetes[o.key] >= o.but) : false;
+
+  // Journée parfaite : la créature grandit
+  useEffect(() => {
+    if (!etat || !toutFait || etat.dernierJourParfait === etat.quetes.jour) return;
+    setEtat((x) => ({ ...x, joursParfaits: x.joursParfaits + 1, dernierJourParfait: x.quetes.jour }));
+  }, [toutFait, etat, setEtat]);
+
+  const recuperer = async () => {
+    setEnvoi({ etat: "envoi", texte: "" });
+    try {
+      const r = await fetch(`${BOT}/api/pet`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quests: OBJECTIFS.length }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.ok) throw new Error(d.error || "Récompense indisponible pour le moment.");
+      setEtat((x) => ({ ...x, quetes: { ...x.quetes, recompense: { code: d.code, prize: d.prize } } }));
+      setEnvoi({ etat: "libre", texte: "" });
+    } catch (e) {
+      setEnvoi({ etat: "erreur", texte: e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Impossible de joindre CycyBot pour le moment. Réessaie dans un instant." });
+    }
+  };
+
+  const changer = () => {
+    if (!confirm("Adopter une autre créature ? Ton compagnon actuel partira explorer la galaxie (il ne reviendra pas).")) return;
+    try {
+      localStorage.removeItem(CLE);
+    } catch {
+      /* rien */
+    }
+    setEtatBrut(etatVide());
+    setEclosion(0);
+    setEclot(false);
+  };
+
+  const humeur = useMemo(() => (etat ? humeurDe(etat) : "normal"), [etat]);
+
+  if (!etat) return <p className="text-ink-soft">Chargement de ton compagnon…</p>;
+
+  // ── 1. Choix de la créature ──
+  if (!etat.espece) {
+    return (
+      <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8">
+        <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-2 text-center">Choisis ton compagnon galactique</h2>
+        <p className="text-ink-soft text-center max-w-2xl mx-auto mb-8">
+          Il naîtra d&apos;un œuf. Nourris-le, lave-le, câline-le et joue avec lui chaque jour : quand toutes ses quêtes du jour sont faites, tu gagnes
+          une récompense sur le Discord !
+        </p>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          {ESPECES.map((e) => (
+            <button
+              key={e.key}
+              type="button"
+              onClick={() => setChoix(e.key)}
+              aria-pressed={choix === e.key}
+              className={`rounded-2xl p-4 text-center border transition-all ${
+                choix === e.key ? "border-violet bg-violet/15 shadow-glow-sm" : "border-violet/15 bg-white/[0.03] hover:border-violet/40"
+              }`}
+            >
+              <div className="flex justify-center cp-flotte">
+                <Creature espece={e.key} humeur="content" stade={0} taille={130} />
+              </div>
+              <p className="font-semibold text-ink mt-1">{e.nom}</p>
+              <p className="text-xs text-ink-soft mt-1">{e.description}</p>
+            </button>
+          ))}
+        </div>
+        <div className="text-center mt-8">
+          <button
+            type="button"
+            onClick={() => adopter(choix)}
+            className="rounded-full px-8 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all"
+          >
+            🥚 Adopter {especeInfo(choix).nom}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const info = especeInfo(etat.espece);
+
+  // ── 2. L'œuf ──
+  if (!etat.neLe) {
+    return (
+      <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8 text-center">
+        {!eclot ? (
+          <>
+            <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-2">Ton œuf de {info.nom.toLowerCase()} va éclore !</h2>
+            <p className="text-ink-soft mb-6">Clique très vite dessus (ou tapote avec ton doigt) pour le réchauffer. S&apos;il refroidit, il faut recommencer !</p>
+            <button
+              type="button"
+              onClick={cliquerOeuf}
+              className="mx-auto block select-none touch-manipulation focus:outline-none"
+              aria-label="Cliquer sur l'œuf"
+              style={{ ["--vitesse" as string]: `${Math.max(0.15, 1.2 - eclosion * 1.1)}s` } as React.CSSProperties}
+            >
+              <span className={eclosion > 0.02 ? "inline-block cp-oeuf" : "inline-block"}>
+                <Oeuf espece={etat.espece} progres={eclosion} taille={210} />
+              </span>
+            </button>
+            <div className="max-w-sm mx-auto mt-5">
+              <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-full rounded-full transition-all" style={{ width: `${eclosion * 100}%`, background: `linear-gradient(90deg, ${info.couleur}, #ffd66b)` }} />
+              </div>
+              <p className="text-xs text-ink-soft mt-2">{eclosion < 0.05 ? "Clique sur l'œuf !" : eclosion < 0.5 ? "Continue, il bouge !" : eclosion < 0.85 ? "Plus vite, il craque !" : "Encore un peu !!!"}</p>
+            </div>
+          </>
+        ) : (
+          <form onSubmit={nommer} className="max-w-md mx-auto">
+            <div className="relative flex justify-center">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <span
+                  key={i}
+                  aria-hidden
+                  className="absolute left-1/2 top-1/2 text-2xl cp-eclat"
+                  style={{ ["--dx" as string]: `${Math.cos(i * 0.63) * 140}px`, ["--dy" as string]: `${Math.sin(i * 0.63) * 110 - 40}px`, ["--rot" as string]: `${i * 50}deg` } as React.CSSProperties}
+                >
+                  {i % 2 ? "✨" : "🥚"}
+                </span>
+              ))}
+              <div className="cp-saut">
+                <Creature espece={etat.espece} humeur="content" stade={0} taille={200} />
+              </div>
+            </div>
+            <h2 className="text-2xl font-semibold text-ink mt-2 mb-1">C&apos;est un {info.nom.toLowerCase()} !</h2>
+            <p className="text-ink-soft mb-4">Comment veux-tu l&apos;appeler ?</p>
+            <div className="flex gap-2">
+              <input
+                value={nomTemp}
+                onChange={(e) => setNomTemp(e.target.value)}
+                maxLength={18}
+                autoFocus
+                aria-label="Nom de ton compagnon"
+                className="flex-1 rounded-full bg-card border border-violet/25 px-4 py-2.5 text-ink outline-none focus:border-violet/60"
+              />
+              <button type="submit" className="rounded-full px-5 py-2.5 bg-violet text-ink font-semibold hover:bg-violet-light">
+                C&apos;est parti !
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    );
+  }
+
+  // ── 3. La vie de la créature ──
+  const q = etat.quetes;
+  const faites = OBJECTIFS.filter((o) => q[o.key] >= o.but).length;
+  const stade = stadeDe(etat);
+  const stadeNom = ["Bébé", "Enfant", "Adulte"][stade];
+  const prochainStade = stade === 0 ? 2 : stade === 1 ? 6 : 0;
+  const recompense = q.recompense;
+
+  const bouton = (emoji: string, label: string, action: () => void, actif = true) => (
+    <button
+      type="button"
+      onClick={action}
+      disabled={!actif}
+      className="flex flex-col items-center gap-1 rounded-2xl border border-violet/20 bg-white/[0.04] px-3 py-3 text-sm text-ink hover:bg-violet/15 hover:border-violet/50 transition-all disabled:opacity-40"
+    >
+      <span className="text-2xl" aria-hidden>
+        {emoji}
+      </span>
+      {label}
+    </button>
+  );
+
+  return (
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+      <div className="carte-holo rounded-3xl border border-violet/20 p-4 md:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
+          <h2 className="text-xl md:text-2xl font-semibold text-ink">
+            {etat.nom} <span className="text-sm font-normal text-ink-soft">· {info.nom} · {stadeNom}</span>
+          </h2>
+          <button type="button" onClick={changer} className="text-xs text-ink-soft/60 hover:text-ink-soft underline">
+            Adopter une autre créature
+          </button>
+        </div>
+
+        {/* La scène */}
+        <div
+          ref={sceneRef}
+          className="relative h-[340px] md:h-[400px] rounded-2xl overflow-hidden select-none"
+          style={{
+            background: etat.dort
+              ? "radial-gradient(ellipse at 50% 120%, #1b1240 0%, #07040f 70%)"
+              : "radial-gradient(ellipse at 50% 120%, #4b2a8f 0%, #1a0f38 55%, #0b0817 100%)",
+          }}
+        >
+          {/* étoiles du décor */}
+          {Array.from({ length: 26 }).map((_, i) => (
+            <span key={i} aria-hidden className="absolute rounded-full bg-white" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 60}%`, width: 2, height: 2, opacity: 0.35 + ((i * 7) % 5) / 10 }} />
+          ))}
+          <div aria-hidden className="absolute -right-10 -top-10 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle at 35% 35%, #ffe7b0, #ff9f5a 60%, transparent 70%)", opacity: etat.dort ? 0.15 : 0.5 }} />
+          {/* sol */}
+          <div aria-hidden className="absolute left-[-10%] right-[-10%] bottom-[-60px] h-[150px] rounded-[50%]" style={{ background: "linear-gradient(#5b3aa8, #2a1857)" }} />
+
+          {/* bulle de dialogue */}
+          <div className="absolute left-1/2 top-4 -translate-x-1/2 max-w-[85%] rounded-2xl bg-white/90 px-4 py-2 text-sm text-[#2a1552] font-medium text-center shadow-lg">
+            {message || phraseDe(etat)}
+          </div>
+
+          {/* la créature : caresse-la ! */}
+          <div className="absolute left-1/2 bottom-[46px] -translate-x-1/2 cursor-pointer" onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
+            <div key={saut} className={saut ? "cp-saut" : ""}>
+              <div className={etat.dort ? "" : "cp-flotte"}>
+                <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} />
+              </div>
+            </div>
+            {etat.dort && (
+              <span aria-hidden className="absolute right-6 top-6 text-2xl text-lilac cp-zzz">
+                Z
+              </span>
+            )}
+          </div>
+
+          {/* cacas */}
+          {etat.cacas.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => nettoyer(c.id)}
+              className="absolute text-3xl hover:scale-125 transition-transform"
+              style={{ left: `${c.x}%`, top: `${c.y}%` }}
+              aria-label="Nettoyer ce caca"
+            >
+              💩
+            </button>
+          ))}
+
+          {/* mini-jeu : étoiles */}
+          {jeu &&
+            jeu.etoiles.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => attraper(s.id)}
+                className="absolute text-4xl cp-etoile"
+                style={{ left: `${s.x}%`, top: `${s.y}%`, filter: "drop-shadow(0 0 10px #ffd66b)" }}
+                aria-label="Attraper l'étoile"
+              >
+                ⭐
+              </button>
+            ))}
+          {jeu && (
+            <div className="absolute right-3 bottom-3 rounded-full bg-black/40 px-3 py-1 text-xs text-ink">
+              ⭐ {jeu.attrapees}/5 · {Math.max(0, Math.ceil((jeu.fin - Date.now()) / 1000))} s
+            </div>
+          )}
+
+          {/* effets */}
+          {effets.map((f) => (
+            <span
+              key={f.id}
+              aria-hidden
+              className={`absolute pointer-events-none text-2xl ${f.type === "bulle" ? "cp-bulle" : "cp-monte"}`}
+              style={{ left: `${f.x}%`, top: `${f.y}%` }}
+            >
+              {f.texte}
+            </span>
+          ))}
+          {etat.dort && <div aria-hidden className="absolute inset-0 bg-[#05020d]/40 pointer-events-none" />}
+        </div>
+
+        {/* jauges */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+          <Jauge emoji="🍖" label="Ventre" valeur={etat.stats.faim} couleur="#ffb15c" />
+          <Jauge emoji="🛁" label="Propreté" valeur={etat.stats.proprete} couleur="#7ec8ff" />
+          <Jauge emoji="💜" label="Bonheur" valeur={etat.stats.bonheur} couleur="#f472b6" />
+          <Jauge emoji="⚡" label="Énergie" valeur={etat.stats.energie} couleur="#7ee2a8" />
+        </div>
+
+        {/* actions */}
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mt-4">
+          {bouton("🍖", "Nourrir", nourrir, !etat.dort)}
+          {bouton("🛁", "Laver", laver, !etat.dort)}
+          {bouton("⭐", "Jouer", jouer, !etat.dort && !jeu)}
+          {bouton(etat.dort ? "☀️" : "🌙", etat.dort ? "Réveiller" : "Dormir", dormir)}
+          <div className="col-span-3 md:col-span-1 flex items-center justify-center rounded-2xl border border-dashed border-violet/20 px-3 py-3 text-xs text-ink-soft text-center">
+            💜 Clique sur {etat.nom} pour le caresser · 💩 clique sur ses cacas pour les nettoyer
+          </div>
+        </div>
+      </div>
+
+      {/* Quêtes du jour */}
+      <aside className="carte-holo rounded-2xl border border-violet/12 p-5">
+        <h2 className="text-lg font-semibold text-ink mb-1">Quêtes du jour</h2>
+        <p className="text-xs text-ink-soft/60 mb-4">
+          {faites}/{OBJECTIFS.length} faites · elles se renouvellent à minuit
+        </p>
+        <ul className="space-y-3 mb-5">
+          {OBJECTIFS.map((o) => {
+            const v = Math.min(o.but, q[o.key]);
+            const ok = v >= o.but;
+            return (
+              <li key={o.key}>
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className={ok ? "text-ink-soft line-through" : "text-ink"}>
+                    <span aria-hidden>{ok ? "✅" : o.emoji}</span> {o.label}
+                  </span>
+                  <span className="text-xs text-ink-soft tabular-nums">
+                    {v}/{o.but}
+                  </span>
+                </div>
+                <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${(v / o.but) * 100}%`, background: ok ? "#7ee2a8" : info.couleur }} />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+
+        {!toutFait ? (
+          <p className="text-sm text-ink-soft rounded-xl bg-white/[0.04] px-4 py-3">
+            🎁 Termine les {OBJECTIFS.length} quêtes pour débloquer ta récompense du jour sur le Discord (points, Éclats, booster…).
+          </p>
+        ) : recompense ? (
+          <div className="rounded-2xl border border-violet/30 bg-violet/10 p-4">
+            <p className="text-ink font-semibold mb-1">
+              {recompense.prize.emoji} {recompense.prize.label}
+            </p>
+            <p className="text-xs text-ink-soft mb-3">{recompense.prize.rarityLabel} · à récupérer sur le Discord</p>
+            <ol className="text-xs text-ink-soft space-y-1 list-decimal list-inside mb-3">
+              <li>Copie ton code avec le bouton « Copier le code ».</li>
+              <li>
+                Dans le salon <strong className="text-ink">CycyBot</strong>, tape <code className="text-lilac">/compagnon</code>.
+              </li>
+              <li>Colle uniquement le code dans la case « code », puis valide.</li>
+            </ol>
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="select-all rounded-xl bg-void/70 border border-violet/30 px-3 py-2 font-mono text-lilac tracking-wider">{recompense.code}</code>
+              <button
+                type="button"
+                onClick={() =>
+                  navigator.clipboard
+                    ?.writeText(recompense.code)
+                    .then(() => {
+                      setCopie(true);
+                      setTimeout(() => setCopie(false), 2000);
+                    })
+                    .catch(() => {})
+                }
+                className="rounded-full px-4 py-2 bg-violet/20 border border-violet/40 text-ink text-xs font-medium hover:bg-violet/30"
+              >
+                {copie ? "Code copié ✓" : "Copier le code"}
+              </button>
+              <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="rounded-full px-4 py-2 bg-violet text-ink text-xs font-medium hover:bg-violet-light">
+                Ouvrir Discord
+              </a>
+            </div>
+            <p className="text-[11px] text-ink-soft/50 mt-2">Code valable 48 h · une récompense par jour</p>
+          </div>
+        ) : (
+          <div>
+            <button
+              type="button"
+              onClick={recuperer}
+              disabled={envoi.etat === "envoi"}
+              className="w-full rounded-full px-5 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
+            >
+              {envoi.etat === "envoi" ? "Ouverture du coffre…" : "🎁 Récupérer ma récompense"}
+            </button>
+            {envoi.etat === "erreur" && <p className="text-sm text-red-300 mt-2">{envoi.texte}</p>}
+          </div>
+        )}
+
+        <div className="mt-5 pt-4 border-t border-violet/10 text-xs text-ink-soft space-y-1">
+          <p>
+            🌱 {etat.nom} est <strong className="text-ink">{stadeNom.toLowerCase()}</strong>
+            {prochainStade ? ` · il grandit après ${prochainStade} journées parfaites (${etat.joursParfaits}/${prochainStade})` : " · il a atteint sa taille adulte 🌟"}
+          </p>
+          <p>⏳ Ses jauges baissent même quand tu n&apos;es pas là : reviens le voir chaque jour !</p>
+        </div>
+      </aside>
+    </div>
+  );
+}

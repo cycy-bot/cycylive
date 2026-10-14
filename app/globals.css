@@ -114,3 +114,28 @@ h1, h2, h3 {
     transition-duration: 0.001ms !important;
   }
 }
+
+/* ── Compagnon (jeux du site) ─────────────────────────────── */
+@keyframes cp-flotte { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+@keyframes cp-saut { 0%, 100% { transform: translateY(0) scale(1, 1); } 30% { transform: translateY(-22px) scale(0.96, 1.04); } 60% { transform: translateY(0) scale(1.05, 0.95); } }
+@keyframes cp-cligne { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+@keyframes cp-oeuf { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-6deg); } 75% { transform: rotate(6deg); } }
+@keyframes cp-monte { 0% { opacity: 0; transform: translateY(0) scale(0.6); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-70px) scale(1.15); } }
+@keyframes cp-bulle { 0% { opacity: 0; transform: translateY(10px) scale(0.5); } 30% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-60px) scale(1.2); } }
+@keyframes cp-zzz { 0% { opacity: 0; transform: translate(0, 0) scale(0.6); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(26px, -46px) scale(1.2); } }
+@keyframes cp-tentacule { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+@keyframes cp-etoile { 0% { opacity: 0; transform: scale(0.3) rotate(0deg); } 15% { opacity: 1; transform: scale(1) rotate(20deg); } 85% { opacity: 1; } 100% { opacity: 0; transform: scale(0.6) rotate(60deg); } }
+@keyframes cp-eclat { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); } }
+.cp-flotte { animation: cp-flotte 3s ease-in-out infinite; }
+.cp-saut { animation: cp-saut 0.6s ease-out; }
+.cp-yeux { animation: cp-cligne 4.5s infinite; transform-box: fill-box; transform-origin: center; }
+.cp-oeuf { animation: cp-oeuf var(--vitesse, 1.2s) ease-in-out infinite; transform-origin: 50% 85%; }
+.cp-monte { animation: cp-monte 1.2s ease-out forwards; }
+.cp-bulle { animation: cp-bulle 1.6s ease-out forwards; }
+.cp-zzz { animation: cp-zzz 2.4s ease-out infinite; }
+.cp-tentacule { animation: cp-tentacule 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: top center; }
+.cp-etoile { animation: cp-etoile 2.6s ease-in-out forwards; }
+.cp-eclat { animation: cp-eclat 0.9s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .cp-etoile, .cp-monte, .cp-bulle, .cp-zzz, .cp-eclat { animation: none !important; }
+}
