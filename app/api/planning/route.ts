@@ -7,6 +7,7 @@
 //        passe simple (variable d'environnement ADMIN_PASSWORD).
 
 import { NextRequest, NextResponse } from "next/server";
+import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lirePlanning, ecrirePlanning } from "@/lib/planningStore";
 import { JourPlanning } from "@/data/planning";
 
@@ -39,12 +40,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (body.motDePasse !== motDePasseAttendu) {
-    return NextResponse.json(
-      { ok: false, erreur: "Mot de passe incorrect." },
-      { status: 401 }
-    );
-  }
+  const verif = await verifierMotDePasse(request, body.motDePasse, motDePasseAttendu);
+  if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
   const planning = body.planning as JourPlanning[] | undefined;
   if (!Array.isArray(planning) || planning.length !== 7) {

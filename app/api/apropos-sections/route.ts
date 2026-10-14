@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lireSectionsAPropos, ecrireSectionsAPropos } from "@/lib/aproposSectionsStore";
 import { SectionAPropos } from "@/data/aproposSections";
 
@@ -24,9 +25,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, erreur: "Requête invalide." }, { status: 400 });
   }
 
-  if (body.motDePasse !== motDePasseAttendu) {
-    return NextResponse.json({ ok: false, erreur: "Mot de passe incorrect." }, { status: 401 });
-  }
+  const verif = await verifierMotDePasse(request, body.motDePasse, motDePasseAttendu);
+  if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
   const sections = body.sections as SectionAPropos[] | undefined;
   if (!Array.isArray(sections)) {

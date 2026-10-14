@@ -1,5 +1,6 @@
 // Administration de la borne d'arcade (protégée par ADMIN_PASSWORD).
 import { NextRequest, NextResponse } from "next/server";
+import { verifierMotDePasse } from "@/lib/adminAuth";
 import { classementAdmin, supprimerPseudo, reinitialiserClassement } from "@/lib/arcadeStore";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,8 @@ export async function POST(request: NextRequest) {
   if (!attendu) return NextResponse.json({ ok: false, erreur: "ADMIN_PASSWORD n'est pas configuré sur le serveur." }, { status: 500 });
   const body = await request.json().catch(() => null);
   if (!body || typeof body.motDePasse !== "string") return NextResponse.json({ ok: false, erreur: "Requête invalide." }, { status: 400 });
-  if (body.motDePasse !== attendu) return NextResponse.json({ ok: false, erreur: "Mot de passe incorrect." }, { status: 401 });
+  const verif = await verifierMotDePasse(request, body.motDePasse, attendu);
+  if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
   try {
     if (body.action === "supprimer") {

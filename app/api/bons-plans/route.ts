@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lienValide } from "@/lib/imagesStore";
 import { lireBonsPlans, ecrireBonsPlans } from "@/lib/partnersStore";
 import { BonPlan } from "@/data/deals";
@@ -23,9 +24,8 @@ export async function POST(request: NextRequest) {
   if (!body || typeof body.motDePasse !== "string") {
     return NextResponse.json({ ok: false, erreur: "Requête invalide." }, { status: 400 });
   }
-  if (body.motDePasse !== motDePasseAttendu) {
-    return NextResponse.json({ ok: false, erreur: "Mot de passe incorrect." }, { status: 401 });
-  }
+  const verif = await verifierMotDePasse(request, body.motDePasse, motDePasseAttendu);
+  if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
   const bonsPlans = body.bonsPlans as BonPlan[] | undefined;
   if (!Array.isArray(bonsPlans)) {

@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { urlAutorisationTwitch } from "@/lib/twitchOAuth";
 
@@ -16,7 +17,9 @@ export async function GET(request: NextRequest) {
   const origin = obtenirOrigine(request);
   const redirectUri = `${origin}/api/twitch-callback`;
 
-  const url = urlAutorisationTwitch(redirectUri);
+  // Jeton anti-falsification : vérifié au retour de Twitch (cookie de 10 min)
+  const state = crypto.randomBytes(16).toString("hex");
+  const url = urlAutorisationTwitch(redirectUri, state);
   if (!url) {
     return NextResponse.json(
       { erreur: "TWITCH_CLIENT_ID n'est pas configuré." },
@@ -24,5 +27,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.redirect(url);
+  const reponse = NextResponse.redirect(url);
+  reponse.cookies.set("cycylive_twitch_state", state, { httpOnly: true, secure: true, sameSite: "lax", path: "/api/twitch-callback", maxAge: 600 });
+  return reponse;
 }

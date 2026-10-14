@@ -28,7 +28,7 @@ function obtenirClient(): Redis | null {
   return Redis.fromEnv();
 }
 
-export function urlAutorisationTwitch(redirectUri: string): string | null {
+export function urlAutorisationTwitch(redirectUri: string, state = ""): string | null {
   const clientId = process.env.TWITCH_CLIENT_ID;
   if (!clientId) return null;
 
@@ -37,6 +37,7 @@ export function urlAutorisationTwitch(redirectUri: string): string | null {
     redirect_uri: redirectUri,
     response_type: "code",
     scope: "moderator:read:followers",
+    ...(state ? { state } : {}),
   });
 
   return `https://id.twitch.tv/oauth2/authorize?${params.toString()}`;

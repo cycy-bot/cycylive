@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lireContenus, ecrireContenus } from "@/lib/contenusStore";
 import { Contenu } from "@/data/contenus";
 
@@ -31,12 +32,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (body.motDePasse !== motDePasseAttendu) {
-    return NextResponse.json(
-      { ok: false, erreur: "Mot de passe incorrect." },
-      { status: 401 }
-    );
-  }
+  const verif = await verifierMotDePasse(request, body.motDePasse, motDePasseAttendu);
+  if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
   const contenus = body.contenus as Contenu[] | undefined;
   if (!Array.isArray(contenus)) {

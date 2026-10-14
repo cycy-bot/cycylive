@@ -14,18 +14,17 @@ export async function GET(request: NextRequest) {
   const code = url.searchParams.get("code");
   const origin = obtenirOrigine(request);
 
-  if (!code) {
+  const state = url.searchParams.get("state");
+  const attendu = request.cookies.get("cycylive_twitch_state")?.value;
+  if (!code || !state || !attendu || state !== attendu) {
     return NextResponse.redirect(`${origin}/admin?twitch=erreur`);
   }
 
   const redirectUri = `${origin}/api/twitch-callback`;
   const resultat = await echangerCodeContreToken(code, redirectUri);
 
-  if (resultat.ok) {
-    return NextResponse.redirect(`${origin}/admin?twitch=connecte`);
-  }
-
-  // Détail temporaire dans l'URL pour diagnostiquer facilement (à retirer une fois résolu).
-  const detail = encodeURIComponent(resultat.erreur ?? "erreur inconnue");
-  return NextResponse.redirect(`${origin}/admin?twitch=erreur&detail=${detail}`);
+  const reponse = NextResponse.redirect(`${origin}/admin?twitch=${resultat.ok ? "connecte" : "erreur"}`);
+  reponse.cookies.set("cycylive_twitch_state", "", { path: "/api/twitch-callback", maxAge: 0 });
+  if (!resultat.ok) console.error("Connexion Twitch :", resultat.erreur ?? "erreur inconnue");
+  return reponse;
 }

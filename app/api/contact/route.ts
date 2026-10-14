@@ -15,6 +15,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { liens } from "@/data/liens";
+import { limiteIp } from "@/lib/arcadeStore";
+import { ipDe } from "@/lib/adminAuth";
 
 const CATEGORIES = [
   "Partenariat",
@@ -35,6 +37,15 @@ export async function POST(request: NextRequest) {
   // Honeypot : un vrai visiteur ne remplit jamais ce champ (invisible pour lui).
   if (site) {
     return NextResponse.json({ ok: true });
+  }
+
+  // Anti-spam : 5 messages par heure et par adresse
+  if (!(await limiteIp(ipDe(request), "contact", 5))) {
+    return NextResponse.json({ ok: false, erreur: "Tu as déjà envoyé plusieurs messages : réessaie dans une heure." }, { status: 429 });
+  }
+
+  if (typeof nom !== "string" || typeof email !== "string" || typeof sujet !== "string" || typeof message !== "string" || nom.length > 120 || email.length > 200 || sujet.length > 200 || message.length > 5000) {
+    return NextResponse.json({ ok: false, erreur: "Message trop long ou invalide." }, { status: 400 });
   }
 
   if (!nom || !email || !sujet || !message) {
@@ -84,7 +95,7 @@ export async function POST(request: NextRequest) {
         from,
         to: liens.mailPro,
         reply_to: email,
-        subject: `[Cycylive — ${categorie}] ${sujet}`,
+        subject: `[Cycylive — ${categorie}] ${sujet.replace(/[\r\n]+/g, " ")}`,
         html: `
           <p><strong>Nom :</strong> ${escapeHtml(nom)}</p>
           <p><strong>Email :</strong> ${escapeHtml(email)}</p>
@@ -117,5 +128,6 @@ function escapeHtml(texte: string): string {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
