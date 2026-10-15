@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { apiMembre, lireJeton } from "@/lib/compteMembre";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 
 // ============================================================
@@ -205,6 +206,17 @@ export default function Compagnon() {
     const t = setInterval(() => setEtat((x) => x), 1000);
     return () => clearInterval(t);
   }, [setEtat]);
+
+  // Membre connecté sur le site : on recopie son compagnon sur son profil public (/membres/…)
+  const signature = etat?.espece && etat.neLe ? JSON.stringify([etat.espece, etat.nom, stadeDe(etat), etat.tenue]) : "";
+  useEffect(() => {
+    if (!signature || !lireJeton()) return;
+    const t = setTimeout(() => {
+      const [espece, nom, stade, tenue] = JSON.parse(signature);
+      apiMembre("/api/membre/compagnon", { method: "POST", body: JSON.stringify({ espece, nom, stade, tenue }) }).catch(() => {});
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [signature]);
 
   // L'œuf « refroidit » : il faut cliquer vite pour le faire éclore
   useEffect(() => {

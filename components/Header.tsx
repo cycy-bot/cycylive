@@ -23,6 +23,15 @@ const navItems: (LienNav | GroupeNav)[] = [
   },
   {
     type: "groupe",
+    label: "Communauté",
+    items: [
+      { label: "Les Cycylien·nes", href: "/membres" },
+      { label: "Mon profil", href: "/profil" },
+      { label: "Le Musée Cycylive", href: "/musee" },
+    ],
+  },
+  {
+    type: "groupe",
     label: "Gaming",
     items: [
       { label: "Valorant", href: "/gaming#valorant" },
@@ -127,7 +136,7 @@ export default function Header() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7 text-sm text-ink-soft">
+        <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-sm text-ink-soft">
           {navItems.map((item) =>
             item.type === "lien" ? (
               <Link key={item.href} href={item.href} className="hover:text-ink transition-colors">
@@ -168,12 +177,12 @@ export default function Header() {
           )}
         </nav>
 
-        <CTATwitch enLigne={enLigne} className="hidden md:inline-flex" />
+        <CTATwitch enLigne={enLigne} className="hidden lg:inline-flex" />
 
         <button
           aria-label="Ouvrir le menu"
           onClick={() => setOuvert(!ouvert)}
-          className="md:hidden text-ink p-2"
+          className="lg:hidden text-ink p-2"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -182,7 +191,7 @@ export default function Header() {
       </div>
 
       {ouvert && (
-        <nav className="md:hidden border-t border-violet/10 bg-void/95 px-5 py-4 flex flex-col gap-1 text-ink-soft">
+        <nav className="lg:hidden border-t border-violet/10 bg-void/95 px-5 py-4 flex flex-col gap-1 text-ink-soft">
           {navItems.map((item) =>
             item.type === "lien" ? (
               <Link
