@@ -19,6 +19,7 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "À propos", href: "/a-propos" },
       { label: "Réseaux", href: "/reseaux" },
       { label: "Statistiques", href: "/statistiques" },
+      { label: "Calendrier", href: "/calendrier" },
     ],
   },
   {
