@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 
 // ============================================================
@@ -39,6 +40,9 @@ type Etat = {
   bonbons: number;
   possedes: string[];
   tenue: Tenue;
+  // Habitat : décorations achetées et installées dans la chambre
+  decos: string[];
+  habitat: Habitat;
   gains: { jour: string; calins: number; visite: boolean };
 };
 
@@ -75,7 +79,7 @@ function etatVide(): Etat {
   return {
     espece: null, nom: "", neLe: 0, stats: { faim: 40, proprete: 60, bonheur: 50, energie: 80 }, maj: Date.now(),
     cacas: [], cacasEnAttente: [], dort: false, quetes: quetesVides(), joursParfaits: 0, dernierJourParfait: "",
-    bonbons: 0, possedes: [], tenue: {}, gains: { jour: "", calins: 0, visite: false },
+    bonbons: 0, possedes: [], tenue: {}, decos: [], habitat: {}, gains: { jour: "", calins: 0, visite: false },
   };
 }
 
@@ -86,6 +90,8 @@ function lireEtat(): Etat {
     const e = { ...etatVide(), ...JSON.parse(brut) } as Etat;
     e.possedes = Array.isArray(e.possedes) ? e.possedes.filter((k) => ACCESSOIRES.some((a) => a.key === k)) : [];
     e.tenue = e.tenue && typeof e.tenue === "object" ? e.tenue : {};
+    e.decos = Array.isArray(e.decos) ? e.decos.filter((k) => DECOS.some((d) => d.key === k)) : [];
+    e.habitat = e.habitat && typeof e.habitat === "object" ? Object.fromEntries(Object.entries(e.habitat).filter(([, k]) => e.decos.includes(String(k)))) : {};
     e.gains = e.gains && typeof e.gains === "object" ? e.gains : { jour: "", calins: 0, visite: false };
     e.bonbons = Number(e.bonbons) || 0;
     if (!ESPECES.some((x) => x.key === e.espece)) e.espece = null;
@@ -393,6 +399,27 @@ export default function Compagnon() {
     sauter();
     dire(`Trop stylé ! Merci pour ${a.nom.toLowerCase()} 💜`);
   };
+  const [boutique, setBoutique] = useState<"accessoires" | "habitat">("accessoires");
+  const [rayonDeco, setRayonDeco] = useState<EmplacementDeco>("fond");
+  const acheterDeco = (k: string) => {
+    const d = DECOS.find((x) => x.key === k);
+    if (!d || !etat || etat.decos.includes(k)) return;
+    if ((etat.bonbons || 0) < d.prix) return dire(`Il te manque ${d.prix - (etat.bonbons || 0)} 🍬 pour ${d.nom.toLowerCase()}…`);
+    setEtat((x) => (x.decos.includes(k) || (x.bonbons || 0) < d.prix ? x : { ...x, bonbons: x.bonbons - d.prix, decos: [...x.decos, k], habitat: { ...x.habitat, [d.emplacement]: k } }));
+    effet("🏠", "coeur");
+    sauter();
+    dire(`Ouaaah, ${d.nom.toLowerCase()} ! Ma chambre est trop belle 💜`);
+  };
+  const installerDeco = (k: string) => {
+    const d = DECOS.find((x) => x.key === k);
+    if (!d) return;
+    setEtat((x) => {
+      const h: Habitat = { ...x.habitat };
+      if (h[d.emplacement] === k) delete h[d.emplacement];
+      else h[d.emplacement] = k;
+      return { ...x, habitat: h };
+    });
+  };
   const porter = (k: string) => {
     const a = ACCESSOIRES.find((x) => x.key === k);
     if (!a) return;
@@ -582,7 +609,9 @@ export default function Compagnon() {
           ref={sceneRef}
           className="relative h-[340px] md:h-[400px] rounded-2xl overflow-hidden select-none"
           style={{
-            background: etat.dort
+            background: etat.habitat?.fond && FONDS[etat.habitat.fond]
+              ? FONDS[etat.habitat.fond][etat.dort ? "nuit" : "jour"]
+              : etat.dort
               ? "radial-gradient(ellipse at 50% 120%, #1b1240 0%, #07040f 70%)"
               : "radial-gradient(ellipse at 50% 120%, #4b2a8f 0%, #1a0f38 55%, #0b0817 100%)",
           }}
@@ -594,6 +623,8 @@ export default function Compagnon() {
           <div aria-hidden className="absolute -right-10 -top-10 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle at 35% 35%, #ffe7b0, #ff9f5a 60%, transparent 70%)", opacity: etat.dort ? 0.15 : 0.5 }} />
           {/* sol */}
           <div aria-hidden className="absolute left-[-10%] right-[-10%] bottom-[-60px] h-[150px] rounded-[50%]" style={{ background: "linear-gradient(#5b3aa8, #2a1857)" }} />
+          {/* habitat : décorations installées */}
+          <DecorScene habitat={etat.habitat || {}} />
 
           {/* bulle de dialogue */}
           <div className="absolute left-1/2 top-4 -translate-x-1/2 max-w-[85%] rounded-2xl bg-white/90 px-4 py-2 text-sm text-[#2a1552] font-medium text-center shadow-lg">
@@ -684,7 +715,42 @@ export default function Compagnon() {
         {/* Boutique d'accessoires */}
         <section aria-labelledby="cp-boutique" className="mt-6 rounded-2xl border border-violet/15 bg-white/[0.03] p-4">
           <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <h3 id="cp-boutique" className="font-semibold text-ink">🛍️ Boutique d&apos;accessoires</h3>
+            <div className="flex gap-1.5" role="tablist" aria-label="Boutique">
+              {(
+                [
+                  ["accessoires", "🎩 Accessoires"],
+                  ["habitat", "🏠 Habitat"],
+                ] as const
+              ).map(([k, t]) => (
+                <button
+                  key={k}
+                  type="button"
+                  role="tab"
+                  aria-selected={boutique === k}
+                  onClick={() => setBoutique(k)}
+                  className={`rounded-full px-4 py-2 text-sm font-semibold transition-all ${boutique === k ? "bg-pink-400/25 border border-pink-300/50 text-ink" : "border border-violet/20 text-ink-soft hover:bg-violet/10"}`}
+                >
+                  {t}
+                </button>
+              ))}
+              <h3 id="cp-boutique" className="sr-only">Boutique</h3>
+            </div>
+            {boutique === "habitat" ? (
+              <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Emplacements">
+                {EMPLACEMENTS_DECO.map((e) => (
+                  <button
+                    key={e.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={rayonDeco === e.key}
+                    onClick={() => setRayonDeco(e.key)}
+                    className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${rayonDeco === e.key ? "bg-violet text-ink" : "border border-violet/25 text-ink-soft hover:bg-violet/10"}`}
+                  >
+                    {e.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
             <div className="flex gap-1.5" role="tablist" aria-label="Rayons">
               {(
                 [
@@ -705,7 +771,34 @@ export default function Compagnon() {
                 </button>
               ))}
             </div>
+            )}
           </div>
+          {boutique === "habitat" ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {DECOS.filter((d) => d.emplacement === rayonDeco).map((d) => {
+                const possede = etat.decos.includes(d.key);
+                const installe = etat.habitat?.[d.emplacement] === d.key;
+                const assez = (etat.bonbons || 0) >= d.prix;
+                return (
+                  <div key={d.key} className={`flex flex-col items-center rounded-2xl border px-2 pt-3 pb-2 text-center transition-all ${installe ? "border-violet bg-violet/15" : "border-violet/15 bg-white/[0.04]"}`}>
+                    <div className="h-[58px] flex items-center justify-center">
+                      <DecoApercu k={d.key} />
+                    </div>
+                    <p className="text-xs font-semibold text-ink mt-1 leading-tight min-h-[2rem] flex items-center">{d.nom}</p>
+                    {possede ? (
+                      <button type="button" onClick={() => installerDeco(d.key)} className={`mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold ${installe ? "border border-violet/40 text-ink-soft hover:bg-violet/10" : "bg-violet text-ink hover:bg-violet-light"}`}>
+                        {installe ? "Ranger" : "Installer"}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => acheterDeco(d.key)} disabled={!assez} className="mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold bg-pink-400/20 border border-pink-300/40 text-ink hover:bg-pink-400/30 disabled:opacity-40">
+                        🍬 {d.prix}
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {ACCESSOIRES.filter((a) => a.emplacement === rayon).map((a) => {
               const possede = etat.possedes.includes(a.key);
@@ -742,6 +835,7 @@ export default function Compagnon() {
               );
             })}
           </div>
+          )}
           <p className="text-[11px] text-ink-soft/60 mt-3">
             🍬 Gagne des bonbons en t&apos;occupant de {etat.nom} : repas +{BONBONS.repas}, bain +{BONBONS.bain}, caca nettoyé +{BONBONS.caca}, partie gagnée +{BONBONS.jeu}, câlins (+1 tous les {BONBONS.calinsParBonbon}), visite du jour +{BONBONS.visite} et journée parfaite +{BONBONS.journeeParfaite}.
           </p>
