@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifierMotDePasse } from "@/lib/adminAuth";
 import { classementAdmin, supprimerPseudo, reinitialiserClassement } from "@/lib/arcadeStore";
+import { estJeuArcade } from "@/lib/arcadeRegles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,16 +15,17 @@ export async function POST(request: NextRequest) {
   const verif = await verifierMotDePasse(request, body.motDePasse, attendu);
   if (!verif.ok) return NextResponse.json({ ok: false, erreur: verif.erreur }, { status: verif.status });
 
+  const jeu = estJeuArcade(body.jeu) ? body.jeu : "runner";
   try {
     if (body.action === "supprimer") {
       if (typeof body.cle !== "string" || !body.cle) return NextResponse.json({ ok: false, erreur: "Pseudo manquant." }, { status: 400 });
-      await supprimerPseudo(body.cle);
+      await supprimerPseudo(body.cle, jeu);
     } else if (body.action === "reinitialiser") {
-      await reinitialiserClassement();
+      await reinitialiserClassement(jeu);
     } else if (body.action !== "lister") {
       return NextResponse.json({ ok: false, erreur: "Action inconnue." }, { status: 400 });
     }
-    const scores = await classementAdmin();
+    const scores = await classementAdmin(jeu);
     if (scores === null) return NextResponse.json({ ok: false, erreur: "Le stockage (Upstash) n'est pas connecté." }, { status: 503 });
     return NextResponse.json({ ok: true, scores });
   } catch {

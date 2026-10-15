@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { JEUX_ARCADE, nomJeu, type JeuArcade } from "@/lib/arcadeRegles";
 
 type Ligne = { rang: number; cle: string; nom: string; score: number; date: number };
 
@@ -9,6 +10,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
   const [scores, setScores] = useState<Ligne[] | null>(null);
   const [message, setMessage] = useState<{ type: "ok" | "erreur"; texte: string } | null>(null);
   const [occupe, setOccupe] = useState(false);
+  const [jeu, setJeu] = useState<JeuArcade>("runner");
 
   const appeler = useCallback(
     async (action: "lister" | "supprimer" | "reinitialiser", cle?: string) => {
@@ -21,7 +23,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
         const r = await fetch("/api/arcade/admin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ motDePasse, action, cle }),
+          body: JSON.stringify({ motDePasse, action, cle, jeu }),
         });
         const d = await r.json().catch(() => ({}));
         if (!r.ok || !d.ok) throw new Error(d.erreur || "Erreur inconnue.");
@@ -33,7 +35,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
         setOccupe(false);
       }
     },
-    [motDePasse]
+    [motDePasse, jeu]
   );
 
   useEffect(() => {
@@ -42,9 +44,23 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
 
   return (
     <div>
-      <h2 className="text-ink font-medium mb-3">Borne d&apos;arcade · Cycy Runner</h2>
+      <h2 className="text-ink font-medium mb-3">Jeux du site · tableaux des records</h2>
+      <div className="flex flex-wrap gap-2 mb-4" role="tablist" aria-label="Jeu">
+        {JEUX_ARCADE.map((j) => (
+          <button
+            key={j}
+            type="button"
+            role="tab"
+            aria-selected={jeu === j}
+            onClick={() => setJeu(j)}
+            className={`rounded-full px-4 py-1.5 text-sm border ${jeu === j ? "bg-violet text-ink border-violet" : "border-violet/25 text-ink-soft hover:bg-violet/10"}`}
+          >
+            {nomJeu(j)}
+          </button>
+        ))}
+      </div>
       <p className="text-ink-soft mb-4 text-sm">
-        Le jeu est sur <a href="/jeux" target="_blank" className="text-lilac underline">cycylive.fr/jeux</a>. Chaque pseudo garde son
+        Les jeux sont sur <a href="/jeux" target="_blank" className="text-lilac underline">cycylive.fr/jeux</a> et dans la <a href="/jeux/arcade" target="_blank" className="text-lilac underline">salle d&apos;arcade</a>. Chaque pseudo garde son
         meilleur score. Les scores impossibles (trop élevés pour la durée de la partie) sont refusés automatiquement. Tu peux retirer un
         pseudo (inapproprié, triche…) ou remettre tout le classement à zéro, par exemple pour lancer une saison.
       </p>
@@ -58,7 +74,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
         </button>
         <button
           onClick={() => {
-            if (confirm("Remettre tout le classement de l'arcade à zéro ? Tous les records seront effacés.")) appeler("reinitialiser");
+            if (confirm(`Remettre le classement de « ${nomJeu(jeu)} » à zéro ? Tous ses records seront effacés.`)) appeler("reinitialiser");
           }}
           disabled={occupe}
           className="rounded-full px-4 py-2 border border-red-400/40 text-red-200 text-sm hover:bg-red-500/10 disabled:opacity-50"

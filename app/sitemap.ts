@@ -16,6 +16,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/cycybot/commandes",
     "/cycybot/leaderboard",
     "/jeux",
+    "/jeux/arcade",
     "/jeux/gratter",
     "/jeux/compagnon",
     "/soutenir",

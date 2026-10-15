@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 // donc les liens du menu du haut ouvrent toujours le bon jeu.
 const JEUX = [
   { href: "/jeux", label: "🏃 Cycy Runner" },
+  { href: "/jeux/arcade", label: "🕹️ Salle d'arcade" },
   { href: "/jeux/gratter", label: "🎟️ Ticket à gratter" },
   { href: "/jeux/compagnon", label: "🥚 Compagnon" },
 ];

@@ -15,20 +15,20 @@ function quand(date: number): string {
   return new Date(date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function ClassementArcade() {
+export default function ClassementArcade({ jeu = "runner", titre = "🏆 Tableau des records" }: { jeu?: string; titre?: string }) {
   const [scores, setScores] = useState<Ligne[] | null>(null);
   const [actif, setActif] = useState(true);
   const [moi, setMoi] = useState("");
 
   const charger = useCallback(() => {
-    fetch("/api/arcade/scores", { cache: "no-store" })
+    fetch(`/api/arcade/scores?jeu=${jeu}`, { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => {
         setActif(d.actif !== false);
         setScores(Array.isArray(d.scores) ? d.scores : []);
       })
       .catch(() => setScores([]));
-  }, []);
+  }, [jeu]);
 
   useEffect(() => {
     try {
@@ -38,7 +38,9 @@ export default function ClassementArcade() {
     }
     charger();
     const maj = (e: Event) => {
-      const p = (e as CustomEvent<{ pseudo?: string }>).detail?.pseudo;
+      const det = (e as CustomEvent<{ pseudo?: string; jeu?: string }>).detail;
+      if ((det?.jeu || "runner") !== jeu) return;
+      const p = det?.pseudo;
       if (p) setMoi(p.toLowerCase());
       charger();
     };
@@ -51,8 +53,8 @@ export default function ClassementArcade() {
   }, [charger]);
 
   return (
-    <section aria-labelledby="classement-arcade" className="carte-holo rounded-2xl border border-violet/12 p-5 md:p-6">
-      <h2 id="classement-arcade" className="text-lg font-semibold text-ink mb-1">🏆 Tableau des records</h2>
+    <section aria-labelledby={`classement-${jeu}`} className="carte-holo rounded-2xl border border-violet/12 p-5 md:p-6">
+      <h2 id={`classement-${jeu}`} className="text-lg font-semibold text-ink mb-1">{titre}</h2>
       <p className="text-xs text-ink-soft/60 mb-4">Le meilleur score de chaque pseudo, mis à jour en direct.</p>
       {scores === null ? (
         <p className="text-sm text-ink-soft">Chargement…</p>

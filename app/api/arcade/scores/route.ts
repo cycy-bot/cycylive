@@ -1,7 +1,7 @@
 // Classement de la borne d'arcade : lecture (GET) et enregistrement d'un record (POST).
 import { NextRequest, NextResponse } from "next/server";
 import { lireClassement, enregistrerScore, limiteIp } from "@/lib/arcadeStore";
-import { verifierPseudo } from "@/lib/arcadeRegles";
+import { verifierPseudo, estJeuArcade, ARCADE } from "@/lib/arcadeRegles";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,9 +10,10 @@ function ipDe(request: NextRequest): string {
   return (request.headers.get("x-forwarded-for") || "").split(",")[0].trim() || request.headers.get("x-real-ip") || "inconnue";
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const scores = await lireClassement();
+    const j = request.nextUrl.searchParams.get("jeu");
+    const scores = await lireClassement(ARCADE.tailleClassement, estJeuArcade(j) ? j : "runner");
     return NextResponse.json({ ok: true, actif: scores !== null, scores: scores ?? [] }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ ok: false, actif: true, scores: [], erreur: "Classement indisponible pour le moment." }, { status: 500 });
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const r = await enregistrerScore(body.jeton, body.score, pseudo.pseudo, pseudo.cle);
+    const r = await enregistrerScore(body.jeton, body.score, pseudo.pseudo, pseudo.cle, estJeuArcade(body.jeu) ? body.jeu : "runner");
     if (!r.ok) return NextResponse.json({ ok: false, erreur: r.erreur }, { status: r.status });
     return NextResponse.json(r);
   } catch {

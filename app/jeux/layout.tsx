@@ -7,9 +7,10 @@ export default function JeuxLayout({ children }: { children: React.ReactNode }) 
       <AccentCosmique variante="planete" />
       <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-3">Les jeux de Cycylive</h1>
       <p className="text-ink-soft leading-relaxed mb-6 max-w-3xl">
-        Trois jeux gratuits, sans compte. <strong className="text-ink">Cycy Runner</strong> pour battre ton record et entrer au
-        tableau des records, le <strong className="text-ink">ticket à gratter</strong> du jour et ton{" "}
-        <strong className="text-ink">compagnon</strong> à chouchouter, qui te font gagner des récompenses sur le Discord.
+        Des jeux gratuits, sans compte. <strong className="text-ink">Cycy Runner</strong> et la{" "}
+        <strong className="text-ink">salle d&apos;arcade</strong> (réflexes, rythme, constellations, memory, quiz) pour battre des records,
+        le <strong className="text-ink">ticket à gratter</strong> du jour et ton <strong className="text-ink">compagnon</strong> à
+        chouchouter, qui te font gagner des récompenses sur le Discord.
       </p>
       <OngletsJeux />
       {children}

@@ -62,3 +62,35 @@ export function verifierPseudo(brut: unknown): { ok: true; pseudo: string; cle: 
   }
   return { ok: true, pseudo, cle: simple };
 }
+
+// ============================================================
+// SALLE D'ARCADE — les mini-jeux et leurs limites de score
+// ============================================================
+// Chaque jeu a son propre tableau des records. Le serveur refuse un
+// score plus haut que ce qui est possible pour le temps écoulé depuis
+// le début de la partie (dureeMin = durée minimale d'une vraie partie).
+
+export type JeuSalle = "reflexes" | "memory" | "quiz" | "constellations" | "rythme";
+export type JeuArcade = "runner" | JeuSalle;
+
+export const JEUX_SALLE: Record<JeuSalle, { nom: string; emoji: string; dureeMin: number; scoreMax: (t: number) => number }> = {
+  // 30 s de cibles : 150 points max par cible, 6 cibles/s au mieux
+  reflexes: { nom: "Réflexes Valorant", emoji: "🎯", dureeMin: 28, scoreMax: (t) => Math.min(t, 34) * 6 * 150 },
+  // 8 paires : 3 000 points de base + bonus de vitesse
+  memory: { nom: "Memory galactique", emoji: "🧠", dureeMin: 6, scoreMax: () => 3000 + 90 * 40 },
+  // 10 questions, 100 points + 50 de bonus de rapidité
+  quiz: { nom: "Quiz de la galaxie", emoji: "❓", dureeMin: 8, scoreMax: () => 1500 },
+  // niveaux de constellations : environ 160 points par seconde au mieux
+  constellations: { nom: "Puzzle des constellations", emoji: "✨", dureeMin: 4, scoreMax: (t) => t * 160 + 200 },
+  // 60 s de musique, 4 notes/s au plus, 100 points × multiplicateur 4
+  rythme: { nom: "Rythme cosmique", emoji: "🎵", dureeMin: 50, scoreMax: (t) => Math.min(t, 70) * 4 * 400 },
+};
+
+export const JEUX_ARCADE: JeuArcade[] = ["runner", "reflexes", "memory", "quiz", "constellations", "rythme"];
+export const estJeuArcade = (j: unknown): j is JeuArcade => JEUX_ARCADE.includes(j as JeuArcade);
+export const nomJeu = (j: JeuArcade) => (j === "runner" ? ARCADE.nom : JEUX_SALLE[j].nom);
+
+/** Score maximum autorisé pour ce jeu après t secondes. */
+export function scoreMaxJeu(jeu: JeuArcade, t: number): number {
+  return jeu === "runner" ? scoreMaxPour(t) : JEUX_SALLE[jeu].scoreMax(t);
+}

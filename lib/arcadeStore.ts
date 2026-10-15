@@ -8,10 +8,11 @@
 
 import crypto from "crypto";
 import { Redis } from "@upstash/redis";
-import { ARCADE, scoreMaxPour } from "@/lib/arcadeRegles";
+import { ARCADE, JEUX_SALLE, scoreMaxJeu, type JeuArcade } from "@/lib/arcadeRegles";
 
-const CLE_SCORES = "cycylive:arcade:scores"; // classement : cle du pseudo → meilleur score
-const CLE_NOMS = "cycylive:arcade:noms"; // cle du pseudo → "Pseudo affiché|date"
+// Cycy Runner garde ses clés d'origine ; chaque jeu de la salle d'arcade a les siennes.
+const cleScores = (jeu: JeuArcade = "runner") => (jeu === "runner" ? "cycylive:arcade:scores" : `cycylive:arcade:${jeu}:scores`); // pseudo → meilleur score
+const cleNoms = (jeu: JeuArcade = "runner") => (jeu === "runner" ? "cycylive:arcade:noms" : `cycylive:arcade:${jeu}:noms`); // pseudo → "Pseudo|date"
 const PREFIXE_JETON = "cycylive:arcade:jeton:";
 const PREFIXE_IP = "cycylive:arcade:ip:";
 const JETON_DUREE_MS = 3 * 60 * 60 * 1000;
@@ -32,12 +33,12 @@ function signer(donnees: string): string {
 }
 
 /** Jeton d'une nouvelle partie (signé, avec l'heure de départ). */
-export function creerJeton(): string {
-  const corps = Buffer.from(JSON.stringify({ id: crypto.randomBytes(9).toString("base64url"), t: Date.now() })).toString("base64url");
+export function creerJeton(jeu: JeuArcade = "runner"): string {
+  const corps = Buffer.from(JSON.stringify({ id: crypto.randomBytes(9).toString("base64url"), t: Date.now(), j: jeu })).toString("base64url");
   return `${corps}.${signer(corps)}`;
 }
 
-function lireJeton(jeton: unknown): { id: string; t: number } | null {
+function lireJeton(jeton: unknown): { id: string; t: number; j?: string } | null {
   const [corps, signature] = String(jeton ?? "").split(".");
   if (!corps || !signature) return null;
   const attendu = signer(corps);
@@ -71,7 +72,8 @@ function decoderNom(valeur: unknown, cle: string): { nom: string; date: number }
   return { nom: brut.slice(0, i) || cle, date: Number(brut.slice(i + 1)) || 0 };
 }
 
-export async function lireClassement(limite: number = ARCADE.tailleClassement): Promise<LigneClassement[] | null> {
+export async function lireClassement(limite: number = ARCADE.tailleClassement, jeu: JeuArcade = "runner"): Promise<LigneClassement[] | null> {
+  const CLE_SCORES = cleScores(jeu), CLE_NOMS = cleNoms(jeu);
   const redis = client();
   if (!redis) return null;
   const brut = await redis.zrange<(string | number)[]>(CLE_SCORES, 0, limite - 1, { rev: true, withScores: true });
@@ -86,7 +88,8 @@ export type ResultatEnvoi =
   | { ok: true; score: number; meilleur: number; nouveauRecord: boolean; rang: number | null }
   | { ok: false; erreur: string; status: number };
 
-export async function enregistrerScore(jeton: unknown, scoreBrut: unknown, pseudo: string, cle: string): Promise<ResultatEnvoi> {
+export async function enregistrerScore(jeton: unknown, scoreBrut: unknown, pseudo: string, cle: string, jeu: JeuArcade = "runner"): Promise<ResultatEnvoi> {
+  const CLE_SCORES = cleScores(jeu), CLE_NOMS = cleNoms(jeu);
   const redis = client();
   if (!redis) return { ok: false, erreur: "Le classement n'est pas encore activé sur le site.", status: 503 };
 
@@ -94,11 +97,13 @@ export async function enregistrerScore(jeton: unknown, scoreBrut: unknown, pseud
   if (!partie) return { ok: false, erreur: "Partie introuvable : rejoue une partie pour enregistrer ton score.", status: 400 };
   const ecoule = Date.now() - partie.t;
   if (ecoule > JETON_DUREE_MS) return { ok: false, erreur: "Cette partie est trop ancienne : rejoue pour enregistrer un score.", status: 400 };
+  if ((partie.j || "runner") !== jeu) return { ok: false, erreur: "Ce jeton n'est pas celui de ce jeu : rejoue une partie.", status: 400 };
+  if (jeu !== "runner" && ecoule < JEUX_SALLE[jeu].dureeMin * 1000 * 0.9) return { ok: false, erreur: "Partie trop courte pour être enregistrée.", status: 400 };
 
   const score = Math.floor(Number(scoreBrut));
   if (!Number.isFinite(score) || score < 1) return { ok: false, erreur: "Score invalide.", status: 400 };
   // Marge pour les petits écarts d'horloge et de réseau
-  if (score > scoreMaxPour(ecoule / 1000) * 1.08 + 25) return { ok: false, erreur: "Ce score n'est pas possible pour la durée de la partie.", status: 400 };
+  if (score > scoreMaxJeu(jeu, ecoule / 1000) * 1.08 + 25) return { ok: false, erreur: "Ce score n'est pas possible pour la durée de la partie.", status: 400 };
 
   // Un jeton = un seul enregistrement
   const libre = await redis.set(PREFIXE_JETON + partie.id, 1, { nx: true, ex: Math.ceil(JETON_DUREE_MS / 1000) });
@@ -117,7 +122,8 @@ export async function enregistrerScore(jeton: unknown, scoreBrut: unknown, pseud
 
 // ── Administration ──────────────────────────────────────────
 
-export async function supprimerPseudo(cle: string): Promise<boolean> {
+export async function supprimerPseudo(cle: string, jeu: JeuArcade = "runner"): Promise<boolean> {
+  const CLE_SCORES = cleScores(jeu), CLE_NOMS = cleNoms(jeu);
   const redis = client();
   if (!redis) return false;
   await redis.zrem(CLE_SCORES, cle);
@@ -125,14 +131,16 @@ export async function supprimerPseudo(cle: string): Promise<boolean> {
   return true;
 }
 
-export async function reinitialiserClassement(): Promise<boolean> {
+export async function reinitialiserClassement(jeu: JeuArcade = "runner"): Promise<boolean> {
+  const CLE_SCORES = cleScores(jeu), CLE_NOMS = cleNoms(jeu);
   const redis = client();
   if (!redis) return false;
   await redis.del(CLE_SCORES, CLE_NOMS);
   return true;
 }
 
-export async function classementAdmin(): Promise<(LigneClassement & { cle: string })[] | null> {
+export async function classementAdmin(jeu: JeuArcade = "runner"): Promise<(LigneClassement & { cle: string })[] | null> {
+  const CLE_SCORES = cleScores(jeu), CLE_NOMS = cleNoms(jeu);
   const redis = client();
   if (!redis) return null;
   const brut = await redis.zrange<(string | number)[]>(CLE_SCORES, 0, 199, { rev: true, withScores: true });
