@@ -10,15 +10,18 @@ import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
 import type { DonneesGaming } from "@/lib/gamingStore";
 import { AFFICHAGES_PARTENAIRE, type Partenaire } from "@/data/partners";
 import AdminArcade from "@/components/admin/AdminArcade";
+import AdminCalendrier from "@/components/admin/AdminCalendrier";
+import { calendrierVide, type DonneesCalendrier } from "@/data/calendrier";
 import ChampImage from "@/components/admin/ChampImage";
 import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
-type Onglet = "planning" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires" | "arcade";
+type Onglet = "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires" | "arcade";
 
 const ONGLETS: { valeur: Onglet; label: string; cles: string[] }[] = [
   { valeur: "planning", label: "📅 Planning", cles: ["planning"] },
+  { valeur: "calendrier", label: "🗓️ Calendrier", cles: ["calendrier"] },
   { valeur: "contenus", label: "🎬 Derniers contenus", cles: ["contenus"] },
   { valeur: "textes", label: "✏️ Textes", cles: ["textes"] },
   { valeur: "timeline", label: "🕰️ Timeline", cles: ["timeline"] },
@@ -31,6 +34,7 @@ const ONGLETS: { valeur: Onglet; label: string; cles: string[] }[] = [
 // Données enregistrées par chaque route (pour savoir ce qui n'est plus « modifié »)
 const CLES_PAR_URL: Record<string, string[]> = {
   "/api/planning": ["planning"],
+  "/api/calendrier": ["calendrier"],
   "/api/contenus": ["contenus"],
   "/api/textes": ["textes"],
   "/api/timeline": ["timeline"],
@@ -111,6 +115,7 @@ export default function AdminPage() {
   const [motDePasse, setMotDePasse] = useState("");
 
   const [planning, setPlanning] = useState<JourPlanning[]>([]);
+  const [calendrier, setCalendrier] = useState<DonneesCalendrier>(calendrierVide);
   const [contenus, setContenus] = useState<Contenu[]>([]);
   const [textes, setTextes] = useState<Textes>(textesParDefaut);
   const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
@@ -152,6 +157,7 @@ export default function AdminPage() {
 
   const donnees: Record<string, unknown> = {
     planning,
+    calendrier,
     contenus,
     textes,
     timeline,
@@ -184,9 +190,11 @@ export default function AdminPage() {
       fetch("/api/gaming").then((r) => r.json()),
       fetch("/api/partenaires").then((r) => r.json()),
       fetch("/api/bons-plans").then((r) => r.json()),
+      fetch("/api/calendrier").then((r) => r.json()).catch(() => calendrierVide),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming, dataPartenaires, dataBonsPlans]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming, dataPartenaires, dataBonsPlans, dataCalendrier]) => {
         setPlanning(dataPlanning.planning);
+        setCalendrier({ exceptions: dataCalendrier?.exceptions ?? {}, evenements: Array.isArray(dataCalendrier?.evenements) ? dataCalendrier.evenements : [] });
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
         setTimeline(dataTimeline.timeline);
@@ -736,7 +744,9 @@ export default function AdminPage() {
           <p className="text-ink-soft mb-6 text-sm">
             Coche "OFF" pour un jour sans live, ou remplis l'heure (et le jeu
             si tu veux). Le jeu est optionnel : sans jeu, le site affiche
-            "Stream".
+            "Stream". C'est ton planning habituel, répété chaque semaine : pour
+            changer une date précise (live annulé, horaire décalé…), va dans{" "}
+            <button type="button" onClick={() => setOnglet("calendrier")} className="text-lilac underline">🗓️ Calendrier</button>.
           </p>
 
           <div className="space-y-3 mb-8">
@@ -789,6 +799,23 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer le planning"}
           </button>
         </>
+      )}
+
+      {onglet === "calendrier" && (
+        <AdminCalendrier
+          planning={planning}
+          calendrier={calendrier}
+          onChange={setCalendrier}
+          enregistrement={enregistrement}
+          onEnregistrer={() => {
+            const sansTitre = calendrier.evenements.some((e) => !e.titre.trim());
+            if (sansTitre) {
+              setMessage({ type: "erreur", texte: "Donne un titre à chaque événement avant d'enregistrer." });
+              return;
+            }
+            enregistrer("/api/calendrier", { calendrier }, "Calendrier enregistré ! CycyBot le récupère dans les 2 minutes.");
+          }}
+        />
       )}
 
       {onglet === "contenus" && (

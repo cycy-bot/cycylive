@@ -10,12 +10,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lirePlanning, ecrirePlanning } from "@/lib/planningStore";
 import { JourPlanning } from "@/data/planning";
+import { lireCalendrier } from "@/lib/calendrierStore";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const planning = await lirePlanning();
-  return NextResponse.json({ planning });
+  // « exceptions » : changements date par date (onglet Calendrier), lus aussi par CycyBot
+  const [planning, calendrier] = await Promise.all([lirePlanning(), lireCalendrier()]);
+  return NextResponse.json({ planning, exceptions: calendrier.exceptions });
 }
 
 export async function POST(request: NextRequest) {

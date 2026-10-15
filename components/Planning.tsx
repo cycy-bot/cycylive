@@ -1,10 +1,18 @@
-import { getSemaineActuelle, LABEL_GENERIQUE } from "@/data/planning";
+import { getSemaineActuelle, datesSemaineActuelle, JOURS_ORDRE, LABEL_GENERIQUE } from "@/data/planning";
+import { lireCalendrier } from "@/lib/calendrierStore";
+import { jourAvecException } from "@/data/calendrier";
 import { lirePlanning } from "@/lib/planningStore";
 import { IconMoonCrescent, IconCrystal } from "@/components/Icons";
 
 export default async function Planning() {
-  const planning = await lirePlanning();
+  const [habituel, calendrier] = await Promise.all([lirePlanning(), lireCalendrier()]);
   const { du, au } = getSemaineActuelle();
+  // Les changements prévus cette semaine (onglet Calendrier de /admin) remplacent le planning habituel
+  const dates = datesSemaineActuelle();
+  const planning = habituel.map((jour) => {
+    const i = (JOURS_ORDRE.indexOf(jour.jour) + 6) % 7;
+    return jourAvecException(jour, dates[i] ? calendrier.exceptions[dates[i]] : undefined);
+  });
 
   return (
     <section className="mx-auto max-w-6xl px-5 md:px-8 py-6 md:py-10">
@@ -44,6 +52,7 @@ export default async function Planning() {
                 </span>
               </>
             )}
+            {jour.note ? <span className="text-[11px] leading-tight text-ink-soft">{jour.note}</span> : null}
           </div>
         ))}
       </div>

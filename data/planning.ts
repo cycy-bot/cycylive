@@ -51,6 +51,14 @@ function formatCourt(date: Date): string {
   return `${jour}/${mois}`;
 }
 
+/** Les 7 dates (« 2026-10-19 »…) de la semaine en cours, du lundi au dimanche, à Paris. */
+export function datesSemaineActuelle(): string[] {
+  const ymd = anneeMoisJourAParis(new Date());
+  const jour = new Date(`${ymd}T12:00:00Z`);
+  const lundi = new Date(jour.getTime() - ((jour.getUTCDay() + 6) % 7) * 86400000);
+  return Array.from({ length: 7 }, (_, i) => new Date(lundi.getTime() + i * 86400000).toISOString().slice(0, 10));
+}
+
 export function getSemaineActuelle(): { du: string; au: string } {
   const aujourdhui = new Date();
   const jourSemaine = aujourdhui.getDay();
@@ -141,17 +149,24 @@ export type ProchainLive = {
 // Trouve le prochain live à venir à partir d'UN planning donné
 // (celui par défaut, ou celui enregistré via /admin).
 export function calculerProchainLive(
-  planning: JourPlanning[]
+  planning: JourPlanning[],
+  exceptions: Record<string, { off: boolean; heure?: string; jeu?: string }> = {}
 ): ProchainLive | null {
   const maintenant = new Date();
 
-  for (let decalage = 0; decalage < 8; decalage++) {
+  for (let decalage = 0; decalage < 22; decalage++) {
     const date = new Date(maintenant);
     date.setDate(maintenant.getDate() + decalage);
     const nomJour = JOURS_ORDRE[jourSemaineAParis(date)];
 
-    const jourPlanning = planning.find((p) => p.jour === nomJour);
-    if (!jourPlanning || jourPlanning.off) continue;
+    const habituel = planning.find((p) => p.jour === nomJour);
+    const exception = exceptions[anneeMoisJourAParis(date)];
+    const jourPlanning: JourPlanning | undefined = exception
+      ? exception.off
+        ? { jour: nomJour, off: true }
+        : { jour: nomJour, off: false, heure: exception.heure || habituel?.heure, jeu: exception.jeu || habituel?.jeu }
+      : habituel;
+    if (!jourPlanning || jourPlanning.off || !jourPlanning.heure) continue;
 
     const { heures, minutes } = parseHeure(jourPlanning.heure);
     const dateLive = dateLiveAParis(date, heures, minutes);
