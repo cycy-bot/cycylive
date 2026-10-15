@@ -12,24 +12,7 @@ export type EtapeTimeline = {
   date: string; // libre : "2023", "Juin 2024", etc.
   titre: string;
   description?: string;
-  // ── Musée Cycylive (/musee) : tout est facultatif ──
-  categorie?: CategorieMusee;
-  emoji?: string;
-  image?: string; // capture (URL ou image envoyée depuis l'admin)
-  clip?: string; // lien d'un clip Twitch ou d'une vidéo YouTube
-  souvenirs?: string; // souvenirs de la commu, un par ligne (« texte — pseudo »)
-  masquerMusee?: boolean;
 };
-
-export type CategorieMusee = "live" | "valorant" | "communaute" | "record" | "evenement";
-
-export const CATEGORIES_MUSEE: { valeur: CategorieMusee; label: string; emoji: string }[] = [
-  { valeur: "live", label: "Lives", emoji: "🔴" },
-  { valeur: "valorant", label: "Valorant", emoji: "🎯" },
-  { valeur: "communaute", label: "Communauté", emoji: "💜" },
-  { valeur: "record", label: "Records", emoji: "🏆" },
-  { valeur: "evenement", label: "Événements", emoji: "🎉" },
-];
 
 export const timelineParDefaut: EtapeTimeline[] = [
   {

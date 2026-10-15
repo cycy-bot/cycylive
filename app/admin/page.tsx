@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
-import { CATEGORIES_MUSEE, type EtapeTimeline } from "@/data/timeline";
+import type { EtapeTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
@@ -21,7 +21,7 @@ const ONGLETS: { valeur: Onglet; label: string; cles: string[] }[] = [
   { valeur: "planning", label: "📅 Planning", cles: ["planning"] },
   { valeur: "contenus", label: "🎬 Derniers contenus", cles: ["contenus"] },
   { valeur: "textes", label: "✏️ Textes", cles: ["textes"] },
-  { valeur: "timeline", label: "🕰️ Timeline & Musée", cles: ["timeline"] },
+  { valeur: "timeline", label: "🕰️ Timeline", cles: ["timeline"] },
   { valeur: "apropos", label: "💜 À propos", cles: ["apropos"] },
   { valeur: "valorant", label: "🎮 Gaming", cles: ["gaming", "news", "clips", "profil"] },
   { valeur: "partenaires", label: "🤝 Partenaires", cles: ["partenaires", "bonsPlans", "textes"] },
@@ -1011,51 +1011,6 @@ export default function AdminPage() {
                   onChange={(e) => modifierEtape(index, { description: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
                 />
-                <details className="rounded-lg border border-violet/15 px-3 py-2">
-                  <summary className="text-xs text-lilac cursor-pointer">🏛️ Musée : catégorie, image, clip, souvenirs</summary>
-                  <div className="space-y-2 mt-2">
-                    <div className="flex gap-2">
-                      <select
-                        value={etape.categorie ?? ""}
-                        onChange={(e) => modifierEtape(index, { categorie: (e.target.value || undefined) as EtapeTimeline["categorie"] })}
-                        className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none"
-                        aria-label="Catégorie"
-                      >
-                        <option value="">Catégorie…</option>
-                        {CATEGORIES_MUSEE.map((c) => (
-                          <option key={c.valeur} value={c.valeur}>{c.emoji} {c.label}</option>
-                        ))}
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Emoji"
-                        maxLength={4}
-                        value={etape.emoji ?? ""}
-                        onChange={(e) => modifierEtape(index, { emoji: e.target.value })}
-                        className="w-20 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none"
-                      />
-                    </div>
-                    <ChampImage label="Capture (optionnel)" valeur={etape.image ?? ""} onChange={(url) => modifierEtape(index, { image: url })} motDePasse={motDePasse} largeurMax={1400} />
-                    <input
-                      type="url"
-                      placeholder="Lien d'un clip Twitch ou d'une vidéo YouTube (optionnel)"
-                      value={etape.clip ?? ""}
-                      onChange={(e) => modifierEtape(index, { clip: e.target.value })}
-                      className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-                    />
-                    <textarea
-                      rows={2}
-                      placeholder={"Souvenirs de la commu, un par ligne\nEx. : J'ai hurlé devant mon écran — Luna"}
-                      value={etape.souvenirs ?? ""}
-                      onChange={(e) => modifierEtape(index, { souvenirs: e.target.value })}
-                      className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-                    />
-                    <label className="flex items-center gap-2 text-xs text-ink-soft">
-                      <input type="checkbox" checked={Boolean(etape.masquerMusee)} onChange={(e) => modifierEtape(index, { masquerMusee: e.target.checked })} />
-                      Ne pas montrer cette étape dans le Musée
-                    </label>
-                  </div>
-                </details>
               </div>
             ))}
           </div>
