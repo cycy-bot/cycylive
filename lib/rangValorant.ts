@@ -8,7 +8,7 @@ export type Palier = { cle: string; fr: string; couleur: string; clair: string }
 
 export const PALIERS: Palier[] = [
   { cle: "Iron", fr: "Fer", couleur: "#6b6b75", clair: "#b9b9c4" },
-  { cle: "Bronze", fr: "Bronze", couleur: "#8c5a2b", clair: "#e0a66a" },
+  { cle: "Bronze", fr: "Bronze", couleur: "#a2652f", clair: "#f2b77c" },
   { cle: "Silver", fr: "Argent", couleur: "#8a97a8", clair: "#e6edf5" },
   { cle: "Gold", fr: "Or", couleur: "#c99a2e", clair: "#ffe08a" },
   { cle: "Platinum", fr: "Platine", couleur: "#2b9aa8", clair: "#8ff0f5" },

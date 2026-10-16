@@ -5,7 +5,7 @@ import { getSemaineActuelle, datesSemaineActuelle, JOURS_ORDRE, LABEL_GENERIQUE 
 import { lireCalendrier } from "@/lib/calendrierStore";
 import { jourAvecException, dateParis } from "@/data/calendrier";
 import { lirePlanning } from "@/lib/planningStore";
-import { IconMoonCrescent, IconCrystal, IconValorant, IconCalendar, IconArrowRight } from "@/components/Icons";
+import { IconCrystal, IconValorant, IconCalendar, IconArrowRight } from "@/components/Icons";
 
 const ICONE_EVENEMENT: Record<string, NomIcone> = { quiz: "quiz", discord: "fete", projet: "outils", live: "live", autre: "etoile" };
 
@@ -67,7 +67,7 @@ export default async function Planning() {
               </span>
               {jour.off ? (
                 <>
-                  <IconMoonCrescent className="w-6 h-6 text-lilac" />
+                  <Icone nom="dodo" className="w-6 h-6 text-ink-soft/70" />
                   <span className="ml-auto md:ml-0 text-ink-soft text-sm font-medium">OFF</span>
                 </>
               ) : (

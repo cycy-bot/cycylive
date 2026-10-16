@@ -3,6 +3,7 @@ import TitreSection from "@/components/icones/TitreSection";
 import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import Link from "next/link";
+import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
 import { lirePartenaires, lireBonsPlans } from "@/lib/partnersStore";
@@ -12,11 +13,6 @@ import FollowersTwitch from "@/components/FollowersTwitch";
 import TexteRiche from "@/components/TexteRiche";
 import BoutonCopierCode from "@/components/BoutonCopierCode";
 import {
-  IconCrystal,
-  IconStar4,
-  IconPlanetRing,
-  IconOrbit,
-  IconMoonCrescent,
   IconMail,
   IconTwitch,
   IconTikTok,
@@ -49,13 +45,13 @@ const presence = [
 ];
 
 const typesCollab = [
-  { label: "Sponsoring", icon: IconOrbit },
-  { label: "Gaming", icon: IconCrystal },
-  { label: "Événements", icon: IconStar4 },
-  { label: "Campagnes sociales", icon: IconMoonCrescent },
-  { label: "Tests / découvertes", icon: IconPlanetRing },
-  { label: "Création de contenu", icon: IconCrystal },
-  { label: "Collaborations créateurs", icon: IconStar4 },
+  { label: "Sponsoring", icone: "mallette" as NomIcone },
+  { label: "Gaming", icone: "manette" as NomIcone },
+  { label: "Événements", icone: "fete" as NomIcone },
+  { label: "Campagnes sociales", icone: "megaphone" as NomIcone },
+  { label: "Tests / découvertes", icone: "colis" as NomIcone },
+  { label: "Création de contenu", icone: "camera" as NomIcone },
+  { label: "Collaborations créateurs", icone: "poignee" as NomIcone },
 ];
 
 function Tag({ label }: { label: string }) {
@@ -215,12 +211,12 @@ export default async function PartenariatsPage() {
           {textes.partenariats.typesTitre}
         </p>
         <div className="flex flex-wrap gap-2 mb-8">
-          {typesCollab.map(({ label, icon: Icon }) => (
+          {typesCollab.map(({ label, icone }) => (
             <span
               key={label}
               className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3.5 py-1.5 text-xs text-ink-soft/80"
             >
-              <Icon className="w-3.5 h-3.5 text-violet-light/70" />
+              <Icone nom={icone} className="w-4 h-4 text-violet-light" />
               {label}
             </span>
           ))}

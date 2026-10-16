@@ -184,6 +184,11 @@ export const BANQUE = {
     <path {...T} d="M12 2.5v5M12 16.5v5M2.5 12h5M16.5 12h5" />
     <circle {...P} cx="12" cy="12" r="1.3" />
   </>),
+  tactique: I("FPS tactique (Valorant)", "Jeux", <>
+    <path {...F} d="M12 2.5 20 6.8v6.1c0 4.1-3.4 7.4-8 8.6-4.6-1.2-8-4.5-8-8.6V6.8l8-4.3Z" />
+    <path {...T} d="M12 6.9v2M12 15.1v2M6.9 12h2M15.1 12h2" /><circle cx="12" cy="12" r="3.1" {...T} />
+    <path {...P} d="m12 11 1 1-1 1-1-1 1-1Z" />
+  </>),
   course: I("Runner", "Jeux", <>
     <circle {...P} cx="15.5" cy="4.3" r="2.1" />
     <path {...T} d="M8 21l3.2-5.2 3.3 2.3V22M11.2 15.8 13 9l4 3.2 3 .4M13 9l-4.2.6-2.1 3.1" />
@@ -301,6 +306,10 @@ export const BANQUE = {
     <path {...F} d="M20.5 14.6A8.8 8.8 0 0 1 9.4 3.5a8.8 8.8 0 1 0 11.1 11.1Z" />
     {eclat(17, 5, 2.2)}
     <circle {...P} cx="21" cy="9" r="1" />
+  </>),
+  dodo: I("Repos / OFF", "Galaxie", <>
+    <path {...F} d="M17.8 15.6A7.6 7.6 0 0 1 8.4 6.2a7.6 7.6 0 1 0 9.4 9.4Z" />
+    <path {...T} d="M14.5 3h4l-4 4.2h4M18.6 9.2h2.9l-2.9 3h2.9" />
   </>),
   soucoupe: I("Discord / soucoupe", "Galaxie", <>
     <path {...F} d="M7.5 11a4.5 4.5 0 0 1 9 0" />

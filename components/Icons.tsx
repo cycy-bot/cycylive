@@ -126,17 +126,13 @@ export function IconChevronRight({ className }: IconProps) {
 }
 
 export function IconValorant({ className }: IconProps) {
+  // Écusson tactique de la banque d'icônes (évoque Valorant sans reprendre son logo)
   return (
-    <svg viewBox="0 0 24 24" fill="none" className={className}>
-      <path
-        d="M3 5h4.2L17 15.8V19h-4.2L3 8.2V5Z"
-        fill="currentColor"
-      />
-      <path
-        d="M13 5h8v3.2L14 16v-4.4L18.4 7H13V5Z"
-        fill="currentColor"
-        opacity="0.7"
-      />
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M12 2.5 20 6.8v6.1c0 4.1-3.4 7.4-8 8.6-4.6-1.2-8-4.5-8-8.6V6.8l8-4.3Z" fill="currentColor" fillOpacity={0.16} />
+      <path d="M12 6.9v2M12 15.1v2M6.9 12h2M15.1 12h2" />
+      <circle cx="12" cy="12" r="3.1" />
+      <path d="m12 11 1 1-1 1-1-1 1-1Z" fill="currentColor" stroke="none" />
     </svg>
   );
 }

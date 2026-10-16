@@ -1,20 +1,15 @@
 import Link from "next/link";
+import type { NomIcone } from "@/components/icones/banque";
 import Icone from "@/components/icones/Icone";
 import { lireTextes } from "@/lib/textesStore";
 import TexteRiche from "@/components/TexteRiche";
-import {
-  IconCrystal,
-  IconStar4,
-  IconPlanetRing,
-  IconOrbit,
-} from "@/components/Icons";
 
 const typesCollab = [
-  { label: "Gaming", icon: IconCrystal },
-  { label: "Événements", icon: IconStar4 },
-  { label: "Marques", icon: IconPlanetRing },
-  { label: "Sponsoring", icon: IconOrbit },
-  { label: "Collabs créateurs", icon: IconCrystal },
+  { label: "Gaming", icone: "manette" as NomIcone },
+  { label: "Événements", icone: "fete" as NomIcone },
+  { label: "Marques", icone: "etiquette" as NomIcone },
+  { label: "Sponsoring", icone: "mallette" as NomIcone },
+  { label: "Collabs créateurs", icone: "poignee" as NomIcone },
 ];
 
 export default async function PartenariatsApercu() {
@@ -46,12 +41,12 @@ export default async function PartenariatsApercu() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
-          {typesCollab.map(({ label, icon: Icon }) => (
+          {typesCollab.map(({ label, icone }) => (
             <span
               key={label}
               className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3.5 py-1.5 text-xs text-ink-soft/80"
             >
-              <Icon className="w-3.5 h-3.5 text-violet-light/70" />
+              <Icone nom={icone} className="w-4 h-4 text-violet-light" />
               {label}
             </span>
           ))}

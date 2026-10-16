@@ -57,32 +57,32 @@ export default function GalerieContenus({ contenus }: { contenus: ContenuAvecMin
       )}
 
       <div className="px-5 md:px-8">
-        <CarouselFleches>
+        {/* Toutes les cartes ont la même taille : miniature 16:9 (les formats verticaux sont centrés sur un fond flouté) */}
+        <CarouselFleches positionFleches="top-[90px]">
           {contenusAffiches.map((contenu) => {
             const Icon = iconParPlateforme[contenu.plateforme];
+            const vertical = contenu.format === "vertical";
             return (
               <a
                 key={contenu.id}
                 href={contenu.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`snap-start shrink-0 carte-holo rounded-2xl overflow-hidden hover:shadow-glow-sm transition-all ${
-                  contenu.format === "vertical" ? "w-40 md:w-48" : "w-64 md:w-80"
-                }`}
+                className="group snap-start shrink-0 w-[min(18rem,80vw)] md:w-80 carte-holo rounded-2xl overflow-hidden flex flex-col hover:shadow-glow-sm hover:-translate-y-0.5 transition-all"
               >
-                <div
-                  className={`relative bg-nebula flex items-center justify-center text-ink-soft/30 text-xs overflow-hidden ${
-                    contenu.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
-                  }`}
-                >
+                <div className="relative aspect-video bg-nebula flex items-center justify-center text-ink-soft/30 text-xs overflow-hidden">
                   {contenu.miniature ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={contenu.miniature}
-                      alt={contenu.titre}
-                      loading="lazy"
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
+                    vertical ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={contenu.miniature} alt="" aria-hidden loading="lazy" className="absolute inset-0 w-full h-full object-cover scale-125 blur-xl opacity-60" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={contenu.miniature} alt={contenu.titre} loading="lazy" className="relative h-full w-auto object-contain shadow-[0_0_30px_rgba(0,0,0,.6)] transition-transform duration-500 group-hover:scale-105" />
+                      </>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={contenu.miniature} alt={contenu.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                    )
                   ) : (
                     <span>{contenu.plateforme}</span>
                   )}
@@ -90,13 +90,9 @@ export default function GalerieContenus({ contenus }: { contenus: ContenuAvecMin
                     <Icon className="w-3.5 h-3.5" />
                   </span>
                 </div>
-                <div className="p-3">
-                  <span className="eyebrow text-[10px] text-violet-light">
-                    {contenu.plateforme}
-                  </span>
-                  <p className="text-sm text-ink mt-1.5 line-clamp-2">
-                    {contenu.titre}
-                  </p>
+                <div className="flex flex-1 flex-col p-4">
+                  <span className="eyebrow text-[10px] text-violet-light">{contenu.plateforme}</span>
+                  <p className="text-sm text-ink mt-1.5 line-clamp-2 min-h-[2.5rem] leading-5">{contenu.titre}</p>
                 </div>
               </a>
             );
