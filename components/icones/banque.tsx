@@ -189,6 +189,34 @@ export const BANQUE = {
     <path {...T} d="M12 6.9v2M12 15.1v2M6.9 12h2M15.1 12h2" /><circle cx="12" cy="12" r="3.1" {...T} />
     <path {...P} d="m12 11 1 1-1 1-1-1 1-1Z" />
   </>),
+  fantome: I("Horreur / fantôme", "Jeux", <>
+    <path {...F} d="M5 20.5V11a7 7 0 0 1 14 0v9.5l-2.3-1.6-2.4 1.6-2.3-1.6-2.3 1.6-2.4-1.6Z" />
+    <circle {...P} cx="9.6" cy="11" r="1.2" /><circle {...P} cx="14.4" cy="11" r="1.2" />
+    <path {...T} d="M10.8 14.6q1.2.9 2.4 0" />
+    {eclat(20.3, 3.8, 1.8)}
+  </>),
+  monstre: I("Créature / monstre", "Jeux", <>
+    <path {...T} d="M7.4 8.6 5.6 3.4l4.5 3M16.6 8.6l1.8-5.2-4.5 3" />
+    <circle {...F} cx="12" cy="13.6" r="7.2" />
+    <circle {...P} cx="9.4" cy="12.6" r="1.2" /><circle {...P} cx="14.6" cy="12.6" r="1.2" />
+    <path {...T} d="M10.4 16.2q1.6 1.2 3.2 0" />
+  </>),
+  epee: I("Aventure / RPG", "Jeux", <>
+    <path {...F} d="M20.5 3.5v4.2l-9.9 9.9-4.2-4.2 9.9-9.9Z" />
+    <path {...T} d="m4.6 12.6 6.8 6.8M7.6 16.4l-3.9 3.9" />
+    <circle {...P} cx="3.3" cy="20.7" r="1.1" />
+  </>),
+  cube: I("Sandbox / construction", "Jeux", <>
+    <path {...F} d="M12 2.8 20 7.3v9.4l-8 4.5-8-4.5V7.3Z" />
+    <path {...T} d="m4 7.3 8 4.5 8-4.5M12 11.8v9.4" />
+    <path {...P} d="m12 5.2 3.6 2-3.6 2-3.6-2 3.6-2Z" opacity=".55" />
+  </>),
+  volant: I("Course / volant", "Jeux", <>
+    <circle {...F} cx="12" cy="12" r="9" />
+    <circle {...T} cx="12" cy="12" r="2.8" />
+    <path {...T} d="M12 14.8V21M9.4 11 3.4 9.6M14.6 11l6-1.4" />
+    <circle {...P} cx="12" cy="12" r="1" />
+  </>),
   course: I("Runner", "Jeux", <>
     <circle {...P} cx="15.5" cy="4.3" r="2.1" />
     <path {...T} d="M8 21l3.2-5.2 3.3 2.3V22M11.2 15.8 13 9l4 3.2 3 .4M13 9l-4.2.6-2.1 3.1" />

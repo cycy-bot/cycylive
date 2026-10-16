@@ -7,6 +7,7 @@ import type { EtapeTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
+import { ILLUSTRATIONS_JEU, illustrationPour } from "@/lib/illustrationJeu";
 import type { DonneesGaming } from "@/lib/gamingStore";
 import { AFFICHAGES_PARTENAIRE, type Partenaire } from "@/data/partners";
 import AdminArcade from "@/components/admin/AdminArcade";
@@ -1249,6 +1250,19 @@ export default function AdminPage() {
                   onChange={(e) => modifierAutreJeu(index, { description: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
+                <label className="flex items-center gap-2 text-xs text-ink-soft">
+                  Illustration
+                  <select
+                    value={jeu.illustration ?? ""}
+                    onChange={(e) => modifierAutreJeu(index, { illustration: e.target.value || undefined })}
+                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  >
+                    <option value="">Automatique ({illustrationPour(jeu.nom).label})</option>
+                    {ILLUSTRATIONS_JEU.map((i) => (
+                      <option key={i.cle} value={i.cle}>{i.label}</option>
+                    ))}
+                  </select>
+                </label>
                 <input
                   type="text"
                   placeholder="Lien vers un clip/contenu (optionnel)"

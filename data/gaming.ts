@@ -9,6 +9,7 @@ export type AutreJeu = {
   nom: string;
   description: string;
   lienClip?: string; // optionnel : lien vers un clip/contenu de ce jeu
+  illustration?: string; // optionnel : clé de lib/illustrationJeu.ts (sinon devinée depuis le nom)
 };
 
 export type JeuDuMoment = {

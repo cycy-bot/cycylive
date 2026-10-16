@@ -11,7 +11,8 @@ import AccentCosmique from "@/components/AccentCosmique";
 import TexteRiche from "@/components/TexteRiche";
 import CarouselFleches from "@/components/CarouselFleches";
 import EmblemeRang from "@/components/gaming/EmblemeRang";
-import { IconValorant, IconTwitch, IconStar4 } from "@/components/Icons";
+import { IconValorant, IconTwitch } from "@/components/Icons";
+import { illustrationPour } from "@/lib/illustrationJeu";
 import Icone, { Pastille } from "@/components/icones/Icone";
 import TitreSection from "@/components/icones/TitreSection";
 
@@ -318,20 +319,34 @@ export default async function GamingPage() {
         <section id="autres-jeux" className="scroll-mt-24 mb-12" aria-labelledby="autres-titre">
           <TitreSection id="autres-titre" icone="joystick" className="mb-5">Autres jeux</TitreSection>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {gaming.autresJeux.map((jeu) => (
-              <div key={jeu.id} className="carte-holo rounded-2xl p-5 flex flex-col">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet/15 border border-violet/25 text-violet-light mb-3">
-                  <IconStar4 className="w-4 h-4" />
-                </span>
-                <h3 className="text-ink font-semibold mb-1.5">{jeu.nom}</h3>
-                <p className="text-ink-soft text-sm mb-3">{jeu.description}</p>
-                {jeu.lienClip && (
-                  <a href={jeu.lienClip} target="_blank" rel="noopener noreferrer" className="mt-auto text-violet-light hover:text-lilac text-sm font-medium transition-colors">
-                    Voir un contenu <Icone nom="fleche" className="w-4 h-4" />
-                  </a>
-                )}
-              </div>
-            ))}
+            {gaming.autresJeux.map((jeu) => {
+              const illu = illustrationPour(jeu.nom, jeu.illustration);
+              return (
+                <div key={jeu.id} className="group carte-holo rounded-2xl overflow-hidden flex flex-col">
+                  {/* illustration : icône du genre sur un halo coloré + petites étoiles */}
+                  <div
+                    className="relative h-32 flex items-center justify-center overflow-hidden border-b border-white/5"
+                    style={{ background: `radial-gradient(circle at 50% 60%, rgba(${illu.couleur},.38), transparent 62%), linear-gradient(160deg, rgba(${illu.couleur},.16), rgba(13,10,23,.9))` }}
+                    aria-hidden
+                  >
+                    <span className="absolute inset-0 opacity-60" style={{ backgroundImage: "radial-gradient(1px 1px at 18% 30%, #fff, transparent), radial-gradient(1px 1px at 78% 22%, #fff, transparent), radial-gradient(1.5px 1.5px at 66% 78%, #fff, transparent), radial-gradient(1px 1px at 30% 80%, #fff, transparent)" }} />
+                    <span className="absolute h-24 w-24 rounded-full border border-white/10" />
+                    <span className="absolute h-36 w-36 rounded-full border border-white/5" />
+                    <Icone nom={illu.icone} className={`relative w-14 h-14 ${illu.texte} transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6`} style={{ filter: `drop-shadow(0 0 14px rgba(${illu.couleur},.7))` }} />
+                    <span className="absolute bottom-2 right-3 rounded-full bg-black/35 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">{illu.label.split(" /")[0]}</span>
+                  </div>
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="text-ink font-semibold mb-1.5">{jeu.nom}</h3>
+                    <p className="text-ink-soft text-sm mb-3">{jeu.description}</p>
+                    {jeu.lienClip && (
+                      <a href={jeu.lienClip} target="_blank" rel="noopener noreferrer" className="mt-auto text-violet-light hover:text-lilac text-sm font-medium transition-colors">
+                        Voir un contenu <Icone nom="fleche" className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
       )}
