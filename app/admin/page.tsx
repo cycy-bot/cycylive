@@ -742,8 +742,8 @@ export default function AdminPage() {
       {onglet === "planning" && (
         <>
           <p className="text-ink-soft mb-6 text-sm">
-            Coche "OFF" pour un jour sans live, ou remplis l'heure (et le jeu
-            si tu veux). Le jeu est optionnel : sans jeu, le site affiche
+            Coche "OFF" pour un jour sans live, ou remplis l'heure de début, l'heure
+            de fin (facultative, ex. « 1h ») et le jeu si tu veux. Le jeu est optionnel : sans jeu, le site affiche
             "Stream". C'est ton planning habituel, répété chaque semaine : pour
             changer une date précise (live annulé, horaire décalé…), va dans{" "}
             <button type="button" onClick={() => setOnglet("calendrier")} className="text-lilac underline">🗓️ Calendrier</button>.
@@ -774,6 +774,15 @@ export default function AdminPage() {
                       placeholder="21h30"
                       value={jour.heure ?? ""}
                       onChange={(e) => modifierJour(index, { heure: e.target.value })}
+                      className="w-24 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    />
+                    <span className="text-ink-soft text-sm" aria-hidden>→</span>
+                    <input
+                      type="text"
+                      placeholder="Fin (1h)"
+                      aria-label={`Heure de fin du ${jour.jour}`}
+                      value={jour.fin ?? ""}
+                      onChange={(e) => modifierJour(index, { fin: e.target.value })}
                       className="w-24 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                     />
                     <input

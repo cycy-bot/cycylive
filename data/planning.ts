@@ -17,6 +17,7 @@ export type JourPlanning = {
   off: boolean;
   jeu?: string;
   heure?: string; // format "21h30"
+  fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
 };
 
 export const LABEL_GENERIQUE = "Stream";

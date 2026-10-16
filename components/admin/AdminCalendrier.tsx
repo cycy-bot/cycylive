@@ -105,7 +105,7 @@ export default function AdminCalendrier({ planning, calendrier, onChange, onEnre
                         {NOMS[i].slice(0, 3)}. {court(date)}
                       </span>
                       <span className="w-36 shrink-0 text-xs text-ink-soft">
-                        {habituel && !habituel.off ? `Habituel : ${habituel.heure ?? ""}${habituel.jeu ? ` · ${habituel.jeu}` : ""}` : "Habituel : OFF"}
+                        {habituel && !habituel.off ? `Habituel : ${habituel.heure ?? ""}${habituel.fin ? `→${habituel.fin}` : ""}${habituel.jeu ? ` · ${habituel.jeu}` : ""}` : "Habituel : OFF"}
                       </span>
                       <select
                         aria-label={`Live du ${court(date)}`}
@@ -115,7 +115,7 @@ export default function AdminCalendrier({ planning, calendrier, onChange, onEnre
                           const v = e.target.value;
                           if (v === "habituel") changerException(date, null);
                           else if (v === "off") changerException(date, { off: true, note: ex?.note });
-                          else changerException(date, { off: false, heure: ex?.heure || habituel?.heure || "21h30", jeu: ex?.jeu || habituel?.jeu, note: ex?.note });
+                          else changerException(date, { off: false, heure: ex?.heure || habituel?.heure || "21h30", fin: ex?.fin || habituel?.fin, jeu: ex?.jeu || habituel?.jeu, note: ex?.note });
                         }}
                         className={CHAMP}
                       >
@@ -126,6 +126,7 @@ export default function AdminCalendrier({ planning, calendrier, onChange, onEnre
                       {mode === "change" && ex ? (
                         <>
                           <input aria-label="Heure" value={ex.heure ?? ""} placeholder="21h30" onChange={(e) => changerException(date, { ...ex, heure: e.target.value })} className={`${CHAMP} w-20`} />
+ <input aria-label="Heure de fin" value={ex.fin ?? ""} placeholder="Fin" onChange={(e) => changerException(date, { ...ex, fin: e.target.value })} className={`${CHAMP} w-20`} />
                           <input aria-label="Jeu" value={ex.jeu ?? ""} placeholder="Jeu" onChange={(e) => changerException(date, { ...ex, jeu: e.target.value })} className={`${CHAMP} w-32`} />
                         </>
                       ) : null}

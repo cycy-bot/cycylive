@@ -49,6 +49,7 @@ export default async function Planning() {
                 </span>
                 <span className="text-ink text-sm font-semibold">
                   {jour.heure}
+                  {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
                 </span>
               </>
             )}
