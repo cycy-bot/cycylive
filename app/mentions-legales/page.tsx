@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
+
+export const metadata: Metadata = {
+  title: "Mentions légales | Cycylive",
+  description: "Mentions légales du site cycylive.fr : éditrice, hébergement et propriété intellectuelle.",
+  alternates: { canonical: "/mentions-legales" },
+};
 
 export default function MentionsLegalesPage() {
   return (

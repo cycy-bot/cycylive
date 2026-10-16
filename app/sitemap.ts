@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
-const SITE_URL = "https://cycylive.fr";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const pages = [

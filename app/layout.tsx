@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { SITE_URL } from "@/lib/site";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
@@ -22,7 +23,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://cycylive.fr"),
+  metadataBase: new URL(SITE_URL),
+  applicationName: "Cycylive",
   title: "Cycylive — Streameuse & créatrice de contenu",
   description:
     "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
@@ -30,8 +32,8 @@ export const metadata: Metadata = {
     title: "Cycylive — Streameuse & créatrice de contenu",
     description:
       "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
-    images: ["/og-image.jpg"],
     type: "website",
+    siteName: "Cycylive",
     locale: "fr_FR",
   },
   twitter: {
@@ -39,8 +41,12 @@ export const metadata: Metadata = {
     title: "Cycylive — Streameuse & créatrice de contenu",
     description:
       "Le hub central de Cycylive : lives Twitch, planning, réseaux, communauté et partenariats.",
-    images: ["/og-image.jpg"],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0d0a17",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({

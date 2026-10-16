@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
+
+export const metadata: Metadata = {
+  title: "Politique de confidentialité | Cycylive",
+  description: "Quelles données sont collectées sur cycylive.fr, pourquoi, et comment exercer tes droits (RGPD).",
+  alternates: { canonical: "/confidentialite" },
+};
 
 export default function ConfidentialitePage() {
   return (
