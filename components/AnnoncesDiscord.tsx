@@ -1,4 +1,5 @@
 import { obtenirAnnoncesDiscord } from "@/lib/discordAnnonces";
+import Icone from "@/components/icones/Icone";
 
 function formaterDate(iso: string): string {
   return new Intl.DateTimeFormat("fr-FR", {
@@ -51,7 +52,7 @@ export default async function AnnoncesDiscord({ limite = 3 }: { limite?: number 
 
           {a.sondage && (
             <div className="rounded-xl bg-white/[0.03] p-3 mt-1">
-              <p className="text-sm text-ink font-medium mb-2">📊 {a.sondage.question}</p>
+              <p className="text-sm text-ink font-medium mb-2"><Icone nom="graphique" className="w-4 h-4 mr-1.5 text-violet-light" />{a.sondage.question}</p>
               <div className="space-y-1.5">
                 {a.sondage.options.map((o, i) => (
                   <div key={i} className="flex items-center justify-between text-xs text-ink-soft">

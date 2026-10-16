@@ -1,10 +1,13 @@
 // Blocs de présentation de la page Cycy_Bot (cartes + encarts « en direct » alimentés par le bot).
 import type { DiscordCycyBot, ObjetMarche } from "@/lib/cycybot";
+import Icone, { Pastille } from "@/components/icones/Icone";
+import { iconeObjet, iconeDestination } from "@/components/icones/correspondances";
+import type { NomIcone } from "@/components/icones/banque";
 
-export type Bloc = { id: string; emoji: string; titre: string; texte: string; commandes: string[] };
+export type Bloc = { id: string; icone: NomIcone; titre: string; texte: string; commandes: string[] };
 
 export const nf = (n: number) => n.toLocaleString("fr-FR");
-export const etoiles = (n: number) => "⭐".repeat(Math.max(1, Math.min(5, n)));
+export const etoiles = (n: number) => "★".repeat(Math.max(1, Math.min(5, n)));
 export const duree = (h: number) => (h >= 1 ? `${h.toLocaleString("fr-FR")} h` : `${Math.round(h * 60)} min`);
 export const dateFr = (iso: string) => iso.split("-").reverse().join("/");
 
@@ -24,9 +27,7 @@ export function Pastilles({ noms }: { noms: string[] }) {
 export function CarteBloc({ bloc, children }: { bloc: Bloc; children?: React.ReactNode }) {
   return (
     <div id={bloc.id} className="carte-holo rounded-2xl p-5 hover:shadow-glow-sm transition-all scroll-mt-24 flex flex-col">
-      <span className="text-2xl" aria-hidden>
-        {bloc.emoji}
-      </span>
+      <Pastille nom={bloc.icone} />
       <h3 className="text-ink font-semibold mt-3 mb-1.5">{bloc.titre}</h3>
       <p className="text-sm text-ink-soft leading-relaxed">{bloc.texte}</p>
       {children}
@@ -43,10 +44,10 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
     const ligne = (o: ObjetMarche) => (
       <li key={o.name} className="flex justify-between gap-3">
         <span className="truncate">
-          {o.emoji} {o.name}
+          <Icone nom={iconeObjet(o.name)} className="w-3.5 h-3.5 mr-1" />{o.name}
         </span>
         <span className="shrink-0 text-lilac">
-          {nf(o.price)} {o.currency === "fragments" ? "🧩" : "✦"}
+          {nf(o.price)} <Icone nom={o.currency === "fragments" ? "puzzle" : "eclats"} className="w-3.5 h-3.5" />
         </span>
       </li>
     );
@@ -58,7 +59,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
           {d.market.weekly.map(ligne)}
           {d.market.hasSecret && (
             <li className="flex justify-between gap-3">
-              <span>🔒 Objet clandestin ???</span>
+              <span><Icone nom="cadenas" className="w-3.5 h-3.5 mr-1" />Objet clandestin ???</span>
               <span className="text-lilac">?</span>
             </li>
           )}
@@ -74,7 +75,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
           {d.destinations.map((x) => (
             <li key={x.name} className="flex justify-between gap-3">
               <span className="truncate">
-                {x.emoji} {x.name}
+                <Icone nom={iconeDestination(x.name)} className="w-3.5 h-3.5 mr-1" />{x.name}
               </span>
               <span className="shrink-0">
                 {duree(x.hours)} · {etoiles(x.difficulty)}
@@ -120,7 +121,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
   if (id === "anomalies" && d.anomaly) {
     return (
       <div className="mt-4 rounded-xl bg-red-500/10 border border-red-400/30 p-3 text-xs text-ink">
-        ⚠️ Anomalie en cours : <strong>{d.anomaly.emoji} {d.anomaly.label}</strong>, file sur le Discord !
+        <Icone nom="alerte" className="w-4 h-4 mr-1 text-red-300" />Anomalie en cours : <strong>{d.anomaly.label}</strong>, file sur le Discord !
       </div>
     );
   }
@@ -132,7 +133,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
           {d.chapters.slice(0, 4).map((c) => (
             <li key={c.num} className="flex justify-between gap-3">
               <span className="truncate">
-                {String(c.num).padStart(3, "0")} · {c.emoji} {c.title}
+                {String(c.num).padStart(3, "0")} · {c.title}
               </span>
               <span className="shrink-0">{dateFr(c.date)}</span>
             </li>

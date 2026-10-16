@@ -1,9 +1,10 @@
 "use client";
 
-// 🎯 Réflexes Valorant : 30 secondes pour toucher un maximum de cibles avant qu'elles
+// Réflexes Valorant : 30 secondes pour toucher un maximum de cibles avant qu'elles
 // ne rétrécissent. Plus tu es rapide, plus la cible rapporte (100 + jusqu'à 50 de bonus).
 // Un tir dans le vide coûte 25 points.
 import { useEffect, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
 const DUREE = 30;
@@ -115,7 +116,7 @@ export default function Reflexes({ onDebut, onFin }: PropsJeu) {
       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 opacity-30" style={{ background: "repeating-linear-gradient(90deg, transparent 0 58px, #ff465533 58px 60px)", maskImage: "linear-gradient(transparent, black)" }} />
       {phase === "depart" ? (
         <EcranDepart
-          emoji="🎯"
+          icone="cible"
           titre="Réflexes Valorant"
           regles={<>30 secondes pour toucher un maximum de cibles. Plus tu tires vite, plus ça rapporte ; les cibles rétrécissent et arrivent de plus en plus vite. <strong className="text-ink">Un tir dans le vide coûte 25 points</strong>, vise juste !</>}
           onJouer={lancer}
@@ -125,8 +126,8 @@ export default function Reflexes({ onDebut, onFin }: PropsJeu) {
       {phase === "jeu" ? (
         <>
           <div className="pointer-events-none absolute left-4 right-4 top-3 flex justify-between text-sm font-semibold text-ink tabular-nums">
-            <span>⏱️ {reste.toFixed(1)} s</span>
-            <span>🎯 {e.touches} · {e.tirs ? Math.round((e.touches / e.tirs) * 100) : 100} %</span>
+            <span><Icone nom="chrono" className="w-4 h-4 mr-1" />{reste.toFixed(1)} s</span>
+            <span><Icone nom="cible" className="w-4 h-4 mr-1" />{e.touches} · {e.tirs ? Math.round((e.touches / e.tirs) * 100) : 100} %</span>
             <span className="text-lilac">{Math.max(0, e.score).toLocaleString("fr-FR")} pts</span>
           </div>
           <div className="pointer-events-none absolute left-0 top-0 h-1 bg-[#ff4655]" style={{ width: `${(reste / DUREE) * 100}%` }} />

@@ -27,7 +27,7 @@ export default async function LeaderboardPage() {
 
       <EntetePage
         retour={{ href: "/cycybot", label: "Cycy_Bot" }}
-        surtitre="🏆 Leaderboard"
+        surtitre="Leaderboard" icone="trophee"
         titre="Les Cycyliens à l'honneur"
         intro={<>Ceux qui font vivre la galaxie, live après live. Tape <code className="text-lilac">!top</code> dans le chat pour retrouver cette page à tout moment.</>}
       />

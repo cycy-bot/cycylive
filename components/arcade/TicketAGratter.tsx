@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Icone, { Pastille } from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 import { idAppareil } from "@/components/arcade/appareil";
 
 // ============================================================
@@ -26,14 +28,14 @@ const COULEURS: Record<string, { fond: string; texte: string; halo: string }> = 
   mythique: { fond: "#3b1033", texte: "#f9a8d4", halo: "rgba(244,114,182,0.6)" },
 };
 
-const GAINS_POSSIBLES = [
-  ["⭐", "Points stellaires", "Commun à peu commun"],
-  ["✦", "Éclats", "Commun à peu commun"],
-  ["🎴", "Booster de Cartes Astrales", "Rare"],
-  ["🧩", "Fragment d'étoile", "Rare"],
-  ["💫", "Points + Éclats", "Épique"],
-  ["🌠", "2 boosters + 1 fragment", "Légendaire"],
-  ["🌈", "Jackpot : 3 boosters + 3 fragments + 250 Éclats", "Mythique"],
+const GAINS_POSSIBLES: [NomIcone, string, string][] = [
+  ["etoile", "Points stellaires", "Commun à peu commun"],
+  ["eclats", "Éclats", "Commun à peu commun"],
+  ["cartes", "Booster de Cartes Astrales", "Rare"],
+  ["puzzle", "Fragment d'étoile", "Rare"],
+  ["comete", "Points + Éclats", "Épique"],
+  ["fusee", "2 boosters + 1 fragment", "Légendaire"],
+  ["couronne", "Jackpot : 3 boosters + 3 fragments + 250 Éclats", "Mythique"],
 ];
 
 function lire(cle: string): string {
@@ -83,7 +85,7 @@ function CoucheAGratter({ onFini }: { onFini: () => void }) {
     ctx.fillStyle = "rgba(60,40,110,0.75)";
     ctx.font = "700 22px system-ui, sans-serif";
     ctx.textAlign = "center";
-    ctx.fillText("✨ GRATTE ICI ✨", l / 2, h / 2 + 2);
+    ctx.fillText("✦ GRATTE ICI ✦", l / 2, h / 2 + 2);
     ctx.font = "500 13px system-ui, sans-serif";
     ctx.fillText("avec ta souris ou ton doigt", l / 2, h / 2 + 24);
   }, []);
@@ -177,13 +179,11 @@ export default function TicketAGratter() {
       <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8 shadow-glow-sm">
         {!ticket ? (
           <div className="text-center py-10 md:py-16">
-            <p className="text-5xl mb-4" aria-hidden>
-              🎟️
-            </p>
+            <Pastille nom="ticket" teinte="or" taille="lg" className="mb-4" />
             <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-2">Ton ticket galactique du jour</h2>
             <p className="text-ink-soft max-w-lg mx-auto mb-6">
               Un ticket gratuit chaque jour. Gratte-le pour découvrir ton gain : points stellaires, Éclats, booster de Cartes Astrales,
-              fragment d&apos;étoile… et peut-être le jackpot 🌈
+              fragment d&apos;étoile… et peut-être le jackpot !
             </p>
             <button
               type="button"
@@ -234,7 +234,7 @@ export default function TicketAGratter() {
                 ) : (
                   <>
                     <p className="text-ink font-semibold text-lg mb-1">
-                      {["legendaire", "mythique"].includes(ticket.prize.rarity) ? "🎉 Incroyable !" : "Bravo !"} Récupère ton gain sur Discord :
+                      {["legendaire", "mythique"].includes(ticket.prize.rarity) ? "Incroyable !" : "Bravo !"} Récupère ton gain sur Discord :
                     </p>
                     {/* Sur ordinateur, une commande collée en entier n'est pas reconnue par Discord : on ne copie que le code */}
                     <ol className="text-ink-soft text-sm mb-4 mx-auto max-w-md text-left space-y-1 list-decimal list-inside">
@@ -274,7 +274,7 @@ export default function TicketAGratter() {
                 )}
               </div>
             ) : (
-              <p className="mt-5 text-center text-sm text-ink-soft">Gratte la zone argentée pour découvrir ton gain ✨</p>
+              <p className="mt-5 text-center text-sm text-ink-soft">Gratte la zone argentée pour découvrir ton gain.</p>
             )}
           </div>
         )}
@@ -298,9 +298,7 @@ export default function TicketAGratter() {
         <ul className="space-y-1.5 text-sm">
           {GAINS_POSSIBLES.map(([e, nom, rarete]) => (
             <li key={nom} className="flex items-center gap-2">
-              <span aria-hidden className="w-6 text-center">
-                {e}
-              </span>
+              <Icone nom={e} className="w-5 h-5 text-lilac" />
               <span className="flex-1 text-ink-soft">{nom}</span>
               <span className="text-xs text-ink-soft/60 whitespace-nowrap">{rarete}</span>
             </li>

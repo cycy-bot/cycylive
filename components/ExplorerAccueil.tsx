@@ -3,13 +3,15 @@ import Link from "next/link";
 import Image from "next/image";
 import MiniatureJeu from "@/components/arcade/MiniatureJeu";
 import { IconValorant, IconTrophy, IconArrowRight } from "@/components/Icons";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 
 const carte = "group relative flex flex-col overflow-hidden rounded-3xl border border-violet/15 bg-card/80 transition-all duration-300 hover:-translate-y-1 hover:border-violet/45 hover:shadow-glow-sm";
 
-function Pied({ titre, texte }: { titre: string; texte: string }) {
+function Pied({ titre, texte, icone }: { titre: string; texte: string; icone: NomIcone }) {
   return (
     <div className="flex flex-1 flex-col p-5">
-      <h3 className="text-lg font-semibold text-ink">{titre}</h3>
+      <h3 className="flex items-center gap-2 text-lg font-semibold text-ink"><Icone nom={icone} className="w-5 h-5 text-violet-light" />{titre}</h3>
       <p className="mt-1 text-sm leading-relaxed text-ink-soft">{texte}</p>
       <span className="mt-auto pt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-violet-light group-hover:text-lilac">
         Découvrir <IconArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
@@ -27,14 +29,14 @@ export default function ExplorerAccueil() {
           <div className="relative aspect-[16/10] overflow-hidden">
             <MiniatureJeu id="runner" className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105" />
           </div>
-          <Pied titre="🕹️ Les jeux" texte="Six jeux à records et des récompenses du jour pour le Discord." />
+          <Pied icone="joystick" titre="Les jeux" texte="Six jeux à records et des récompenses du jour pour le Discord." />
         </Link>
 
         <Link href="/cycybot" className={carte}>
           <div className="relative aspect-[16/10] overflow-hidden bg-nebula">
             <Image src="/images/cycybot/passeport.jpg" alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
           </div>
-          <Pied titre="🤖 Cycy_Bot" texte="Passeport galactique, Cartes Astrales, Éclats et Marché noir sur le Discord." />
+          <Pied icone="robot" titre="Cycy_Bot" texte="Passeport galactique, Cartes Astrales, Éclats et Marché noir sur le Discord." />
         </Link>
 
         <Link href="/gaming" className={carte}>
@@ -44,7 +46,7 @@ export default function ExplorerAccueil() {
           >
             <IconValorant className="w-16 h-16 text-rose-300 drop-shadow-[0_0_18px_rgba(255,70,85,0.6)] transition-transform duration-500 group-hover:scale-110" />
           </div>
-          <Pied titre="🎯 Valorant & clips" texte="Mon rank en direct, mes agents et les derniers clips des lives." />
+          <Pied icone="cible" titre="Valorant & clips" texte="Mon rank en direct, mes agents et les derniers clips des lives." />
         </Link>
 
         <Link href="/cycybot/leaderboard" className={carte}>
@@ -58,7 +60,7 @@ export default function ExplorerAccueil() {
             <span className="h-[48%] w-1/4 rounded-t-xl bg-gradient-to-b from-amber-300/45 to-amber-300/5 flex justify-center pt-1 font-display font-bold text-amber-200">1</span>
             <span className="h-[24%] w-1/4 rounded-t-xl bg-gradient-to-b from-orange-400/40 to-orange-400/5 flex justify-center pt-1 font-display font-bold text-orange-200">3</span>
           </div>
-          <Pied titre="🏆 Leaderboard" texte="Les Cycyliens les plus présents, les plus bavards et les plus généreux." />
+          <Pied icone="trophee" titre="Leaderboard" texte="Les Cycyliens les plus présents, les plus bavards et les plus généreux." />
         </Link>
       </div>
     </section>

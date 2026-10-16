@@ -3,6 +3,7 @@
 // Barre de navigation entre les jeux : retour à la vitrine + accès direct à chaque jeu.
 // Défile horizontalement sur mobile ; le jeu en cours est mis en avant.
 import Link from "next/link";
+import Icone from "@/components/icones/Icone";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { JEUX } from "@/lib/jeux";
@@ -39,7 +40,7 @@ export default function BarreJeux() {
                   actif ? "bg-violet text-ink shadow-glow-sm" : "text-ink-soft hover:bg-violet/10 hover:text-ink"
                 }`}
               >
-                <span aria-hidden>{j.emoji}</span>
+                <Icone nom={j.icone} className="w-[18px] h-[18px]" />
                 <span className={actif ? "" : "hidden 2xl:inline"}>{j.nom}</span>
               </Link>
             </li>

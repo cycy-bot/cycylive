@@ -1,10 +1,11 @@
 "use client";
 
-// ✨ Puzzle des constellations : une vraie constellation s'affiche quelques secondes,
+// Puzzle des constellations : une vraie constellation s'affiche quelques secondes,
 // puis ses traits disparaissent. Retrace-la en cliquant ses étoiles dans l'ordre,
 // en partant de l'étoile qui clignote. Des étoiles pièges se cachent autour !
 // 3 vies. Par niveau : 50 points par étoile + bonus de rapidité (jusqu'à 100).
 import { useEffect, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
 type Etoile = { x: number; y: number };
@@ -111,7 +112,7 @@ export default function Constellations({ onDebut, onFin }: PropsJeu) {
     <div className="relative min-h-[440px] md:min-h-[500px] overflow-hidden rounded-2xl border border-violet/20" style={{ background: "radial-gradient(ellipse at 30% 20%, #241a4d 0%, #0e0a20 60%, #07050f 100%)" }}>
       {phase === "depart" ? (
         <EcranDepart
-          emoji="✨"
+          icone="constellation"
           titre="Puzzle des constellations"
           regles={<>Une constellation s’affiche quelques secondes, puis ses traits s’effacent. <strong className="text-ink">Retrace-la</strong> en cliquant ses étoiles dans l’ordre, depuis l’étoile qui clignote. Attention aux étoiles pièges ! 3 vies.</>}
           onJouer={lancer}
@@ -120,11 +121,11 @@ export default function Constellations({ onDebut, onFin }: PropsJeu) {
         <>
           <div className="absolute left-4 right-4 top-3 z-10 flex justify-between text-sm font-semibold text-ink tabular-nums">
             <span>Niveau {niveau + 1} · {n.nom}</span>
-            <span>{"💜".repeat(Math.max(0, vies))}{"🖤".repeat(Math.max(0, 3 - vies))}</span>
+            <span className="inline-flex gap-0.5" aria-label={`${vies} vies`}>{[0, 1, 2].map((n) => <Icone key={n} nom="coeur" className={`w-4 h-4 ${n < vies ? "text-pink-300" : "text-white/15"}`} />)}</span>
             <span className="text-lilac">{score.current.toLocaleString("fr-FR")} pts</span>
           </div>
           <p className="absolute inset-x-0 bottom-3 z-10 text-center text-sm text-ink-soft">
-            {phase === "memo" ? "👀 Mémorise la forme…" : phase === "trace" ? `Relie les étoiles : ${pas - 1}/${n.chemin.length - 1}` : vies > 0 ? "✨ Bravo !" : "💫 Plus de vies !"}
+            {phase === "memo" ? "Mémorise la forme…" : phase === "trace" ? `Relie les étoiles : ${pas - 1}/${n.chemin.length - 1}` : vies > 0 ? "Bravo !" : "Plus de vies !"}
           </p>
           <svg viewBox={`0 0 ${L} ${H}`} className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid meet">
             {/* poussière d'étoiles décorative */}

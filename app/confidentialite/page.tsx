@@ -4,7 +4,7 @@ import { liens } from "@/data/liens";
 export default function ConfidentialitePage() {
   return (
     <div className="mx-auto max-w-3xl px-5 md:px-8 py-8 md:py-12 text-ink-soft leading-relaxed">
-      <EntetePage surtitre="📄 Informations" titre="Politique de confidentialité" />
+      <EntetePage surtitre="Informations" icone="document" titre="Politique de confidentialité" />
 
       <p className="mb-8 text-sm text-ink-soft/70">
         Cette politique de confidentialité explique quelles données sont

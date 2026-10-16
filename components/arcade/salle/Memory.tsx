@@ -1,13 +1,15 @@
 "use client";
 
-// 🧠 Memory galactique : retrouve les 8 paires le plus vite possible, avec le moins
+// Memory galactique : retrouve les 8 paires le plus vite possible, avec le moins
 // d'erreurs. Score = 3 000 + bonus de vitesse (40 points par seconde sous 90 s)
 // − 25 points par erreur (minimum 100).
 import { useEffect, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
-const SYMBOLES = ["🪐", "🚀", "🌙", "☄️", "🛸", "👾", "🌟", "🔮"];
-type Carte = { id: number; s: string; trouvee: boolean };
+const SYMBOLES: NomIcone[] = ["planete", "fusee", "lune", "comete", "soucoupe", "robot", "etoile", "boule"];
+type Carte = { id: number; s: NomIcone; trouvee: boolean };
 
 function melanger(): Carte[] {
   const cartes = [...SYMBOLES, ...SYMBOLES].map((s, i) => ({ id: i, s, trouvee: false }));
@@ -71,7 +73,7 @@ export default function Memory({ onDebut, onFin }: PropsJeu) {
     <div className="relative min-h-[440px] md:min-h-[500px] overflow-hidden rounded-2xl border border-violet/20 p-4 md:p-6" style={{ background: "radial-gradient(ellipse at 50% 0%, #2b1550 0%, #120b22 60%, #0b0817 100%)" }}>
       {phase === "depart" ? (
         <EcranDepart
-          emoji="🧠"
+          icone="cerveau"
           titre="Memory galactique"
           regles={<>Retourne les cartes deux par deux et retrouve les <strong className="text-ink">8 paires</strong>. Le chrono démarre à la première carte : plus tu es rapide et précis·e, plus ton score grimpe.</>}
           onJouer={() => setPhase("jeu")}
@@ -79,8 +81,8 @@ export default function Memory({ onDebut, onFin }: PropsJeu) {
       ) : (
         <>
           <div className="flex justify-between text-sm font-semibold text-ink tabular-nums mb-4">
-            <span>⏱️ {secondes.toFixed(1)} s</span>
-            <span>🔁 {coups} coups · ❌ {erreurs}</span>
+            <span><Icone nom="chrono" className="w-4 h-4 mr-1" />{secondes.toFixed(1)} s</span>
+            <span><Icone nom="rejouer" className="w-4 h-4 mr-1" />{coups} coups · <Icone nom="erreur" className="w-4 h-4 mx-1" />{erreurs}</span>
             <span className="text-lilac">{scoreMemory(secondes, erreurs).toLocaleString("fr-FR")} pts</span>
           </div>
           <div className="mx-auto grid max-w-[520px] grid-cols-4 gap-2 md:gap-3">
@@ -99,12 +101,12 @@ export default function Memory({ onDebut, onFin }: PropsJeu) {
                     style={{ transform: visible ? "rotateY(180deg)" : "none" }}
                   >
                     <span className="absolute inset-0 flex items-center justify-center rounded-xl border border-violet/35 [backface-visibility:hidden]" style={{ background: "linear-gradient(135deg, #3b1d6e, #1b1033)" }}>
-                      <span className="text-2xl opacity-40">✦</span>
+                      <Icone nom="eclats" className="w-7 h-7 text-lilac opacity-40" />
                     </span>
                     <span
                       className={`absolute inset-0 flex items-center justify-center rounded-xl border text-3xl md:text-4xl [backface-visibility:hidden] [transform:rotateY(180deg)] ${c.trouvee ? "border-emerald-300/60 bg-emerald-300/10" : "border-lilac/60 bg-violet/25"}`}
                     >
-                      {c.s}
+                      <Icone nom={c.s} className={`w-9 h-9 md:w-11 md:h-11 ${c.trouvee ? "text-emerald-300" : "text-lilac"}`} />
                     </span>
                   </span>
                 </button>

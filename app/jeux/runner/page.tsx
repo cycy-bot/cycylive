@@ -20,7 +20,7 @@ export default function RunnerPage() {
       <EnteteJeu jeu={jeu} />
       <div className="flex flex-col gap-6">
         <BorneArcade />
-        <ClassementArcade jeu="runner" titre="🏆 Records · 🏃 Cycy Runner" />
+        <ClassementArcade jeu="runner" titre="Records · Cycy Runner" />
       </div>
       <AutresJeux actuel="runner" />
     </>

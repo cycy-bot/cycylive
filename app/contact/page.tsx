@@ -60,7 +60,7 @@ export default function ContactPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 md:px-8 py-8 md:py-12">
-      <EntetePage surtitre="✉️ Contact" titre={textes.contact.titre} intro={<TexteRiche html={textes.contact.texte} />} />
+      <EntetePage surtitre="Contact" icone="enveloppe" titre={textes.contact.titre} intro={<TexteRiche html={textes.contact.texte} />} />
 
       {statut === "succes" ? (
         <div className="carte-holo rounded-2xl p-8 border border-violet/20 text-center">

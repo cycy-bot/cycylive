@@ -1,10 +1,11 @@
 "use client";
 
-// 🎵 Rythme cosmique : des notes tombent sur 4 couloirs, tape-les pile sur la ligne
+// Rythme cosmique : des notes tombent sur 4 couloirs, tape-les pile sur la ligne
 // (touches D F J K, ou directement sur l'écran). La musique est jouée par le
 // navigateur (Web Audio), aucune piste à télécharger. 60 secondes.
 // Parfait = 100, bien = 50, multiplié par le combo (×2 dès 10, ×3 dès 20, ×4 dès 30).
 import { useEffect, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
 const BPM = 120;
@@ -278,9 +279,9 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
     <div className="relative h-[440px] md:h-[500px] overflow-hidden rounded-2xl border border-violet/20 select-none" style={{ background: "linear-gradient(180deg, #0b0817 0%, #1a0f33 70%, #2a1250 100%)" }}>
       {phase === "depart" ? (
         <EcranDepart
-          emoji="🎵"
+          icone="note"
           titre="Rythme cosmique"
-          regles={<>Tape les notes quand elles passent sur les cercles : touches <strong className="text-ink">D F J K</strong> au clavier, ou directement sur l’écran. Enchaîne sans rater pour multiplier tes points (jusqu’à ×4). Monte le son 🔊</>}
+          regles={<>Tape les notes quand elles passent sur les cercles : touches <strong className="text-ink">D F J K</strong> au clavier, ou directement sur l’écran. Enchaîne sans rater pour multiplier tes points (jusqu’à ×4). Monte le son !</>}
           onJouer={lancer}
         />
       ) : (
@@ -294,13 +295,13 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
             }}
           />
           <div className="pointer-events-none absolute left-4 right-4 top-3 flex justify-between text-sm font-semibold text-ink tabular-nums">
-            <span>⏱️ {Math.max(0, Math.ceil(DUREE - Math.max(0, t)))} s</span>
-            <span>🔥 {j.combo} {j.combo >= 10 ? `· ×${1 + Math.min(3, Math.floor(j.combo / 10))}` : ""}</span>
+            <span><Icone nom="chrono" className="w-4 h-4 mr-1" />{Math.max(0, Math.ceil(DUREE - Math.max(0, t)))} s</span>
+            <span><Icone nom="flamme" className="w-4 h-4 mr-1" />{j.combo} {j.combo >= 10 ? `· ×${1 + Math.min(3, Math.floor(j.combo / 10))}` : ""}</span>
             <span className="text-lilac">{j.score.toLocaleString("fr-FR")} pts</span>
           </div>
           {t < 0 ? <p className="pointer-events-none absolute inset-x-0 top-1/3 text-center text-5xl font-bold text-ink glow-text">{Math.ceil(-t)}</p> : null}
           <button type="button" onClick={() => setSon(!son)} className="absolute right-3 top-10 rounded-full border border-violet/30 bg-void/60 px-3 py-1 text-xs text-ink-soft">
-            {son ? "🔊 Son" : "🔇 Muet"}
+            <Icone nom={son ? "son" : "muet"} className="w-4 h-4 mr-1" />{son ? "Son" : "Muet"}
           </button>
         </>
       )}

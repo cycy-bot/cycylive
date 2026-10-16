@@ -112,7 +112,7 @@ export default async function ReseauxPage() {
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
       <EntetePage
-        surtitre="📱 Réseaux"
+        surtitre="Réseaux" icone="smartphone"
         titre="Me retrouver partout"
         intro="Les lives sur Twitch, et le reste du temps des clips, des coulisses et des vidéos sur mes autres réseaux."
         sommaire={[

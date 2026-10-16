@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 import {
   CYCYBOT_URL_PUBLIC,
   type Classement,
@@ -9,12 +11,12 @@ import {
   type TypeClassement,
 } from "@/lib/cycybot";
 
-const TYPES: { id: TypeClassement; label: string; emoji: string; titre: string }[] = [
-  { id: "messages", label: "Messages", emoji: "💬", titre: "Les plus bavards du chat" },
-  { id: "watch", label: "Présence", emoji: "⏱", titre: "Les plus présents en live" },
-  { id: "streak", label: "Séries", emoji: "🔥", titre: "Les plus fidèles, live après live" },
-  { id: "bits", label: "Bits", emoji: "💎", titre: "Les pluies de bits" },
-  { id: "gifts", label: "Subs offerts", emoji: "🎁", titre: "Les plus généreux" },
+const TYPES: { id: TypeClassement; label: string; icone: NomIcone; titre: string }[] = [
+  { id: "messages", label: "Messages", icone: "bulle", titre: "Les plus bavards du chat" },
+  { id: "watch", label: "Présence", icone: "chrono", titre: "Les plus présents en live" },
+  { id: "streak", label: "Séries", icone: "flamme", titre: "Les plus fidèles, live après live" },
+  { id: "bits", label: "Bits", icone: "diamant", titre: "Les pluies de bits" },
+  { id: "gifts", label: "Subs offerts", icone: "cadeau", titre: "Les plus généreux" },
 ];
 
 const PERIODES: { id: PeriodeClassement; label: string }[] = [
@@ -72,7 +74,7 @@ function Marche({ ligne, type }: { ligne: LigneClassement | undefined; type: Typ
       <div className={`relative rounded-full ${style.glow}`}>
         {ligne.rank === 1 && (
           <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-3xl drop-shadow-[0_0_10px_rgba(252,211,77,0.8)]" aria-hidden>
-            👑
+            <Icone nom="couronne" className="w-8 h-8 text-amber-300" />
           </span>
         )}
         <Avatar ligne={ligne} taille={style.taille} anneau={style.anneau} />
@@ -143,7 +145,7 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
                 : "bg-card/70 border-violet/15 text-ink-soft hover:text-ink hover:border-violet/40"
             }`}
           >
-            <span aria-hidden className="block text-2xl">{t.emoji}</span>
+            <Icone nom={t.icone} className={`mx-auto block w-7 h-7 ${type === t.id ? "text-lilac" : "text-violet-light/80"}`} />
             <span className="mt-1 block text-xs md:text-sm font-semibold">{t.label}</span>
           </button>
         ))}
@@ -178,7 +180,7 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
 
       <div className={`transition-opacity ${chargement ? "opacity-50" : "opacity-100"}`} aria-busy={chargement}>
         <h2 className="text-xl md:text-2xl font-semibold text-ink mb-6">
-          {infos.emoji} {infos.titre}
+          <Icone nom={infos.icone} className="w-6 h-6 mr-2 text-violet-light" />{infos.titre}
           {type !== "streak" && periode === "session" && classement?.live && (
             <span className="ml-3 align-middle text-xs font-medium rounded-full bg-red-500/15 text-red-300 px-2.5 py-1">
               en direct
@@ -192,7 +194,7 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
           </p>
         ) : lignes.length === 0 ? (
           <p className="carte-holo rounded-2xl p-6 text-ink-soft">
-            Personne au classement pour cette période… la place est libre, à toi de jouer au prochain live ! 🚀
+            Personne au classement pour cette période… la place est libre, à toi de jouer au prochain live !
           </p>
         ) : (
           <>

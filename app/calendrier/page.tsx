@@ -16,7 +16,7 @@ export default function CalendrierPage() {
     <div className="mx-auto w-full max-w-[1400px] px-4 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="constellation" />
       <EntetePage
-        surtitre="📅 Calendrier"
+        surtitre="Calendrier" icone="calendrier"
         titre="Calendrier de la communauté"
         className="mb-8"
         intro={<p>

@@ -7,6 +7,8 @@ import SectionGalaxie from "@/components/cycybot/SectionGalaxie";
 import AccentCosmique from "@/components/AccentCosmique";
 import ConsoleCycyBot from "@/components/ConsoleCycyBot";
 import { IconDiscord, IconTwitch } from "@/components/Icons";
+import Icone, { Pastille } from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 
 export const metadata: Metadata = {
   title: "Cycy_Bot | Cycylive",
@@ -25,24 +27,24 @@ export const revalidate = 60;
 
 // ── Twitch ──────────────────────────────────────────────────
 const fonctionsTwitch = [
-  { emoji: "📡", titre: "Il annonce le live", texte: "Début, reprise, fin avec la durée, changement de jeu, et notification sur le Discord." },
-  { emoji: "💜", titre: "Il remercie l'équipage", texte: "Follows, subs, resubs, subs offerts, raids et Hype Train, avec un message pour chaque moment." },
-  { emoji: "🃏", titre: "Il lâche des cartes mystère", texte: "Pendant le live, une carte sauvage apparaît : tape !attraper, un gagnant est tiré au sort et la carte rejoint sa collection Discord." },
-  { emoji: "🔮", titre: "Il lance les prédictions", texte: "En points de chaîne sur Twitch, ou en Éclats Stellaires sur le Discord, avec le résultat annoncé." },
-  { emoji: "🏆", titre: "Il tient le classement", texte: "Messages, présence, séries de lives, bits et subs offerts : chaque Cycylien a sa place au leaderboard." },
-  { emoji: "🛡", titre: "Il protège le chat", texte: "Mode lent après les gros raids, et une vingtaine d'outils pour que les modos agissent en un clin d'œil." },
+  { icone: "antenne" as NomIcone, titre: "Il annonce le live", texte: "Début, reprise, fin avec la durée, changement de jeu, et notification sur le Discord." },
+  { icone: "coeur" as NomIcone, titre: "Il remercie l'équipage", texte: "Follows, subs, resubs, subs offerts, raids et Hype Train, avec un message pour chaque moment." },
+  { icone: "cartes" as NomIcone, titre: "Il lâche des cartes mystère", texte: "Pendant le live, une carte sauvage apparaît : tape !attraper, un gagnant est tiré au sort et la carte rejoint sa collection Discord." },
+  { icone: "boule" as NomIcone, titre: "Il lance les prédictions", texte: "En points de chaîne sur Twitch, ou en Éclats Stellaires sur le Discord, avec le résultat annoncé." },
+  { icone: "trophee" as NomIcone, titre: "Il tient le classement", texte: "Messages, présence, séries de lives, bits et subs offerts : chaque Cycylien a sa place au leaderboard." },
+  { icone: "bouclier" as NomIcone, titre: "Il protège le chat", texte: "Mode lent après les gros raids, et une vingtaine d'outils pour que les modos agissent en un clin d'œil." },
 ];
 
 const aEssayer = ["attraper", "eclats", "watchtime", "8ball"];
 
 // ── Discord ─────────────────────────────────────────────────
 const blocsDiscord: Bloc[] = [
-  { id: "passeport", emoji: "🪪", titre: "Le passeport galactique", texte: "Ta carte d'identité de Cycylien : infos, rang, succès et tampons, avec plus de 30 thèmes à débloquer, des cadres, des titres et des effets de nom.", commandes: ["passeport", "rank", "leaderboard"] },
-  { id: "jeux", emoji: "🎮", titre: "Des jeux chaque jour", texte: "Explorer la galaxie, chasser les étoiles, ouvrir un coffre, le quiz, le mot mystère, les duels et le défi galactique du jour : de quoi monter d'orbite.", commandes: ["jeux", "explorer", "quiz", "duel"] },
-  { id: "cartes", emoji: "🃏", titre: "Les Cartes Astrales", texte: "Un vrai jeu de cartes à collectionner : un booster gratuit par jour, six raretés, des brillantes, des mythiques en dix exemplaires et des cartes à l'effigie de la commu.", commandes: ["booster", "collection", "fabriquer"] },
-  { id: "succes", emoji: "🏅", titre: "Des succès à trois niveaux", texte: "Chaque succès monte jusqu'au niveau III : boosters, rôles « aguerri·e », thèmes Prestige et Légende, cartes Trophées… et le titre ultime de Maître des succès.", commandes: ["passeport"] },
-  { id: "musique", emoji: "🎵", titre: "La musique en vocal", texte: "Colle un lien Spotify (titre, album ou playlist) et CycyBot le joue dans ton salon vocal, avec une file d'attente partagée.", commandes: ["jouer", "file", "volume"] },
-  { id: "vocaux", emoji: "🔊", titre: "Des vocaux rien qu'à toi", texte: "Rejoins le salon de création et ton propre vocal apparaît : nom, limite, verrou, invités… tu gères tout, il disparaît quand il se vide.", commandes: ["vocal"] },
+  { id: "passeport", icone: "badge", titre: "Le passeport galactique", texte: "Ta carte d'identité de Cycylien : infos, rang, succès et tampons, avec plus de 30 thèmes à débloquer, des cadres, des titres et des effets de nom.", commandes: ["passeport", "rank", "leaderboard"] },
+  { id: "jeux", icone: "manette", titre: "Des jeux chaque jour", texte: "Explorer la galaxie, chasser les étoiles, ouvrir un coffre, le quiz, le mot mystère, les duels et le défi galactique du jour : de quoi monter d'orbite.", commandes: ["jeux", "explorer", "quiz", "duel"] },
+  { id: "cartes", icone: "cartes", titre: "Les Cartes Astrales", texte: "Un vrai jeu de cartes à collectionner : un booster gratuit par jour, six raretés, des brillantes, des mythiques en dix exemplaires et des cartes à l'effigie de la commu.", commandes: ["booster", "collection", "fabriquer"] },
+  { id: "succes", icone: "medaille", titre: "Des succès à trois niveaux", texte: "Chaque succès monte jusqu'au niveau III : boosters, rôles « aguerri·e », thèmes Prestige et Légende, cartes Trophées… et le titre ultime de Maître des succès.", commandes: ["passeport"] },
+  { id: "musique", icone: "note", titre: "La musique en vocal", texte: "Colle un lien Spotify (titre, album ou playlist) et CycyBot le joue dans ton salon vocal, avec une file d'attente partagée.", commandes: ["jouer", "file", "volume"] },
+  { id: "vocaux", icone: "son", titre: "Des vocaux rien qu'à toi", texte: "Rejoins le salon de création et ton propre vocal apparaît : nom, limite, verrou, invités… tu gères tout, il disparaît quand il se vide.", commandes: ["vocal"] },
 ];
 
 
@@ -92,7 +94,7 @@ export default async function CycyBotPage() {
           </h1>
           <p className="text-ink-soft text-lg leading-relaxed mb-5 max-w-xl">
             {donnees?.bot.bio ||
-              "Le bot officiel de Cycylive. Il veille sur le chat Twitch pendant que Cycy essaie de viser, et fait vivre toute une galaxie sur le Discord. 🎯"}
+              "Le bot officiel de Cycylive. Il veille sur le chat Twitch pendant que Cycy essaie de viser, et fait vivre toute une galaxie sur le Discord."}
           </p>
 
           {donnees && (
@@ -119,13 +121,13 @@ export default async function CycyBotPage() {
               href="#discord"
               className="rounded-full px-5 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 hover:text-ink transition-all"
             >
-              ✦ L&apos;univers Discord
+              <Icone nom="soucoupe" className="w-4 h-4 mr-1.5" />L&apos;univers Discord
             </a>
             <Link
               href="/cycybot/leaderboard"
               className="rounded-full px-5 py-2.5 border border-violet/30 text-ink-soft text-sm font-medium hover:bg-violet/10 hover:text-ink transition-all"
             >
-              🏆 Leaderboard
+              <Icone nom="trophee" className="w-4 h-4 mr-1.5" />Leaderboard
             </Link>
           </div>
         </div>
@@ -153,7 +155,7 @@ export default async function CycyBotPage() {
 
       {discord?.anomaly && (
         <div className="mb-10 rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-ink" role="status">
-          ⚠️ <strong>Anomalie détectée sur le Discord :</strong> {discord.anomaly.emoji} {discord.anomaly.label}. Fonce en profiter !
+          <Icone nom="alerte" className="w-4 h-4 mr-1" /> <strong>Anomalie détectée sur le Discord :</strong> {discord.anomaly.label}. Fonce en profiter !
         </div>
       )}
 
@@ -171,9 +173,7 @@ export default async function CycyBotPage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {fonctionsTwitch.map((f) => (
             <div key={f.titre} className="carte-holo rounded-2xl p-5 hover:shadow-glow-sm transition-all">
-              <span className="text-2xl" aria-hidden>
-                {f.emoji}
-              </span>
+              <Pastille nom={f.icone} />
               <h3 className="text-ink font-semibold mt-3 mb-1.5">{f.titre}</h3>
               <p className="text-sm text-ink-soft leading-relaxed">{f.texte}</p>
             </div>
@@ -276,7 +276,7 @@ export default async function CycyBotPage() {
       {/* Accès rapides */}
       <section className="grid md:grid-cols-2 gap-4 mb-16">
         <Link href="/cycybot/commandes" className="group carte-holo rounded-2xl p-6 hover:shadow-glow-sm transition-all">
-          <span className="text-3xl" aria-hidden>🛰</span>
+          <Pastille nom="clavier" taille="lg" />
           <h2 className="text-xl font-semibold text-ink mt-3 mb-1">Toutes les commandes</h2>
           <p className="text-sm text-ink-soft">
             {donnees
@@ -286,7 +286,7 @@ export default async function CycyBotPage() {
           <span className="inline-block mt-4 text-sm text-lilac group-hover:text-ink transition-colors">Voir la liste ›</span>
         </Link>
         <Link href="/cycybot/leaderboard" className="group carte-holo rounded-2xl p-6 hover:shadow-glow-sm transition-all">
-          <span className="text-3xl" aria-hidden>🏆</span>
+          <Pastille nom="trophee" teinte="or" taille="lg" />
           <h2 className="text-xl font-semibold text-ink mt-3 mb-1">Le leaderboard des Cycyliens</h2>
           <p className="text-sm text-ink-soft">
             Qui écrit le plus, qui ne rate aucun live, qui fait pleuvoir les bits : découvre le podium.

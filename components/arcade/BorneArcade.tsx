@@ -584,7 +584,7 @@ export default function BorneArcade() {
       const place = d.rang ? ` Tu es ${d.rang === 1 ? "1er·e" : `${d.rang}e`} du classement.` : "";
       setEnvoi({
         etat: "ok",
-        texte: d.nouveauRecord ? `🎉 Nouveau record pour ${pseudo.trim()} : ${d.score} points !${place}` : `Score enregistré. Ton record reste de ${d.meilleur} points.${place}`,
+        texte: d.nouveauRecord ? `Nouveau record pour ${pseudo.trim()} : ${d.score} points !${place}` : `Score enregistré. Ton record reste de ${d.meilleur} points.${place}`,
       });
       window.dispatchEvent(new CustomEvent("arcade:classement", { detail: { pseudo: pseudo.trim() } }));
     } catch (err) {

@@ -4,6 +4,7 @@
 //  • les récompenses du jour : liées au Discord (un ticket, des quêtes par jour).
 
 import type { JeuArcade } from "@/lib/arcadeRegles";
+import type { NomIcone } from "@/components/icones/banque";
 
 export type FamilleJeu = "arcade" | "quotidien";
 
@@ -13,6 +14,8 @@ export type FicheJeu = {
   href: string;
   nom: string;
   emoji: string;
+  /** Icône de la banque Cycylive (remplace l'emoji à l'affichage). */
+  icone: NomIcone;
   /** Une ligne, sur la carte de la vitrine. */
   accroche: string;
   /** Deux ou trois phrases, sous le titre de la page du jeu. */
@@ -28,6 +31,7 @@ export type FicheJeu = {
 export const JEUX: FicheJeu[] = [
   {
     id: "runner",
+    icone: "course",
     famille: "arcade",
     href: "/jeux/runner",
     nom: "Cycy Runner",
@@ -41,6 +45,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "reflexes",
+    icone: "cible",
     famille: "arcade",
     href: "/jeux/arcade/reflexes",
     nom: "Réflexes Valorant",
@@ -53,6 +58,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "rythme",
+    icone: "note",
     famille: "arcade",
     href: "/jeux/arcade/rythme",
     nom: "Rythme cosmique",
@@ -65,6 +71,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "constellations",
+    icone: "constellation",
     famille: "arcade",
     href: "/jeux/arcade/constellations",
     nom: "Puzzle des constellations",
@@ -77,6 +84,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "memory",
+    icone: "cerveau",
     famille: "arcade",
     href: "/jeux/arcade/memory",
     nom: "Memory galactique",
@@ -89,6 +97,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "quiz",
+    icone: "quiz",
     famille: "arcade",
     href: "/jeux/arcade/quiz",
     nom: "Quiz de la galaxie",
@@ -101,6 +110,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "gratter",
+    icone: "ticket",
     famille: "quotidien",
     href: "/jeux/gratter",
     nom: "Ticket à gratter",
@@ -114,6 +124,7 @@ export const JEUX: FicheJeu[] = [
   },
   {
     id: "compagnon",
+    icone: "oeuf",
     famille: "quotidien",
     href: "/jeux/compagnon",
     nom: "Compagnon galactique",

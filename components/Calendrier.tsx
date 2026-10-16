@@ -6,6 +6,8 @@
 // « Je participe », rappel en MP) ; ici on peut aussi ajouter l'événement à son agenda.
 
 import { useEffect, useMemo, useState } from "react";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 const TZ = "Europe/Paris";
@@ -30,13 +32,13 @@ type Evenement = {
   result: Resultat;
 };
 
-const TYPES: { id: string; label: string; couleur: string }[] = [
-  { id: "live", label: "🔴 Lives", couleur: "#9146ff" },
-  { id: "pp", label: "🎮 Soirées PP", couleur: "#ff4655" },
-  { id: "quiz", label: "🧠 Quiz", couleur: "#fbbf24" },
-  { id: "discord", label: "🎉 Discord", couleur: "#5865f2" },
-  { id: "projet", label: "🛠️ Projets", couleur: "#34d399" },
-  { id: "autre", label: "✨ Autres", couleur: "#c084fc" },
+const TYPES: { id: string; label: string; couleur: string; icone: NomIcone }[] = [
+  { id: "live", label: "Lives", couleur: "#9146ff", icone: "live" },
+  { id: "pp", label: "Soirées PP", couleur: "#ff4655", icone: "cible" },
+  { id: "quiz", label: "Quiz", couleur: "#fbbf24", icone: "quiz" },
+  { id: "discord", label: "Discord", couleur: "#5865f2", icone: "fete" },
+  { id: "projet", label: "Projets", couleur: "#34d399", icone: "outils" },
+  { id: "autre", label: "Autres", couleur: "#c084fc", icone: "etoile" },
 ];
 const couleurDe = (type: string) => TYPES.find((t) => t.id === type)?.couleur ?? "#c084fc";
 const JOURS = ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."];
@@ -80,7 +82,7 @@ function fichierIcs(e: Evenement) {
 
 function Badge({ statut }: { statut: Statut }) {
   if (statut === "encours")
-    return <span className="rounded-full bg-emerald-400/15 border border-emerald-400/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">🟢 En cours</span>;
+    return <span className="rounded-full bg-emerald-400/15 border border-emerald-400/40 px-2.5 py-0.5 text-xs font-semibold text-emerald-300 inline-flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-300 animate-pulse" />En cours</span>;
   if (statut === "termine")
     return <span className="rounded-full border border-violet/25 px-2.5 py-0.5 text-xs text-ink-soft">Terminé</span>;
   return <span className="rounded-full border border-violet/35 bg-violet/10 px-2.5 py-0.5 text-xs text-lilac">À venir</span>;
@@ -91,18 +93,18 @@ function CarteEvenement({ e }: { e: Evenement }) {
   return (
     <article className="carte-holo rounded-2xl border border-violet/25 p-4 md:p-5" style={{ borderLeft: `4px solid ${couleurDe(e.type)}` }}>
       <div className="flex flex-wrap items-center gap-2 mb-1.5">
-        <span className="text-xs uppercase tracking-wide text-ink-soft">{e.emoji} {e.typeLabel}</span>
+        <span className="text-xs uppercase tracking-wide text-ink-soft inline-flex items-center gap-1.5"><Icone nom={TYPES.find((t) => t.id === e.type)?.icone || "etoile"} className="w-4 h-4" style={{ color: couleurDe(e.type) }} />{e.typeLabel}</span>
         <Badge statut={e.status} />
       </div>
       <h3 className="text-lg font-semibold text-ink leading-snug">{e.title}</h3>
       <p className="text-sm text-ink-soft mt-1 first-letter:uppercase">
         {dateLongue(e.startAt)} · {heure(e.startAt)} → {heure(e.endAt)}
-        {e.location ? ` · 📍 ${e.location}` : ""}
+        {e.location ? <> · <Icone nom="lieu" className="w-3.5 h-3.5" /> {e.location}</> : ""}
       </p>
       {e.description ? <p className="text-sm text-ink-soft/90 mt-2 whitespace-pre-line">{e.description}</p> : null}
       {e.participants !== null && (
         <p className="text-sm text-ink mt-2">
-          🙋 <strong>{e.participants}</strong> inscrit·e{e.participants > 1 ? "s" : ""}
+          <Icone nom="mainLevee" className="w-4 h-4 mr-1 text-violet-light" /><strong>{e.participants}</strong> inscrit·e{e.participants > 1 ? "s" : ""}
           {e.maxPlaces ? ` / ${e.maxPlaces} places` : ""}
           {complet && e.status === "avenir" ? " · complet" : ""}
         </p>
@@ -110,21 +112,21 @@ function CarteEvenement({ e }: { e: Evenement }) {
 
       {e.result && (e.result.text || e.result.url) ? (
         <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/5 p-3">
-          <p className="text-sm font-semibold text-amber-200">🏁 Résultats</p>
+          <p className="text-sm font-semibold text-amber-200"><Icone nom="drapeau" className="w-4 h-4 mr-1.5" />Résultats</p>
           {e.result.text ? <p className="text-sm text-ink mt-1 whitespace-pre-line">{e.result.text}</p> : null}
           {e.result.clips?.length ? (
             <ul className="mt-2 flex flex-wrap gap-2">
               {e.result.clips.map((c) => (
                 <li key={c.url}>
                   <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-block rounded-full border border-violet/30 px-3 py-1 text-xs text-lilac hover:bg-violet/15">
-                    🎬 {c.label}
+                    <Icone nom="clap" className="w-3.5 h-3.5 mr-1" />{c.label}
                   </a>
                 </li>
               ))}
             </ul>
           ) : e.result.url ? (
             <a href={e.result.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-sm text-lilac underline underline-offset-2">
-              Voir le résultat →
+              Voir le résultat <Icone nom="fleche" className="w-4 h-4" />
             </a>
           ) : null}
         </div>
@@ -133,17 +135,17 @@ function CarteEvenement({ e }: { e: Evenement }) {
       <div className="mt-3 flex flex-wrap gap-2">
         {e.status !== "termine" && e.discordUrl && !complet ? (
           <a href={e.discordUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-violet px-4 py-2 text-sm font-semibold text-ink shadow-glow-sm hover:bg-violet-light">
-            ✋ Je participe (Discord)
+            <Icone nom="mainLevee" className="w-4 h-4 mr-1.5" />Je participe (Discord)
           </a>
         ) : null}
         {e.status === "avenir" ? (
           <button type="button" onClick={() => fichierIcs(e)} className="rounded-full border border-violet/30 px-4 py-2 text-sm text-ink-soft hover:bg-violet/10 hover:text-ink">
-            📲 Ajouter à mon agenda
+            <Icone nom="calendrier" className="w-4 h-4 mr-1.5" />Ajouter à mon agenda
           </button>
         ) : null}
         {e.link ? (
           <a href={e.link} target="_blank" rel="noopener noreferrer" className="rounded-full border border-violet/30 px-4 py-2 text-sm text-ink-soft hover:bg-violet/10 hover:text-ink">
-            {e.type === "live" ? (e.status === "termine" ? "📼 Revoir" : "📺 Twitch") : "🔗 Lien"}
+            {e.type === "live" ? (e.status === "termine" ? <><Icone nom="rejouer" className="w-4 h-4 mr-1.5" />Revoir</> : <><Icone nom="ecran" className="w-4 h-4 mr-1.5" />Twitch</>) : <><Icone nom="lien" className="w-4 h-4 mr-1.5" />Lien</>}
           </a>
         ) : null}
       </div>
@@ -222,6 +224,7 @@ export default function Calendrier() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all border ${actif ? "text-ink bg-violet/15" : "text-ink-soft/60 border-violet/15"}`}
               style={actif ? { borderColor: couleurDe(t.id) } : undefined}
             >
+              <Icone nom={t.icone} className="w-4 h-4 mr-1.5" style={actif ? { color: couleurDe(t.id) } : undefined} />
               {t.label}
             </button>
           );
@@ -229,7 +232,7 @@ export default function Calendrier() {
         <div className="ml-auto flex rounded-full border border-violet/25 p-1">
           {(["mois", "liste"] as const).map((v) => (
             <button key={v} type="button" aria-pressed={vue === v} onClick={() => setVue(v)} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${vue === v ? "bg-violet text-ink" : "text-ink-soft"}`}>
-              {v === "mois" ? "🗓️ Mois" : "📋 Liste"}
+              {v === "mois" ? <><Icone nom="calendrier" className="w-4 h-4 mr-1.5" />Mois</> : <><Icone nom="liste" className="w-4 h-4 mr-1.5" />Liste</>}
             </button>
           ))}
         </div>
@@ -271,7 +274,7 @@ export default function Calendrier() {
                     <span className="mt-1 hidden md:flex flex-col gap-0.5">
                       {evs.slice(0, 3).map((e) => (
                         <span key={e.id} className="truncate rounded px-1 text-[10.5px] leading-4 text-ink" style={{ background: couleurDe(e.type) + "33" }}>
-                          {e.emoji} {e.title}
+                          <Icone nom={TYPES.find((t) => t.id === e.type)?.icone || "etoile"} className="w-3 h-3 mr-1" />{e.title}
                         </span>
                       ))}
                       {evs.length > 3 ? <span className="text-[10px] text-ink-soft">+{evs.length - 3}</span> : null}
@@ -289,7 +292,7 @@ export default function Calendrier() {
             {duJour.length ? (
               <div className="space-y-3">{duJour.map((e) => <CarteEvenement key={e.id} e={e} />)}</div>
             ) : (
-              <p className="text-ink-soft text-sm">Rien de prévu ce jour-là. Choisis un autre jour dans le calendrier 🌙</p>
+              <p className="text-ink-soft text-sm">Rien de prévu ce jour-là. Choisis un autre jour dans le calendrier.</p>
             )}
           </section>
         </div>
@@ -299,14 +302,14 @@ export default function Calendrier() {
           {aVenir.length ? (
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{aVenir.map((e) => <CarteEvenement key={e.id} e={e} />)}</div>
           ) : (
-            <p className="text-ink-soft text-sm">Rien de prévu pour l’instant… reviens bientôt 👀</p>
+            <p className="text-ink-soft text-sm">Rien de prévu pour l’instant… reviens bientôt !</p>
           )}
         </section>
       )}
 
       {resultats.length ? (
         <section>
-          <h2 className="text-xl font-semibold text-ink mb-3">🏁 Derniers résultats</h2>
+          <h2 className="text-xl font-semibold text-ink mb-3 flex items-center gap-2"><Icone nom="drapeau" className="w-5 h-5 text-amber-300" />Derniers résultats</h2>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{resultats.map((e) => <CarteEvenement key={e.id} e={e} />)}</div>
         </section>
       ) : null}

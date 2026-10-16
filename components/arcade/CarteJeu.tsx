@@ -1,5 +1,6 @@
 // Carte d'un jeu dans la vitrine /jeux : miniature, nom, accroche, infos et record actuel.
 import Link from "next/link";
+import Icone from "@/components/icones/Icone";
 import MiniatureJeu from "@/components/arcade/MiniatureJeu";
 import type { FicheJeu } from "@/lib/jeux";
 
@@ -30,19 +31,19 @@ export default function CarteJeu({ jeu, record = null, format = "standard" }: { 
           style={{ background: jeu.teinte.accent }}
           aria-hidden
         >
-          ▶
+          <Icone nom="lecture" className="w-6 h-6" />
         </span>
       </div>
       <div className={`flex flex-1 flex-col ${compact ? "p-3.5" : "p-5"}`}>
         <h3 className={`font-semibold text-ink ${compact ? "text-sm" : "text-lg"}`}>
-          <span aria-hidden className="mr-1.5">{jeu.emoji}</span>
+          <Icone nom={jeu.icone} className="text-[color:var(--accent)] mr-2 w-5 h-5" />
           {jeu.nom}
         </h3>
         {!compact && <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">{large ? jeu.description : jeu.accroche}</p>}
         {!compact && (
           <div className="mt-4 flex flex-wrap gap-1.5 text-[11px] text-ink-soft">
-            <span className="rounded-full border border-violet/20 px-2.5 py-1">⏱ {jeu.duree}</span>
-            <span className="rounded-full border border-violet/20 px-2.5 py-1">🎮 {jeu.controles}</span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet/20 px-2.5 py-1"><Icone nom="chrono" className="w-3.5 h-3.5" />{jeu.duree}</span>
+            <span className="inline-flex items-center gap-1 rounded-full border border-violet/20 px-2.5 py-1"><Icone nom="manette" className="w-3.5 h-3.5" />{jeu.controles}</span>
           </div>
         )}
         {!compact && (
@@ -50,17 +51,17 @@ export default function CarteJeu({ jeu, record = null, format = "standard" }: { 
             {jeu.famille === "arcade" ? (
               record ? (
                 <span className="min-w-0 truncate text-ink-soft">
-                  🏆 <span className="font-mono font-semibold text-lilac">{record.score.toLocaleString("fr-FR")}</span>
+                  <Icone nom="trophee" className="w-4 h-4 mr-1 text-amber-300" /><span className="font-mono font-semibold text-lilac">{record.score.toLocaleString("fr-FR")}</span>
                   <span className="text-ink-soft/70"> · {record.nom}</span>
                 </span>
               ) : (
-                <span className="text-ink-soft/70">🏁 Aucun record : à toi !</span>
+                <span className="text-ink-soft/70"><Icone nom="drapeau" className="w-4 h-4 mr-1" />Aucun record : à toi !</span>
               )
             ) : (
-              <span className="text-ink-soft/70">🎁 Gain à récupérer sur Discord</span>
+              <span className="text-ink-soft/70"><Icone nom="cadeau" className="w-4 h-4 mr-1" />Gain à récupérer sur Discord</span>
             )}
             <span className="shrink-0 font-semibold transition-colors" style={{ color: jeu.teinte.accent }}>
-              Jouer →
+              Jouer <Icone nom="fleche" className="w-4 h-4" />
             </span>
           </div>
         )}

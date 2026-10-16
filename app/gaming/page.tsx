@@ -12,6 +12,8 @@ import TexteRiche from "@/components/TexteRiche";
 import CarouselFleches from "@/components/CarouselFleches";
 import EmblemeRang from "@/components/gaming/EmblemeRang";
 import { IconValorant, IconTwitch, IconStar4 } from "@/components/Icons";
+import Icone, { Pastille } from "@/components/icones/Icone";
+import TitreSection from "@/components/icones/TitreSection";
 
 export const metadata: Metadata = {
   title: "Gaming | Cycylive",
@@ -53,10 +55,10 @@ function CarteClip({ c }: { c: ClipTwitch }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={c.miniature} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30" aria-hidden>
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet/90 text-white opacity-0 shadow-glow transition-opacity group-hover:opacity-100">▶</span>
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet/90 text-white opacity-0 shadow-glow transition-opacity group-hover:opacity-100"><Icone nom="lecture" className="w-6 h-6" /></span>
         </span>
         <span className="absolute bottom-2 right-2 rounded-md bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white tabular-nums">{mmss(c.duree)}</span>
-        <span className="absolute left-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] text-white">👁 {c.vues.toLocaleString("fr-FR")}</span>
+        <span className="absolute left-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] text-white inline-flex items-center gap-1"><Icone nom="oeil" className="w-3.5 h-3.5" /> {c.vues.toLocaleString("fr-FR")}</span>
       </div>
       <div className="p-3.5">
         <p className="line-clamp-2 text-sm font-medium text-ink" title={c.titre}>{c.titre}</p>
@@ -95,13 +97,13 @@ export default async function GamingPage() {
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
       <EntetePage
-        surtitre="🎮 Gaming"
+        surtitre="Gaming" icone="manette"
         titre="Les jeux de mes lives"
         intro={<TexteRiche html={gaming.intro} />}
         sommaire={[
-          { href: "#valorant", label: "🎯 Valorant" },
-          { href: "#clips", label: "🎬 Derniers clips" },
-          ...(gaming.autresJeux.length ? [{ href: "#autres-jeux", label: "🕹️ Autres jeux" }] : []),
+          { href: "#valorant", label: "Valorant", icone: "cible" as const },
+          { href: "#clips", label: "Derniers clips", icone: "clap" as const },
+          ...(gaming.autresJeux.length ? [{ href: "#autres-jeux", label: "Autres jeux", icone: "joystick" as const }] : []),
         ]}
       />
 
@@ -161,7 +163,7 @@ export default async function GamingPage() {
                     </div>
                     {ecart != null && (
                       <p className="text-right text-sm text-ink-soft">
-                        {ecart <= 0 ? "🎉 Objectif atteint !" : `encore ${ecart} palier${ecart > 1 ? "s" : ""}`}
+                        {ecart <= 0 ? <><Icone nom="fete" className="w-4 h-4 text-amber-300" /> Objectif atteint !</> : `encore ${ecart} palier${ecart > 1 ? "s" : ""}`}
                       </p>
                     )}
                   </div>
@@ -175,14 +177,14 @@ export default async function GamingPage() {
                 </div>
               )}
               {!objectif && profil.objectifRank && !/^à définir$/i.test(profil.objectifRank) && (
-                <p className="mt-5 text-sm text-ink-soft">🎯 Objectif : <span className="text-ink">{profil.objectifRank}</span></p>
+                <p className="mt-5 text-sm text-ink-soft"><Icone nom="cible" className="w-4 h-4 text-rose-300" /> Objectif : <span className="text-ink">{profil.objectifRank}</span></p>
               )}
             </div>
 
             {/* Présentation */}
             <div className="flex flex-col">
               <TexteRiche html={profil.intro} className="text-ink-soft leading-relaxed" />
-              {profil.statsPerso && <p className="mt-3 text-sm text-ink">📈 {profil.statsPerso}</p>}
+              {profil.statsPerso && <p className="mt-3 text-sm text-ink"><Icone nom="boost" className="w-4 h-4 text-emerald-300" /> {profil.statsPerso}</p>}
 
               {(agents.length > 0 || maps.length > 0 || skins.length > 0) && (
                 <dl className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -203,7 +205,7 @@ export default async function GamingPage() {
                     <div>
                       <dt className="text-xs uppercase tracking-wide text-ink-soft/60 mb-2">Maps favorites</dt>
                       <dd className="flex flex-wrap gap-1.5">
-                        {maps.map((m) => <span key={m} className="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-ink-soft">🗺️ {m}</span>)}
+                        {maps.map((m) => <span key={m} className="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-ink-soft inline-flex items-center gap-1.5"><Icone nom="carte" className="w-4 h-4 text-ink-soft/70" />{m}</span>)}
                       </dd>
                     </div>
                   )}
@@ -211,7 +213,7 @@ export default async function GamingPage() {
                     <div>
                       <dt className="text-xs uppercase tracking-wide text-ink-soft/60 mb-2">Skins & armes</dt>
                       <dd className="flex flex-wrap gap-1.5">
-                        {skins.map((m) => <span key={m} className="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-ink-soft">🔫 {m}</span>)}
+                        {skins.map((m) => <span key={m} className="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-ink-soft inline-flex items-center gap-1.5"><Icone nom="viseur" className="w-4 h-4 text-ink-soft/70" />{m}</span>)}
                       </dd>
                     </div>
                   )}
@@ -225,7 +227,7 @@ export default async function GamingPage() {
                 </a>
                 {profil.trackerUrl && (
                   <a href={profil.trackerUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-ink-soft hover:text-ink hover:bg-white/5 transition-all">
-                    Mon profil Tracker.gg ↗
+                    Mon profil Tracker.gg <Icone nom="externe" className="w-4 h-4" />
                   </a>
                 )}
               </div>
@@ -236,7 +238,7 @@ export default async function GamingPage() {
             <div className="mt-8 grid gap-6 border-t border-white/10 pt-6 md:grid-cols-2">
               {moments.length > 0 && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">🏆 Des moments de l&apos;aventure</p>
+                  <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3 flex items-center gap-2"><Icone nom="trophee" className="w-4 h-4 text-amber-300" /> Des moments de l&apos;aventure</p>
                   <ol className="relative space-y-3 border-l border-rose-300/25 pl-4">
                     {moments.map((e) => (
                       <li key={e.id}>
@@ -250,13 +252,13 @@ export default async function GamingPage() {
               )}
               {news.length > 0 && (
                 <div>
-                  <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">📰 News Valorant</p>
+                  <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3 flex items-center gap-2"><Icone nom="journal" className="w-4 h-4 text-rose-300" /> News Valorant</p>
                   <div className="space-y-2">
                     {news.map((n) => (
                       <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink hover:border-rose-300/40 transition-all">
                         <IconValorant className="w-3.5 h-3.5 text-rose-300 shrink-0" />
                         <span className="min-w-0 flex-1">{n.titre}</span>
-                        <span aria-hidden className="text-ink-soft/50">↗</span>
+                        <Icone nom="externe" className="w-4 h-4 text-ink-soft/50" />
                       </a>
                     ))}
                   </div>
@@ -271,11 +273,11 @@ export default async function GamingPage() {
       <section id="clips" className="scroll-mt-24 mb-14" aria-labelledby="clips-titre">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 id="clips-titre" className="text-2xl md:text-3xl font-semibold text-ink">🎬 Les derniers clips</h2>
+            <TitreSection id="clips-titre" icone="clap">Les derniers clips</TitreSection>
             <p className="mt-1 text-ink-soft">Les meilleurs moments des lives, clippés par la commu. Tape <code className="text-lilac">!clip</code> pendant un live pour en créer un&nbsp;!</p>
           </div>
           <a href={`https://www.twitch.tv/${twitchLogin}/clips`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-lilac hover:text-ink">
-            Tous les clips sur Twitch ↗
+            Tous les clips sur Twitch <Icone nom="externe" className="w-4 h-4" />
           </a>
         </div>
         {clipsTwitch.length > 0 ? (
@@ -284,14 +286,14 @@ export default async function GamingPage() {
           </div>
         ) : (
           <a href={`https://www.twitch.tv/${twitchLogin}/clips`} target="_blank" rel="noopener noreferrer" className="carte-holo flex items-center gap-4 rounded-2xl p-6 hover:shadow-glow-sm transition-all">
-            <span className="text-3xl" aria-hidden>🎬</span>
-            <span className="text-ink-soft">Les clips arrivent ici automatiquement. En attendant, retrouve-les tous sur Twitch ↗</span>
+            <Pastille nom="clap" taille="lg" />
+            <span className="text-ink-soft">Les clips arrivent ici automatiquement. En attendant, retrouve-les tous sur Twitch.</span>
           </a>
         )}
 
         {clipsValorant.length > 0 && (
           <div className="mt-8">
-            <h3 className="text-lg font-semibold text-ink mb-4">🎯 Mes clips Valorant préférés</h3>
+            <TitreSection niveau={3} icone="cible" teinte="rose" taille="xs" className="mb-4">Mes clips Valorant préférés</TitreSection>
             <CarouselFleches>
               {clipsValorant.map((c) => (
                 <a key={c.id} href={c.url} target="_blank" rel="noopener noreferrer" className="snap-start shrink-0 w-40 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all">
@@ -314,7 +316,7 @@ export default async function GamingPage() {
       {/* ── Autres jeux ── */}
       {gaming.autresJeux.length > 0 && (
         <section id="autres-jeux" className="scroll-mt-24 mb-12" aria-labelledby="autres-titre">
-          <h2 id="autres-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-5">🕹️ Autres jeux</h2>
+          <TitreSection id="autres-titre" icone="joystick" className="mb-5">Autres jeux</TitreSection>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {gaming.autresJeux.map((jeu) => (
               <div key={jeu.id} className="carte-holo rounded-2xl p-5 flex flex-col">
@@ -325,7 +327,7 @@ export default async function GamingPage() {
                 <p className="text-ink-soft text-sm mb-3">{jeu.description}</p>
                 {jeu.lienClip && (
                   <a href={jeu.lienClip} target="_blank" rel="noopener noreferrer" className="mt-auto text-violet-light hover:text-lilac text-sm font-medium transition-colors">
-                    Voir un contenu →
+                    Voir un contenu <Icone nom="fleche" className="w-4 h-4" />
                   </a>
                 )}
               </div>

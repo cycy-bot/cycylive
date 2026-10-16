@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Icone from "@/components/icones/Icone";
 
 type Ligne = { rang: number; nom: string; score: number; date: number };
 
-const MEDAILLES = ["🥇", "🥈", "🥉"];
+const COULEUR_MEDAILLE = ["text-amber-300", "text-slate-200", "text-orange-300"];
 
 function quand(date: number): string {
   if (!date) return "";
@@ -15,7 +16,7 @@ function quand(date: number): string {
   return new Date(date).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export default function ClassementArcade({ jeu = "runner", titre = "🏆 Tableau des records" }: { jeu?: string; titre?: string }) {
+export default function ClassementArcade({ jeu = "runner", titre = "Tableau des records" }: { jeu?: string; titre?: string }) {
   const [scores, setScores] = useState<Ligne[] | null>(null);
   const [actif, setActif] = useState(true);
   const [moi, setMoi] = useState("");
@@ -60,7 +61,7 @@ export default function ClassementArcade({ jeu = "runner", titre = "🏆 Tableau
     <section aria-labelledby={`classement-${jeu}`} className="carte-holo rounded-3xl p-5 md:p-7">
       <div className="flex flex-wrap items-end justify-between gap-2 mb-5">
         <div>
-          <h2 id={`classement-${jeu}`} className="text-xl md:text-2xl font-semibold text-ink">{titre}</h2>
+          <h2 id={`classement-${jeu}`} className="flex items-center gap-2.5 text-xl md:text-2xl font-semibold text-ink"><Icone nom="trophee" className="w-6 h-6 text-amber-300" />{titre}</h2>
           <p className="text-sm text-ink-soft/70 mt-1">Le meilleur score de chaque pseudo, mis à jour en direct.</p>
         </div>
         {scores && scores.length > 0 && <p className="text-xs text-ink-soft/60">Top {scores.length}</p>}
@@ -73,7 +74,7 @@ export default function ClassementArcade({ jeu = "runner", titre = "🏆 Tableau
         <p className="text-sm text-ink-soft">Le classement arrive très bientôt !</p>
       ) : scores.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-violet/30 p-8 text-center">
-          <p className="text-3xl mb-2" aria-hidden>🏁</p>
+          <Icone nom="drapeau" className="w-9 h-9 mb-2 text-violet-light" />
           <p className="text-ink font-medium">Aucun record pour l&apos;instant</p>
           <p className="text-sm text-ink-soft mt-1">Joue une partie et inscris ton pseudo en premier !</p>
         </div>
@@ -88,7 +89,7 @@ export default function ClassementArcade({ jeu = "runner", titre = "🏆 Tableau
                 } ${estMoi(s.nom) ? "ring-2 ring-violet-light" : ""}`}
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="text-3xl" aria-label={`${s.rang}ᵉ place`}>{MEDAILLES[s.rang - 1]}</span>
+                  <span className={`relative ${COULEUR_MEDAILLE[s.rang - 1]}`} aria-label={`${s.rang}ᵉ place`}><Icone nom="medaille" className="w-9 h-9" /></span>
                   <div className="min-w-0">
                     <p className="font-semibold text-ink truncate text-base" title={s.nom}>
                       {s.nom}

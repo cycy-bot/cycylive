@@ -7,6 +7,9 @@ import { lireBonsPlans, lirePartenaires } from "@/lib/partnersStore";
 import AccentCosmique from "@/components/AccentCosmique";
 import BoutonCopierCode from "@/components/BoutonCopierCode";
 import { IconDiscord, IconTwitch } from "@/components/Icons";
+import Icone, { Pastille, type Teinte } from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
+import TitreSection from "@/components/icones/TitreSection";
 
 export const metadata: Metadata = {
   title: "Soutenir Cycylive : don, abonnement Twitch et Prime Gaming | Cycylive",
@@ -35,18 +38,18 @@ const boutonContour = `${bouton} border border-violet/30 text-ink-soft hover:bg-
 
 // Pourquoi chaque geste compte (visibilité sur Twitch)
 const impact = [
-  { e: "👀", t: "Chaque viewer compte", d: "Plus il y a de monde en même temps sur le live, plus la chaîne remonte dans la catégorie du jeu et dans les recommandations Twitch." },
-  { e: "💜", t: "Chaque follow aide", d: "Les follows font grandir la chaîne et te préviennent à chaque début de live : tu ne rates rien, et Twitch voit la chaîne progresser." },
-  { e: "⭐", t: "Chaque sub fait avancer", d: "Un abonnement (même gratuit avec Prime) soutient directement la chaîne et débloque les emotes et ton badge de Cycylien." },
+  { e: "oeil" as NomIcone, c: "ciel" as Teinte, t: "Chaque viewer compte", d: "Plus il y a de monde en même temps sur le live, plus la chaîne remonte dans la catégorie du jeu et dans les recommandations Twitch." },
+  { e: "coeur" as NomIcone, c: "violet" as Teinte, t: "Chaque follow aide", d: "Les follows font grandir la chaîne et te préviennent à chaque début de live : tu ne rates rien, et Twitch voit la chaîne progresser." },
+  { e: "etoile" as NomIcone, c: "or" as Teinte, t: "Chaque sub fait avancer", d: "Un abonnement (même gratuit avec Prime) soutient directement la chaîne et débloque les emotes et ton badge de Cycylien." },
 ];
 
-const gratuit = [
-  ["💜", "Follow + notifications", "Active la cloche pour être prévenu·e à chaque live."],
-  ["🖥️", "Laisser le live en fond", "Même sans regarder : le live compte ta présence, et tu grimpes au leaderboard."],
-  ["💬", "Écrire dans le chat", "Un chat vivant donne envie aux nouveaux de rester (et ça fait plaisir 😄)."],
-  ["🎬", "Clipper et partager", "Tape !clip pendant un live, puis partage le clip à tes potes ou sur tes réseaux."],
-  ["📣", "Parler de la chaîne", "Un message à un ami, une story : c'est comme ça que la commu grandit."],
-  ["🛸", "Rejoindre le Discord", "Pour discuter entre les lives, jouer avec la commu et gagner des récompenses."],
+const gratuit: [NomIcone, string, string][] = [
+  ["coeur", "Follow + notifications", "Active la cloche pour être prévenu·e à chaque live."],
+  ["ecran", "Laisser le live en fond", "Même sans regarder : le live compte ta présence, et tu grimpes au leaderboard."],
+  ["bulle", "Écrire dans le chat", "Un chat vivant donne envie aux nouveaux de rester (et ça fait plaisir !)."],
+  ["clap", "Clipper et partager", "Tape !clip pendant un live, puis partage le clip à tes potes ou sur tes réseaux."],
+  ["megaphone", "Parler de la chaîne", "Un message à un ami, une story : c'est comme ça que la commu grandit."],
+  ["soucoupe", "Rejoindre le Discord", "Pour discuter entre les lives, jouer avec la commu et gagner des récompenses."],
 ];
 
 export default async function SoutenirPage() {
@@ -60,7 +63,7 @@ export default async function SoutenirPage() {
 
       {/* En-tête */}
       <EntetePage
-        surtitre="💜 Soutenir la chaîne"
+        surtitre="Soutenir la chaîne" icone="coeur"
         titre="Aide Cycylive à briller plus fort"
         intro={<>Que tu aies cinq minutes ou cinq euros, il y a toujours une façon de donner un coup de pouce. Et la plupart sont gratuites&nbsp;!</>}
       />
@@ -68,23 +71,23 @@ export default async function SoutenirPage() {
       {/* Les 3 façons principales */}
       <div className="grid gap-4 md:grid-cols-3 mb-14">
         <a href="#gratuit" className="group carte-holo rounded-3xl p-6 transition-all hover:-translate-y-1 hover:shadow-glow-sm">
-          <span className="text-3xl" aria-hidden>🚀</span>
+          <Pastille nom="fusee" teinte="ciel" />
           <h2 className="mt-3 text-lg font-semibold text-ink">Gratuitement</h2>
           <p className="mt-1 text-sm text-ink-soft">Follow, regarder les lives, partager des clips : le plus important, et ça ne coûte rien.</p>
-          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">Voir comment →</span>
+          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">Voir comment <Icone nom="fleche" className="w-4 h-4" /></span>
         </a>
         <a href="#abonnement" className="group relative overflow-hidden rounded-3xl border border-violet/40 p-6 transition-all hover:-translate-y-1 hover:shadow-glow" style={{ background: "linear-gradient(160deg, rgba(123,56,255,.28), rgba(13,10,23,.95) 70%)" }}>
           <span className="absolute right-4 top-4 rounded-full bg-violet px-2.5 py-1 text-[11px] font-semibold text-white">Le plus utile</span>
-          <span className="text-3xl" aria-hidden>⭐</span>
+          <Pastille nom="etoile" teinte="or" />
           <h2 className="mt-3 text-lg font-semibold text-ink">S&apos;abonner</h2>
           <p className="mt-1 text-sm text-ink-soft">Emotes, badge, et soutien direct. Avec Amazon Prime, ton sub du mois est offert.</p>
-          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">M&apos;abonner →</span>
+          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">M&apos;abonner <Icone nom="fleche" className="w-4 h-4" /></span>
         </a>
         <a href="#don" className="group carte-holo rounded-3xl p-6 transition-all hover:-translate-y-1 hover:shadow-glow-sm">
-          <span className="text-3xl" aria-hidden>💝</span>
+          <Pastille nom="don" teinte="rose" />
           <h2 className="mt-3 text-lg font-semibold text-ink">Faire un don</h2>
           <p className="mt-1 text-sm text-ink-soft">Pour le matériel, les jeux et les projets pour la commu. Paiement sécurisé PayPal.</p>
-          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">Faire un don →</span>
+          <span className="mt-4 inline-block text-sm font-semibold text-lilac group-hover:text-ink">Faire un don <Icone nom="fleche" className="w-4 h-4" /></span>
         </a>
       </div>
 
@@ -97,26 +100,26 @@ export default async function SoutenirPage() {
         <div className="grid gap-4 md:grid-cols-3">
           {impact.map((i) => (
             <div key={i.t} className="rounded-2xl border border-violet/15 bg-white/[0.02] p-5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet/15 text-2xl" aria-hidden>{i.e}</span>
+              <Pastille nom={i.e} teinte={i.c} />
               <h3 className="mt-3 font-semibold text-ink">{i.t}</h3>
               <p className="mt-1 text-sm text-ink-soft leading-relaxed">{i.d}</p>
             </div>
           ))}
         </div>
         <p className="mt-4 text-sm text-ink-soft">
-          📊 Envie de voir la progression de la chaîne&nbsp;?{" "}
+          <Icone nom="graphique" className="w-4 h-4 text-violet-light" /> Envie de voir la progression de la chaîne&nbsp;?{" "}
           <Link href="/statistiques" className="text-lilac underline underline-offset-4 hover:text-ink">Les statistiques sont ici</Link>.
         </p>
       </section>
 
       {/* Gratuit */}
       <section id="gratuit" className="scroll-mt-24 mb-14" aria-labelledby="gratuit-titre">
-        <h2 id="gratuit-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-2">🚀 Soutenir gratuitement</h2>
+        <TitreSection id="gratuit-titre" icone="fusee" teinte="ciel" className="mb-2">Soutenir gratuitement</TitreSection>
         <p className="text-ink-soft mb-6 max-w-2xl">Pas besoin de dépenser quoi que ce soit : ces gestes simples aident énormément la chaîne à se faire connaître.</p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {gratuit.map(([emoji, titre, texte]) => (
             <div key={titre} className="carte-holo flex gap-3 rounded-2xl p-4">
-              <span className="text-2xl" aria-hidden>{emoji}</span>
+              <Pastille nom={emoji} taille="sm" />
               <div>
                 <h3 className="font-semibold text-ink">{titre}</h3>
                 <p className="mt-0.5 text-sm text-ink-soft leading-relaxed">{texte}</p>
@@ -140,12 +143,12 @@ export default async function SoutenirPage() {
       <section id="abonnement" className="scroll-mt-24 mb-14" aria-labelledby="abo-titre">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <div className="carte-holo liseret-glow rounded-3xl p-6 md:p-8">
-            <h2 id="abo-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-2">⭐ S&apos;abonner sur Twitch</h2>
+            <TitreSection id="abo-titre" icone="etoile" teinte="or" className="mb-2">S&apos;abonner sur Twitch</TitreSection>
             <p className="text-ink-soft mb-5">La façon la plus directe de soutenir la chaîne. En échange :</p>
             <ul className="mb-6 space-y-2 text-sm text-ink">
-              <li className="flex gap-2"><span aria-hidden>😺</span> Les emotes de la chaîne, utilisables partout sur Twitch</li>
-              <li className="flex gap-2"><span aria-hidden>🏅</span> Un badge à côté de ton pseudo, qui évolue avec ton ancienneté</li>
-              <li className="flex gap-2"><span aria-hidden>🛸</span> Le rôle abonné sur le Discord (et des boosters de Cartes Astrales)</li>
+              <li className="flex gap-2"><Icone nom="coeur" className="w-5 h-5 text-violet-light" /> Les emotes de la chaîne, utilisables partout sur Twitch</li>
+              <li className="flex gap-2"><Icone nom="medaille" className="w-5 h-5 text-amber-300" /> Un badge à côté de ton pseudo, qui évolue avec ton ancienneté</li>
+              <li className="flex gap-2"><Icone nom="soucoupe" className="w-5 h-5 text-indigo-300" /> Le rôle abonné sur le Discord (et des boosters de Cartes Astrales)</li>
             </ul>
             <a href={lienAbonnement} target="_blank" rel="noopener noreferrer" className={boutonPlein}>
               <IconTwitch className="w-4 h-4" />
@@ -153,7 +156,7 @@ export default async function SoutenirPage() {
             </a>
           </div>
           <div id="prime" className="scroll-mt-24 rounded-3xl border border-sky-300/25 p-6 md:p-8" style={{ background: "linear-gradient(160deg, rgba(56,189,248,.12), rgba(13,10,23,.95) 70%)" }}>
-            <h3 className="text-xl font-semibold text-ink mb-2">👑 Prime Gaming : ton sub offert</h3>
+            <TitreSection niveau={3} icone="couronne" teinte="ciel" taille="xs" className="mb-2 !text-xl">Prime Gaming : ton sub offert</TitreSection>
             <p className="text-sm text-ink-soft mb-4">Avec Amazon Prime, tu as un abonnement Twitch gratuit chaque mois. Il est perdu si tu ne l&apos;utilises pas&nbsp;!</p>
             <ol className="mb-5 space-y-2 text-sm text-ink">
               {["Relie ton compte Amazon à Twitch (une seule fois)", "Sur la chaîne, clique sur « S'abonner »", "Choisis « Utiliser Prime » (à refaire chaque mois)"].map((t, i) => (
@@ -174,7 +177,7 @@ export default async function SoutenirPage() {
       <section id="don" className="scroll-mt-24 mb-14" aria-labelledby="don-titre">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <div className="carte-holo rounded-3xl p-6 md:p-8">
-            <h2 id="don-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-2">💝 Faire un don</h2>
+            <TitreSection id="don-titre" icone="don" teinte="rose" className="mb-2">Faire un don</TitreSection>
             <p className="text-ink-soft mb-6">
               Un don aide directement la chaîne : matériel, jeux, projets pour la communauté. Paiement sécurisé sur PayPal, par carte ou
               avec ton compte. Un petit mot dans la note fait toujours plaisir.
@@ -196,7 +199,7 @@ export default async function SoutenirPage() {
             )}
           </div>
           <div id="bits" className="scroll-mt-24 rounded-3xl border border-violet/15 bg-white/[0.02] p-6 md:p-8">
-            <h3 className="text-xl font-semibold text-ink mb-2">💎 Envoyer des bits</h3>
+            <TitreSection niveau={3} icone="diamant" teinte="fuchsia" taille="xs" className="mb-2 !text-xl">Envoyer des bits</TitreSection>
             <p className="text-sm text-ink-soft leading-relaxed">
               Les bits s&apos;envoient dans le chat pendant le live, avec un message. Les plus généreux apparaissent dans le{" "}
               <Link href="/cycybot/leaderboard" className="text-lilac underline underline-offset-4 hover:text-ink">leaderboard des Cycyliens</Link>.
@@ -210,7 +213,7 @@ export default async function SoutenirPage() {
         <div className="rounded-3xl border border-amber-300/25 p-6 md:p-8" style={{ background: "linear-gradient(160deg, rgba(252,211,77,.10), rgba(13,10,23,.95) 65%)" }}>
           <div className="flex flex-wrap items-end justify-between gap-4 mb-5">
             <div className="max-w-xl">
-              <h2 id="partenaires-titre" className="text-2xl font-semibold text-ink mb-1">🤝 Économise et soutiens en même temps</h2>
+              <TitreSection id="partenaires-titre" icone="etiquette" teinte="or" className="mb-1 !text-2xl">Économise et soutiens en même temps</TitreSection>
               <p className="text-ink-soft text-sm">
                 Les codes promo des partenaires te font des économies, et la chaîne est soutenue au passage, sans surcoût pour toi.
               </p>
@@ -228,7 +231,7 @@ export default async function SoutenirPage() {
                   <div className="mt-auto pt-3 flex flex-wrap items-center gap-2">
                     {b.promoCode && <BoutonCopierCode code={b.promoCode} />}
                     <a href={b.url} target="_blank" rel={b.affilie ? "sponsored noopener noreferrer" : "noopener noreferrer"} className="text-sm font-semibold text-lilac hover:text-ink">
-                      Voir l&apos;offre →
+                      Voir l&apos;offre <Icone nom="fleche" className="w-4 h-4" />
                     </a>
                   </div>
                 </li>
@@ -238,7 +241,7 @@ export default async function SoutenirPage() {
         </div>
       </section>
 
-      <p className="mt-12 text-center text-ink-soft">Merci du fond du cœur pour ton soutien 💜 À tout de suite sur le live&nbsp;!</p>
+      <p className="mt-12 text-center text-ink-soft">Merci du fond du cœur pour ton soutien. À tout de suite sur le live&nbsp;!</p>
     </div>
   );
 }

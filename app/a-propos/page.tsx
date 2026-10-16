@@ -65,7 +65,7 @@ export default async function AProposPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="lune" />
-      <EntetePage surtitre="✨ À propos" titre={textes.apropos.pageTitre} />
+      <EntetePage surtitre="À propos" icone="etoile" titre={textes.apropos.pageTitre} />
 
       <div className="grid md:grid-cols-[1fr_1.4fr] gap-10 items-start mb-4">
         <div className="relative aspect-[4/5] rounded-3xl overflow-hidden liseret-glow border border-violet/25">

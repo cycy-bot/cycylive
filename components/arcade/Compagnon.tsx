@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 import { idAppareil } from "@/components/arcade/appareil";
@@ -47,12 +49,12 @@ type Etat = {
   gains: { jour: string; calins: number; visite: boolean };
 };
 
-const OBJECTIFS: { key: keyof Omit<Quetes, "jour" | "recompense">; emoji: string; label: string; but: number }[] = [
-  { key: "repas", emoji: "🍖", label: "Le nourrir", but: 3 },
-  { key: "bains", emoji: "🛁", label: "Le laver", but: 1 },
-  { key: "cacas", emoji: "💩", label: "Nettoyer ses cacas", but: 3 },
-  { key: "calins", emoji: "💜", label: "Le caresser", but: 15 },
-  { key: "jeux", emoji: "⭐", label: "Jouer avec lui", but: 2 },
+const OBJECTIFS: { key: keyof Omit<Quetes, "jour" | "recompense">; icone: NomIcone; label: string; but: number }[] = [
+  { key: "repas", icone: "repas" as NomIcone, label: "Le nourrir", but: 3 },
+  { key: "bains", icone: "bain" as NomIcone, label: "Le laver", but: 1 },
+  { key: "cacas", icone: "eclats" as NomIcone, label: "Nettoyer ses cacas", but: 3 },
+  { key: "calins", icone: "coeur" as NomIcone, label: "Le caresser", but: 15 },
+  { key: "jeux", icone: "etoile" as NomIcone, label: "Jouer avec lui", but: 2 },
 ];
 
 // Bonbons cosmiques 🍬 : ce que rapporte chaque soin (les câlins sont plafonnés chaque jour)
@@ -153,13 +155,13 @@ function phraseDe(e: Etat): string {
 
 // ── Petits composants ───────────────────────────────────────
 
-function Jauge({ emoji, label, valeur, couleur }: { emoji: string; label: string; valeur: number; couleur: string }) {
+function Jauge({ icone, label, valeur, couleur }: { icone: NomIcone; label: string; valeur: number; couleur: string }) {
   const v = Math.round(valeur);
   return (
     <div>
       <div className="flex items-center justify-between text-xs text-ink-soft mb-1">
         <span>
-          <span aria-hidden>{emoji}</span> {label}
+          <Icone nom={icone} className="w-4 h-4 mr-1" style={{ color: couleur }} />{label}
         </span>
         <span className={v < 25 ? "text-red-300 font-semibold" : ""}>{v} %</span>
       </div>
@@ -495,7 +497,7 @@ export default function Compagnon() {
             onClick={() => adopter(choix)}
             className="rounded-full px-8 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all"
           >
-            🥚 Adopter {especeInfo(choix).nom}
+            <Icone nom="oeuf" className="w-5 h-5 mr-1.5" />Adopter {especeInfo(choix).nom}
           </button>
         </div>
       </div>
@@ -576,16 +578,14 @@ export default function Compagnon() {
   const prochainStade = stade === 0 ? 2 : stade === 1 ? 6 : 0;
   const recompense = q.recompense;
 
-  const bouton = (emoji: string, label: string, action: () => void, actif = true) => (
+  const bouton = (icone: NomIcone, label: string, action: () => void, actif = true) => (
     <button
       type="button"
       onClick={action}
       disabled={!actif}
       className="flex flex-col items-center gap-1 rounded-2xl border border-violet/20 bg-white/[0.04] px-3 py-3 text-sm text-ink hover:bg-violet/15 hover:border-violet/50 transition-all disabled:opacity-40"
     >
-      <span className="text-2xl" aria-hidden>
-        {emoji}
-      </span>
+      <Icone nom={icone} className="w-7 h-7 text-lilac" />
       {label}
     </button>
   );
@@ -598,7 +598,7 @@ export default function Compagnon() {
             {etat.nom} <span className="text-sm font-normal text-ink-soft">· {info.nom} · {stadeNom}</span>
           </h2>
           <span className="rounded-full border border-pink-300/30 bg-pink-400/10 px-3 py-1 text-sm font-semibold text-ink" title="Bonbons cosmiques : gagne-les en t'occupant de ton compagnon">
-            🍬 {etat.bonbons || 0} <span className="font-normal text-ink-soft text-xs">bonbons</span>
+            <Icone nom="bonbon" className="w-4 h-4 mr-1 text-pink-300" />{etat.bonbons || 0} <span className="font-normal text-ink-soft text-xs">bonbons</span>
           </span>
           <button type="button" onClick={changer} className="text-xs text-ink-soft/60 hover:text-ink-soft underline">
             Adopter une autre créature
@@ -696,20 +696,20 @@ export default function Compagnon() {
 
         {/* jauges */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-          <Jauge emoji="🍖" label="Ventre" valeur={etat.stats.faim} couleur="#ffb15c" />
-          <Jauge emoji="🛁" label="Propreté" valeur={etat.stats.proprete} couleur="#7ec8ff" />
-          <Jauge emoji="💜" label="Bonheur" valeur={etat.stats.bonheur} couleur="#f472b6" />
-          <Jauge emoji="⚡" label="Énergie" valeur={etat.stats.energie} couleur="#7ee2a8" />
+          <Jauge icone="repas" label="Ventre" valeur={etat.stats.faim} couleur="#ffb15c" />
+          <Jauge icone="bain" label="Propreté" valeur={etat.stats.proprete} couleur="#7ec8ff" />
+          <Jauge icone="coeur" label="Bonheur" valeur={etat.stats.bonheur} couleur="#f472b6" />
+          <Jauge icone="eclair" label="Énergie" valeur={etat.stats.energie} couleur="#7ee2a8" />
         </div>
 
         {/* actions */}
         <div className="grid grid-cols-3 md:grid-cols-5 gap-2 mt-4">
-          {bouton("🍖", "Nourrir", nourrir, !etat.dort)}
-          {bouton("🛁", "Laver", laver, !etat.dort)}
-          {bouton("⭐", "Jouer", jouer, !etat.dort && !jeu)}
-          {bouton(etat.dort ? "☀️" : "🌙", etat.dort ? "Réveiller" : "Dormir", dormir)}
+          {bouton("repas", "Nourrir", nourrir, !etat.dort)}
+          {bouton("bain", "Laver", laver, !etat.dort)}
+          {bouton("etoile", "Jouer", jouer, !etat.dort && !jeu)}
+          {bouton(etat.dort ? "soleil" : "lune", etat.dort ? "Réveiller" : "Dormir", dormir)}
           <div className="col-span-3 md:col-span-1 flex items-center justify-center rounded-2xl border border-dashed border-violet/20 px-3 py-3 text-xs text-ink-soft text-center">
-            💜 Clique sur {etat.nom} pour le caresser · 💩 clique sur ses cacas pour les nettoyer
+            <span><Icone nom="coeur" className="w-4 h-4 mr-1 text-pink-300" />Clique sur {etat.nom} pour le caresser · clique sur ses cacas pour les nettoyer</span>
           </div>
         </div>
 
@@ -719,8 +719,8 @@ export default function Compagnon() {
             <div className="flex gap-1.5" role="tablist" aria-label="Boutique">
               {(
                 [
-                  ["accessoires", "🎩 Accessoires"],
-                  ["habitat", "🏠 Habitat"],
+                  ["accessoires", "Accessoires"],
+                  ["habitat", "Habitat"],
                 ] as const
               ).map(([k, t]) => (
                 <button
@@ -755,9 +755,9 @@ export default function Compagnon() {
             <div className="flex gap-1.5" role="tablist" aria-label="Rayons">
               {(
                 [
-                  ["tete", "🎩 Tête"],
-                  ["yeux", "🕶️ Yeux"],
-                  ["cou", "🧣 Cou"],
+                  ["tete", "Tête"],
+                  ["yeux", "Yeux"],
+                  ["cou", "Cou"],
                 ] as [Emplacement, string][]
               ).map(([k, t]) => (
                 <button
@@ -792,7 +792,7 @@ export default function Compagnon() {
                       </button>
                     ) : (
                       <button type="button" onClick={() => acheterDeco(d.key)} disabled={!assez} className="mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold bg-pink-400/20 border border-pink-300/40 text-ink hover:bg-pink-400/30 disabled:opacity-40">
-                        🍬 {d.prix}
+                        <Icone nom="bonbon" className="w-4 h-4 mr-1 text-pink-300" />{d.prix}
                       </button>
                     )}
                   </div>
@@ -829,7 +829,7 @@ export default function Compagnon() {
                       disabled={!assez}
                       className="mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold bg-pink-400/20 border border-pink-300/40 text-ink hover:bg-pink-400/30 disabled:opacity-40"
                     >
-                      🍬 {a.prix}
+                      <Icone nom="bonbon" className="w-4 h-4 mr-1 text-pink-300" />{a.prix}
                     </button>
                   )}
                 </div>
@@ -838,7 +838,7 @@ export default function Compagnon() {
           </div>
           )}
           <p className="text-[11px] text-ink-soft/60 mt-3">
-            🍬 Gagne des bonbons en t&apos;occupant de {etat.nom} : repas +{BONBONS.repas}, bain +{BONBONS.bain}, caca nettoyé +{BONBONS.caca}, partie gagnée +{BONBONS.jeu}, câlins (+1 tous les {BONBONS.calinsParBonbon}), visite du jour +{BONBONS.visite} et journée parfaite +{BONBONS.journeeParfaite}.
+            <Icone nom="bonbon" className="w-4 h-4 mr-1 text-pink-300" />Gagne des bonbons en t&apos;occupant de {etat.nom} : repas +{BONBONS.repas}, bain +{BONBONS.bain}, caca nettoyé +{BONBONS.caca}, partie gagnée +{BONBONS.jeu}, câlins (+1 tous les {BONBONS.calinsParBonbon}), visite du jour +{BONBONS.visite} et journée parfaite +{BONBONS.journeeParfaite}.
           </p>
         </section>
       </div>
@@ -857,7 +857,7 @@ export default function Compagnon() {
               <li key={o.key}>
                 <div className="flex items-center justify-between text-sm mb-1">
                   <span className={ok ? "text-ink-soft line-through" : "text-ink"}>
-                    <span aria-hidden>{ok ? "✅" : o.emoji}</span> {o.label}
+                    <Icone nom={ok ? "valide" : o.icone} className={`w-4 h-4 mr-1.5 ${ok ? "text-emerald-300" : "text-lilac"}`} />{o.label}
                   </span>
                   <span className="text-xs text-ink-soft tabular-nums">
                     {v}/{o.but}
@@ -873,7 +873,7 @@ export default function Compagnon() {
 
         {!toutFait ? (
           <p className="text-sm text-ink-soft rounded-xl bg-white/[0.04] px-4 py-3">
-            🎁 Termine les {OBJECTIFS.length} quêtes pour débloquer ta récompense du jour sur le Discord (points, Éclats, booster…).
+            <Icone nom="cadeau" className="w-4 h-4 mr-1.5 text-lilac" />Termine les {OBJECTIFS.length} quêtes pour débloquer ta récompense du jour sur le Discord (points, Éclats, booster…).
           </p>
         ) : recompense ? (
           <div className="rounded-2xl border border-violet/30 bg-violet/10 p-4">
@@ -919,7 +919,7 @@ export default function Compagnon() {
               disabled={envoi.etat === "envoi"}
               className="w-full rounded-full px-5 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
             >
-              {envoi.etat === "envoi" ? "Ouverture du coffre…" : "🎁 Récupérer ma récompense"}
+              {envoi.etat === "envoi" ? "Ouverture du coffre…" : <><Icone nom="cadeau" className="w-5 h-5 mr-1.5" />Récupérer ma récompense</>}
             </button>
             {envoi.etat === "erreur" && <p className="text-sm text-red-300 mt-2">{envoi.texte}</p>}
           </div>
@@ -927,10 +927,10 @@ export default function Compagnon() {
 
         <div className="mt-5 pt-4 border-t border-violet/10 text-xs text-ink-soft space-y-1">
           <p>
-            🌱 {etat.nom} est <strong className="text-ink">{stadeNom.toLowerCase()}</strong>
-            {prochainStade ? ` · il grandit après ${prochainStade} journées parfaites (${etat.joursParfaits}/${prochainStade})` : " · il a atteint sa taille adulte 🌟"}
+            <Icone nom="pousse" className="w-4 h-4 mr-1 text-emerald-300" />{etat.nom} est <strong className="text-ink">{stadeNom.toLowerCase()}</strong>
+            {prochainStade ? ` · il grandit après ${prochainStade} journées parfaites (${etat.joursParfaits}/${prochainStade})` : " · il a atteint sa taille adulte !"}
           </p>
-          <p>⏳ Ses jauges baissent même quand tu n&apos;es pas là : reviens le voir chaque jour !</p>
+          <p><Icone nom="sablier" className="w-4 h-4 mr-1 text-lilac" />Ses jauges baissent même quand tu n&apos;es pas là : reviens le voir chaque jour !</p>
         </div>
       </aside>
     </div>

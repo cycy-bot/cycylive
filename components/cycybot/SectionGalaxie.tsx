@@ -3,31 +3,34 @@
 // en direct (le Marché Noir Astral et les destinations du jour), puis les autres rendez-vous.
 import type { DiscordCycyBot, ObjetMarche } from "@/lib/cycybot";
 import { CarteBloc, EnDirect, Pastilles, duree, nf, type Bloc } from "@/components/cycybot/Blocs";
+import Icone from "@/components/icones/Icone";
+import { iconeObjet, iconeDestination } from "@/components/icones/correspondances";
+import type { NomIcone } from "@/components/icones/banque";
 
 const GAGNER = [
-  { e: "🎮", t: "Jeux du Discord" },
-  { e: "🃏", t: "Cartes attrapées en live" },
-  { e: "📺", t: "Lives regardés" },
-  { e: "🚀", t: "Expéditions réussies" },
-  { e: "🔮", t: "Prédictions gagnées" },
+  { e: "manette" as NomIcone, t: "Jeux du Discord" },
+  { e: "cartes" as NomIcone, t: "Cartes attrapées en live" },
+  { e: "ecran" as NomIcone, t: "Lives regardés" },
+  { e: "fusee" as NomIcone, t: "Expéditions réussies" },
+  { e: "boule" as NomIcone, t: "Prédictions gagnées" },
 ];
 const DEPENSER = [
-  { e: "🕶️", t: "Marché noir" },
-  { e: "🔮", t: "Mises des prédictions" },
-  { e: "🎰", t: "Relances d'expédition" },
+  { e: "lunettes" as NomIcone, t: "Marché noir" },
+  { e: "boule" as NomIcone, t: "Mises des prédictions" },
+  { e: "slot" as NomIcone, t: "Relances d'expédition" },
 ];
 
 const autres: Bloc[] = [
-  { id: "question", emoji: "💫", titre: "La question du jour", texte: "Chaque jour, une question à la commu. On vote avec un bouton, les résultats tombent le lendemain et restent dans les archives.", commandes: ["question"] },
-  { id: "chronique", emoji: "📖", titre: "La Chronique CycyLive", texte: "Les grands moments de la commu deviennent des chapitres. Les présents reçoivent un tampon unique sur leur passeport, impossible à obtenir après coup.", commandes: ["chronique"] },
-  { id: "predictions", emoji: "🔮", titre: "Les prédictions", texte: "Pendant les lives, mise tes Éclats : « Cycy gagne la game ? », « Ace ce soir ? »… Le pot est partagé entre ceux qui ont vu juste.", commandes: [] },
-  { id: "anomalies", emoji: "🌌", titre: "Les anomalies", texte: "Une à trois fois par semaine, sans prévenir : pluie de météores, distorsion temporelle, XP ×2, faille à cartes ou éclipse. Il faut être là.", commandes: [] },
+  { id: "question", icone: "comete", titre: "La question du jour", texte: "Chaque jour, une question à la commu. On vote avec un bouton, les résultats tombent le lendemain et restent dans les archives.", commandes: ["question"] },
+  { id: "chronique", icone: "livre", titre: "La Chronique CycyLive", texte: "Les grands moments de la commu deviennent des chapitres. Les présents reçoivent un tampon unique sur leur passeport, impossible à obtenir après coup.", commandes: ["chronique"] },
+  { id: "predictions", icone: "boule", titre: "Les prédictions", texte: "Pendant les lives, mise tes Éclats : « Cycy gagne la game ? », « Ace ce soir ? »… Le pot est partagé entre ceux qui ont vu juste.", commandes: [] },
+  { id: "anomalies", icone: "galaxie", titre: "Les anomalies", texte: "Une à trois fois par semaine, sans prévenir : pluie de météores, distorsion temporelle, XP ×2, faille à cartes ou éclipse. Il faut être là.", commandes: [] },
 ];
 
 function Prix({ o }: { o: ObjetMarche }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-full bg-fuchsia-400/15 px-2.5 py-1 text-xs font-semibold text-fuchsia-200 tabular-nums">
-      {nf(o.price)} <span aria-label={o.currency === "fragments" ? "fragments" : "Éclats"}>{o.currency === "fragments" ? "🧩" : "✦"}</span>
+      {nf(o.price)} <Icone nom={o.currency === "fragments" ? "puzzle" : "eclats"} className="w-3.5 h-3.5" titre={o.currency === "fragments" ? "fragments" : "Éclats"} />
     </span>
   );
 }
@@ -36,7 +39,7 @@ function Objet({ o, rare = false }: { o: ObjetMarche; rare?: boolean }) {
   return (
     <li className={`relative flex flex-col rounded-2xl border p-3 ${rare ? "border-amber-300/40 bg-gradient-to-b from-amber-300/10 to-transparent" : "border-fuchsia-300/15 bg-white/[0.03]"}`}>
       {rare && <span className="absolute right-2 top-2 rounded-full bg-amber-300/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-200">Rare</span>}
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-black/30 text-2xl" aria-hidden>{o.emoji}</span>
+      <span className={`flex h-11 w-11 items-center justify-center rounded-xl bg-black/30 ${rare ? "text-amber-200" : "text-fuchsia-200"}`} aria-hidden><Icone nom={iconeObjet(o.name)} className="w-6 h-6" /></span>
       <span className="mt-2 text-sm font-medium leading-snug text-ink line-clamp-2" title={o.name}>{o.name}</span>
       <span className="mt-auto pt-2"><Prix o={o} /></span>
     </li>
@@ -55,7 +58,7 @@ function MarcheNoir({ d }: { d: DiscordCycyBot | null }) {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="eyebrow text-fuchsia-300/90">Boutique clandestine</p>
-          <h3 className="mt-1 text-2xl font-semibold text-ink">🕶️ Le Marché Noir Astral</h3>
+          <h3 className="mt-1 flex items-center gap-2.5 text-2xl font-semibold text-ink"><Icone nom="lunettes" className="w-7 h-7 text-fuchsia-300" />Le Marché Noir Astral</h3>
         </div>
         {!vide && (
           <span className="inline-flex items-center gap-2 rounded-full border border-fuchsia-300/30 bg-black/30 px-3 py-1 text-xs text-fuchsia-100">
@@ -75,7 +78,7 @@ function MarcheNoir({ d }: { d: DiscordCycyBot | null }) {
           {m!.weekly.map((o) => <Objet key={`w-${o.name}`} o={o} rare />)}
           {m!.hasSecret && (
             <li className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-fuchsia-300/40 bg-black/40 p-3 text-center">
-              <span className="text-3xl blur-[1px]" aria-hidden>📦</span>
+              <Icone nom="colis" className="w-9 h-9 text-fuchsia-200" />
               <span className="mt-2 text-sm font-semibold text-fuchsia-100">Objet clandestin</span>
               <span className="text-xs text-ink-soft">Prix et contenu : ???</span>
             </li>
@@ -110,7 +113,7 @@ function Expeditions({ d }: { d: DiscordCycyBot | null }) {
       style={{ background: "radial-gradient(ellipse 80% 60% at 0% 0%, rgba(56,189,248,.14), transparent 60%), linear-gradient(160deg, #0b1424, #0b0817 70%)" }}
     >
       <p className="eyebrow text-sky-300/90">Missions en équipage</p>
-      <h3 className="mt-1 text-2xl font-semibold text-ink">🚀 Les expéditions</h3>
+      <h3 className="mt-1 flex items-center gap-2.5 text-2xl font-semibold text-ink"><Icone nom="satellite" className="w-7 h-7 text-sky-300" />Les expéditions</h3>
       <p className="mt-2 text-sm leading-relaxed text-ink-soft">
         Jusqu&apos;à quatre par équipage. Quand le radar détecte quelque chose, à vous de choisir : investiguer, continuer… ou tirer
         dessus.
@@ -121,10 +124,10 @@ function Expeditions({ d }: { d: DiscordCycyBot | null }) {
           <ul className="space-y-2">
             {dest.map((x) => (
               <li key={x.name} className="flex items-center gap-3 rounded-2xl border border-sky-300/15 bg-white/[0.03] px-3 py-2.5">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/30 text-xl" aria-hidden>{x.emoji}</span>
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black/30 text-sky-200" aria-hidden><Icone nom={iconeDestination(x.name)} className="w-5 h-5" /></span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-medium text-ink">{x.name}</span>
-                  <span className="text-xs text-ink-soft">⏱ {duree(x.hours)}</span>
+                  <span className="text-xs text-ink-soft"><Icone nom="chrono" className="w-3.5 h-3.5 mr-1" />{duree(x.hours)}</span>
                 </span>
                 <Difficulte n={x.difficulty} />
               </li>
@@ -156,7 +159,7 @@ function Expeditions({ d }: { d: DiscordCycyBot | null }) {
 export default function SectionGalaxie({ discord }: { discord: DiscordCycyBot | null }) {
   return (
     <section id="galaxie" className="mb-16 scroll-mt-24" aria-labelledby="galaxie-titre">
-      <p className="eyebrow text-lilac mb-2">✦ L&apos;économie de la galaxie</p>
+      <p className="eyebrow text-lilac mb-2 inline-flex items-center gap-2"><Icone nom="eclats" className="w-4 h-4" />L&apos;économie de la galaxie</p>
       <h2 id="galaxie-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-2">
         Éclats, expéditions &amp; Marché noir
       </h2>
@@ -167,7 +170,7 @@ export default function SectionGalaxie({ discord }: { discord: DiscordCycyBot | 
         <div className="pointer-events-none absolute -right-10 -top-16 h-56 w-56 rounded-full bg-violet/25 blur-3xl" aria-hidden />
         <div className="relative grid gap-6 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] md:items-center">
           <div className="flex gap-4">
-            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-light to-violet text-3xl text-white shadow-glow" aria-hidden>✦</span>
+            <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-light to-violet text-white shadow-glow" aria-hidden><Icone nom="eclats" className="w-8 h-8" /></span>
             <div>
               <h3 className="text-xl font-semibold text-ink">Les Éclats Stellaires</h3>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
@@ -175,7 +178,7 @@ export default function SectionGalaxie({ discord }: { discord: DiscordCycyBot | 
                 {discord && discord.stats.eclatsCirculation > 0 ? (
                   <>
                     {" "}
-                    <strong className="text-ink">{nf(discord.stats.eclatsCirculation)} ✦</strong> en circulation en ce moment.
+                    <strong className="text-ink">{nf(discord.stats.eclatsCirculation)} <Icone nom="eclats" className="w-4 h-4" /></strong> en circulation en ce moment.
                   </>
                 ) : null}
               </p>
@@ -187,16 +190,16 @@ export default function SectionGalaxie({ discord }: { discord: DiscordCycyBot | 
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-emerald-200">Gagner</p>
               <ul className="space-y-1.5 text-sm text-ink">
                 {GAGNER.map((g) => (
-                  <li key={g.t} className="flex gap-2"><span aria-hidden>{g.e}</span>{g.t}</li>
+                  <li key={g.t} className="flex items-center gap-2"><Icone nom={g.e} className="w-4 h-4 text-ink-soft" />{g.t}</li>
                 ))}
               </ul>
             </div>
-            <span className="hidden text-2xl text-lilac sm:block" aria-hidden>→</span>
+            <Icone nom="fleche" className="hidden w-7 h-7 text-lilac sm:block" />
             <div className="rounded-2xl border border-fuchsia-300/20 bg-fuchsia-300/[0.06] p-3.5 self-stretch">
               <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-fuchsia-200">Dépenser</p>
               <ul className="space-y-1.5 text-sm text-ink">
                 {DEPENSER.map((g) => (
-                  <li key={g.t} className="flex gap-2"><span aria-hidden>{g.e}</span>{g.t}</li>
+                  <li key={g.t} className="flex items-center gap-2"><Icone nom={g.e} className="w-4 h-4 text-ink-soft" />{g.t}</li>
                 ))}
               </ul>
             </div>

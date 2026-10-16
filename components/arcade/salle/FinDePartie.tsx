@@ -2,6 +2,8 @@
 
 // Écran de fin commun aux jeux de la salle d'arcade : score, pseudo, enregistrement du record.
 import { useEffect, useRef, useState } from "react";
+import type { NomIcone } from "@/components/icones/banque";
+import Icone, { Pastille } from "@/components/icones/Icone";
 import { ARCADE, type JeuSalle } from "@/lib/arcadeRegles";
 
 const CLE_PSEUDO = "cycylive-arcade-pseudo";
@@ -59,7 +61,7 @@ export default function FinDePartie({ jeu, score, resume, jeton, onRejouer }: Pr
         /* pas de stockage */
       }
       const place = d.rang ? ` Tu es ${d.rang === 1 ? "1ᵉʳ·e" : `${d.rang}ᵉ`} du classement !` : "";
-      setEtat({ type: "ok", texte: d.nouveauRecord ? `🎉 Nouveau record : ${d.score.toLocaleString("fr-FR")} points !${place}` : `Score enregistré. Ton record reste de ${d.meilleur.toLocaleString("fr-FR")} points.${place}` });
+      setEtat({ type: "ok", texte: d.nouveauRecord ? `Nouveau record : ${d.score.toLocaleString("fr-FR")} points !${place}` : `Score enregistré. Ton record reste de ${d.meilleur.toLocaleString("fr-FR")} points.${place}` });
       setEnvoye(true);
       window.dispatchEvent(new CustomEvent("arcade:classement", { detail: { pseudo: pseudo.trim(), jeu } }));
     } catch (err) {
@@ -96,7 +98,7 @@ export default function FinDePartie({ jeu, score, resume, jeton, onRejouer }: Pr
         ) : null}
         {etat ? <p className={`text-sm mb-3 ${etat.type === "ok" ? "text-emerald-300" : "text-red-300"}`}>{etat.texte}</p> : null}
         <button type="button" onClick={onRejouer} className="rounded-full border border-violet/40 px-6 py-2.5 text-sm font-semibold text-ink hover:bg-violet/15">
-          🔁 Rejouer
+          <Icone nom="rejouer" className="w-4 h-4 mr-1.5" />Rejouer
         </button>
       </div>
     </div>
@@ -111,15 +113,15 @@ export type PropsJeu = {
 };
 
 /** Écran de départ commun : titre, règles, bouton Jouer. */
-export function EcranDepart({ emoji, titre, regles, onJouer, bouton = "Jouer" }: { emoji: string; titre: string; regles: React.ReactNode; onJouer: () => void; bouton?: string }) {
+export function EcranDepart({ icone, titre, regles, onJouer, bouton = "Jouer" }: { icone: NomIcone; titre: string; regles: React.ReactNode; onJouer: () => void; bouton?: string }) {
   return (
     <div className="absolute inset-0 z-10 flex items-center justify-center p-5 text-center">
       <div className="max-w-md">
-        <p className="text-5xl mb-2" aria-hidden>{emoji}</p>
+        <Pastille nom={icone} taille="lg" className="mb-3" />
         <h3 className="text-2xl font-semibold text-ink mb-2">{titre}</h3>
         <div className="text-sm text-ink-soft leading-relaxed mb-5">{regles}</div>
         <button type="button" onClick={onJouer} className="rounded-full bg-violet px-8 py-3 font-semibold text-ink shadow-glow hover:bg-violet-light">
-          ▶ {bouton}
+          <Icone nom="lecture" className="w-5 h-5 mr-1.5" />{bouton}
         </button>
       </div>
     </div>

@@ -1,9 +1,13 @@
 import Link from "next/link";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
 import { getSemaineActuelle, datesSemaineActuelle, JOURS_ORDRE, LABEL_GENERIQUE } from "@/data/planning";
 import { lireCalendrier } from "@/lib/calendrierStore";
-import { jourAvecException, dateParis, TYPES_EVENEMENT } from "@/data/calendrier";
+import { jourAvecException, dateParis } from "@/data/calendrier";
 import { lirePlanning } from "@/lib/planningStore";
 import { IconMoonCrescent, IconCrystal, IconValorant, IconCalendar, IconArrowRight } from "@/components/Icons";
+
+const ICONE_EVENEMENT: Record<string, NomIcone> = { quiz: "quiz", discord: "fete", projet: "outils", live: "live", autre: "etoile" };
 
 export default async function Planning() {
   const [habituel, calendrier] = await Promise.all([lirePlanning(), lireCalendrier()]);
@@ -87,10 +91,9 @@ export default async function Planning() {
         <div className="mt-5 flex flex-wrap items-center gap-2">
           <span className="text-xs uppercase tracking-wide text-ink-soft/60 mr-1">À venir</span>
           {evenements.map((e) => {
-            const type = TYPES_EVENEMENT.find((t) => t.valeur === e.type);
             return (
               <Link key={e.id} href="/calendrier" className="inline-flex items-center gap-2 rounded-full border border-violet/15 bg-card/70 px-3.5 py-1.5 text-sm text-ink-soft hover:text-ink hover:border-violet/40 transition-all">
-                <span aria-hidden>{type?.label.split(" ")[0] || "✨"}</span>
+                <Icone nom={ICONE_EVENEMENT[e.type] || "etoile"} className="w-4 h-4 text-violet-light" />
                 <span className="font-medium text-ink">{e.titre}</span>
                 <span className="text-ink-soft/70">· {quand(e.debut)}</span>
               </Link>

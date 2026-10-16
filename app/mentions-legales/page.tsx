@@ -4,7 +4,7 @@ import { liens } from "@/data/liens";
 export default function MentionsLegalesPage() {
   return (
     <div className="mx-auto max-w-3xl px-5 md:px-8 py-8 md:py-12 text-ink-soft leading-relaxed">
-      <EntetePage surtitre="📄 Informations" titre="Mentions légales" />
+      <EntetePage surtitre="Informations" icone="document" titre="Mentions légales" />
 
       <p className="mb-8 text-sm text-ink-soft/70">
         Conformément aux dispositions de la loi n° 2004-575 du 21 juin 2004

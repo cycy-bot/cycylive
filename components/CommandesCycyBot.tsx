@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Pastille } from "@/components/icones/Icone";
+import { ICONE_GROUPE } from "@/components/icones/correspondances";
 import type { CommandeCycyBot, GroupeCommandesDiscord, GroupeCommandesTwitch } from "@/lib/cycybot";
 
 // Remplace les variables techniques par un texte lisible pour les visiteurs.
@@ -61,7 +63,7 @@ export default function CommandesCycyBot({
   const sectionsTwitch = useMemo(() => {
     const connus = groupesTwitch.filter((g) => twitch.some((c) => c.group === g.key)).map((g) => ({ ...g, items: twitch.filter((c) => c.group === g.key) }));
     const reste = twitch.filter((c) => !groupesTwitch.some((g) => g.key === c.group));
-    return reste.length ? [...connus, { key: "autres", label: connus.length ? "Autres" : "", emoji: connus.length ? "📌" : "", items: reste }] : connus;
+    return reste.length ? [...connus, { key: "autres", label: connus.length ? "Autres" : "", emoji: "", items: reste }] : connus;
   }, [groupesTwitch, twitch]);
   const nbDiscord = groupes.reduce((n, g) => n + g.items.length, 0);
 
@@ -118,8 +120,8 @@ export default function CommandesCycyBot({
               {sectionsTwitch.map((g) => (
                 <section key={g.key} aria-labelledby={g.label ? `groupe-twitch-${g.key}` : undefined}>
                   {g.label && (
-                    <h2 id={`groupe-twitch-${g.key}`} className="text-lg font-semibold text-ink mb-3">
-                      <span aria-hidden>{g.emoji}</span> {g.label}
+                    <h2 id={`groupe-twitch-${g.key}`} className="flex items-center gap-2.5 text-lg font-semibold text-ink mb-3">
+                      <Pastille nom={ICONE_GROUPE[g.key] || "etoile"} taille="xs" /> {g.label}
                     </h2>
                   )}
                   <ul className="carte-holo rounded-2xl overflow-hidden divide-y divide-violet/10">
@@ -156,8 +158,8 @@ export default function CommandesCycyBot({
           </p>
           {groupes.map((g) => (
             <section key={g.key} aria-labelledby={`groupe-${g.key}`}>
-              <h2 id={`groupe-${g.key}`} className="text-lg font-semibold text-ink mb-3">
-                <span aria-hidden>{g.emoji}</span> {g.label}
+              <h2 id={`groupe-${g.key}`} className="flex items-center gap-2.5 text-lg font-semibold text-ink mb-3">
+                <Pastille nom={ICONE_GROUPE[g.key] || "etoile"} taille="xs" /> {g.label}
               </h2>
               <ul className="carte-holo rounded-2xl overflow-hidden divide-y divide-violet/10">
                 {g.items.map((c) => (

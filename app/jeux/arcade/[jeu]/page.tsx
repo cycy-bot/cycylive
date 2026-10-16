@@ -34,7 +34,7 @@ export default function PageJeuSalle({ params }: { params: { jeu: string } }) {
       <EnteteJeu jeu={fiche} />
       <div className="flex flex-col gap-6">
         <JeuSalle jeu={jeu} />
-        <ClassementArcade jeu={jeu} titre={`🏆 Records · ${fiche.emoji} ${fiche.nom}`} />
+        <ClassementArcade jeu={jeu} titre={`Records · ${fiche.nom}`} />
       </div>
       <AutresJeux actuel={jeu} />
     </>

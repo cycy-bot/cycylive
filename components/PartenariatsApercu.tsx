@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icone from "@/components/icones/Icone";
 import { lireTextes } from "@/lib/textesStore";
 import TexteRiche from "@/components/TexteRiche";
 import {
@@ -34,7 +35,7 @@ export default async function PartenariatsApercu() {
               href="/partenariats#bons-plans"
               className="inline-flex rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
             >
-              🏷️ Voir les codes promo
+              <Icone nom="etiquette" className="w-5 h-5 mr-2" />Voir les codes promo
             </Link>
             <Link
               href="/partenariats"

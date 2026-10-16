@@ -10,12 +10,12 @@ export type EmplacementDeco = "fond" | "plafond" | "mur" | "sol" | "gauche" | "d
 export type Habitat = Partial<Record<EmplacementDeco, string>>;
 
 export const EMPLACEMENTS_DECO: { key: EmplacementDeco; label: string }[] = [
-  { key: "fond", label: "🌌 Fond" },
-  { key: "plafond", label: "✨ Plafond" },
-  { key: "mur", label: "🖼️ Mur" },
-  { key: "sol", label: "🟣 Sol" },
-  { key: "gauche", label: "🪴 À gauche" },
-  { key: "droite", label: "🕹️ À droite" },
+  { key: "fond", label: "Fond" },
+  { key: "plafond", label: "Plafond" },
+  { key: "mur", label: "Mur" },
+  { key: "sol", label: "Sol" },
+  { key: "gauche", label: "À gauche" },
+  { key: "droite", label: "À droite" },
 ];
 
 export const DECOS: { key: string; nom: string; emplacement: EmplacementDeco; prix: number }[] = [

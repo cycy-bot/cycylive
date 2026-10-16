@@ -26,7 +26,7 @@ export default async function CommandesPage() {
 
       <EntetePage
         retour={{ href: "/cycybot", label: "Cycy_Bot" }}
-        surtitre="⌨️ Commandes"
+        surtitre="Commandes" icone="clavier"
         titre="Les commandes de Cycy_Bot"
         intro="Dans le chat Twitch pendant les lives, et sur le Discord tout le temps. Cette liste se met à jour automatiquement avec Cycy_Bot."
       />

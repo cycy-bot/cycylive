@@ -1,3 +1,5 @@
+import Icone, { Pastille } from "@/components/icones/Icone";
+import TitreSection from "@/components/icones/TitreSection";
 import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import Link from "next/link";
@@ -79,7 +81,7 @@ export default async function PartenariatsPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="planete" />
-      <EntetePage surtitre="🤝 Partenaires" titre="Partenaires & bons plans" className="mb-4" />
+      <EntetePage surtitre="Partenaires" icone="poignee" titre="Partenaires & bons plans" className="mb-4" />
       <TexteRiche
         html={
           "Je sélectionne mes partenariats avec attention pour qu'ils restent cohérents avec mon univers et utiles à ma communauté.<br><br>" +
@@ -89,9 +91,9 @@ export default async function PartenariatsPage() {
       />
       <nav aria-label="Sommaire" className="mb-10 flex flex-wrap gap-2">
         {[
-          ...(bonsPlans.length ? [{ href: "#bons-plans", label: `🏷️ Bons plans (${bonsPlans.length})` }] : []),
-          ...(partenaires.length ? [{ href: "#partenaires", label: `🤝 Partenaires (${partenaires.length})` }] : []),
-          { href: "#collaborer", label: "💼 Devenir partenaire" },
+          ...(bonsPlans.length ? [{ href: "#bons-plans", label: `Bons plans (${bonsPlans.length})`, icone: "etiquette" as const }] : []),
+          ...(partenaires.length ? [{ href: "#partenaires", label: `Partenaires (${partenaires.length})`, icone: "poignee" as const }] : []),
+          { href: "#collaborer", label: "Devenir partenaire", icone: "mallette" as const },
         ].map((l) => (
           <a key={l.href} href={l.href} className="rounded-full border border-violet/20 bg-card px-4 py-2 text-sm text-ink-soft hover:text-ink hover:border-violet/50 transition-all">
             {l.label}
@@ -104,7 +106,7 @@ export default async function PartenariatsPage() {
 
       {bonsPlans.length > 0 && (
         <section id="bons-plans" className="mb-12 scroll-mt-28">
-          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-1">🏷️ Bons plans & codes promo</h2>
+          <TitreSection icone="etiquette" teinte="or" className="mb-2">Bons plans & codes promo</TitreSection>
           <p className="text-sm text-ink-soft mb-5">Copie le code, profite de la réduction : tu économises et la chaîne est soutenue au passage.</p>
           <div className="space-y-3">
             {bonsPlans.map((b) => (
@@ -148,7 +150,7 @@ export default async function PartenariatsPage() {
 
       {partenaires.length > 0 && (
         <section id="partenaires" className="mb-12 scroll-mt-28">
-          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">🤝 Mes partenaires</h2>
+          <TitreSection icone="poignee" className="mb-5">Mes partenaires</TitreSection>
           {/* Mis en avant (ou partenaire unique) en grand, puis les autres en grille */}
           {enGrand.length > 0 && (
             <div className="space-y-4 mb-4">
@@ -169,13 +171,13 @@ export default async function PartenariatsPage() {
 
       {avecAffilie && (
         <p className="text-xs text-ink-soft/60 -mt-6 mb-12">
-          Les liens marqués « Lien affilié » peuvent me rapporter une petite commission si tu achètes, sans aucun surcoût pour toi. Merci de soutenir la chaîne 💜
+          Les liens marqués « Lien affilié » peuvent me rapporter une petite commission si tu achètes, sans aucun surcoût pour toi. Merci de soutenir la chaîne !
         </p>
       )}
 
       <section id="collaborer" className="carte-holo rounded-3xl p-6 md:p-8 border border-violet/15 scroll-mt-28">
         <h2 className="text-xl md:text-2xl font-semibold text-ink mb-4">
-          💼 Envie de travailler ensemble ?
+          <Pastille nom="mallette" taille="sm" className="mr-3 align-middle" />Envie de travailler ensemble ?
         </h2>
         <TexteRiche
           html={textes.partenariats.intro}

@@ -1,5 +1,6 @@
 // Vitrine des jeux (/jeux) : la salle d'arcade (jeux à records) puis les récompenses du jour (liées au Discord).
 import CarteJeu, { type RecordJeu } from "@/components/arcade/CarteJeu";
+import Icone from "@/components/icones/Icone";
 import { jeuxArcade, jeuxQuotidiens } from "@/lib/jeux";
 
 export default function VitrineJeux({ records = {} }: { records?: Record<string, RecordJeu> }) {
@@ -8,7 +9,7 @@ export default function VitrineJeux({ records = {} }: { records?: Record<string,
   return (
     <div>
       <header className="mb-10 md:mb-12 max-w-3xl">
-        <p className="eyebrow text-lilac mb-3">🕹️ Salle de jeux</p>
+        <p className="eyebrow text-lilac mb-3 inline-flex items-center gap-2"><Icone nom="joystick" className="w-4 h-4" />Salle de jeux</p>
         <h1 className="text-4xl md:text-5xl font-semibold text-ink glow-text leading-[1.15]">Les jeux de Cycylive</h1>
         <p className="mt-4 text-lg text-ink-soft leading-relaxed">
           Gratuits, sans compte, sur ordi comme sur mobile. Choisis un jeu, bats les records de la commu… et n&apos;oublie pas tes
@@ -16,10 +17,10 @@ export default function VitrineJeux({ records = {} }: { records?: Record<string,
         </p>
         <div className="mt-5 flex flex-wrap gap-2 text-sm">
           <a href="#arcade" className="rounded-full bg-violet px-5 py-2.5 font-semibold text-ink shadow-glow-sm hover:bg-violet-light transition-colors">
-            🏆 Battre un record
+            <Icone nom="trophee" className="w-4 h-4 mr-1.5" />Battre un record
           </a>
           <a href="#quotidien" className="rounded-full border border-violet/30 px-5 py-2.5 font-semibold text-ink-soft hover:text-ink hover:bg-violet/10 transition-colors">
-            🎁 Mes récompenses du jour
+            <Icone nom="cadeau" className="w-4 h-4 mr-1.5" />Mes récompenses du jour
           </a>
         </div>
       </header>
