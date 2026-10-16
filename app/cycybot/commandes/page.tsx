@@ -36,7 +36,7 @@ export default async function CommandesPage() {
       </p>
 
       {donnees ? (
-        <CommandesCycyBot toutLeMonde={donnees.commands.everyone} discord={donnees.discord?.commands ?? []} />
+        <CommandesCycyBot toutLeMonde={donnees.commands.everyone} groupesTwitch={donnees.commands.groups ?? []} discord={donnees.discord?.commands ?? []} />
       ) : (
         <p className="carte-holo rounded-2xl p-6 text-ink-soft">
           Cycy_Bot fait une petite pause technique, la liste revient dans un instant. En attendant, tape{" "}

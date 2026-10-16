@@ -10,12 +10,15 @@ export type CommandeCycyBot = {
   description: string;
   permission: string;
   permissionLabel: string;
+  group?: string;
 };
+
+export type GroupeCommandesTwitch = { key: string; label: string; emoji: string };
 
 export type DonneesCycyBot = {
   bot: { name: string; avatar: string | null; bio: string; url: string };
   live: { isLive: boolean; category: string | null };
-  commands: { everyone: CommandeCycyBot[]; mods: CommandeCycyBot[] };
+  commands: { everyone: CommandeCycyBot[]; mods: CommandeCycyBot[]; groups?: GroupeCommandesTwitch[] };
   transmission?: LigneConsole[];
   discord?: DiscordCycyBot | null;
   updatedAt: string;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { CommandeCycyBot, GroupeCommandesDiscord } from "@/lib/cycybot";
+import type { CommandeCycyBot, GroupeCommandesDiscord, GroupeCommandesTwitch } from "@/lib/cycybot";
 
 // Remplace les variables techniques par un texte lisible pour les visiteurs.
 function lisible(texte: string): string {
@@ -26,10 +26,12 @@ type Onglet = "twitch" | "discord";
 
 export default function CommandesCycyBot({
   toutLeMonde,
+  groupesTwitch = [],
   discord = [],
   ongletInitial = "twitch",
 }: {
   toutLeMonde: CommandeCycyBot[];
+  groupesTwitch?: GroupeCommandesTwitch[];
   discord?: GroupeCommandesDiscord[];
   ongletInitial?: Onglet;
 }) {
@@ -55,6 +57,12 @@ export default function CommandesCycyBot({
         .filter((g) => g.items.length),
     [discord, terme]
   );
+  // Commandes Twitch classées par catégorie (si Cycy_Bot les fournit), sinon une seule liste
+  const sectionsTwitch = useMemo(() => {
+    const connus = groupesTwitch.filter((g) => twitch.some((c) => c.group === g.key)).map((g) => ({ ...g, items: twitch.filter((c) => c.group === g.key) }));
+    const reste = twitch.filter((c) => !groupesTwitch.some((g) => g.key === c.group));
+    return reste.length ? [...connus, { key: "autres", label: connus.length ? "Autres" : "", emoji: connus.length ? "📌" : "", items: reste }] : connus;
+  }, [groupesTwitch, twitch]);
   const nbDiscord = groupes.reduce((n, g) => n + g.items.length, 0);
 
   const onglets: { key: Onglet; label: string; n: number }[] = [
@@ -106,25 +114,36 @@ export default function CommandesCycyBot({
         ) : (
           <>
             <p className="text-sm text-ink-soft mb-4">À taper dans le chat Twitch pendant les lives. Les éléments entre crochets sont facultatifs.</p>
-            <ul className="carte-holo rounded-2xl overflow-hidden divide-y divide-violet/10">
-              {twitch.map((c) => (
-                <li key={c.name} className="grid md:grid-cols-[minmax(200px,280px)_1fr] gap-x-8 gap-y-1.5 px-5 md:px-6 py-4">
-                  <div>
-                    <code className="font-display font-semibold text-lilac">!{c.name}</code>
-                    {["subscriber", "vip", "broadcaster"].includes(c.permission) && (
-                      <span className="ml-2 align-middle rounded-full border border-lilac/30 px-2 py-0.5 text-[0.7rem] text-lilac">
-                        {c.permissionLabel}
-                      </span>
-                    )}
-                    {c.usage && <span className="ml-2 text-xs text-ink-soft/70">{c.usage}</span>}
-                    {c.aliases.length > 0 && (
-                      <span className="block text-xs text-ink-soft/50 mt-0.5">aussi {c.aliases.map((a) => `!${a}`).join(", ")}</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-ink-soft break-words">{lisible(c.description)}</p>
-                </li>
+            <div className="space-y-8">
+              {sectionsTwitch.map((g) => (
+                <section key={g.key} aria-labelledby={g.label ? `groupe-twitch-${g.key}` : undefined}>
+                  {g.label && (
+                    <h2 id={`groupe-twitch-${g.key}`} className="text-lg font-semibold text-ink mb-3">
+                      <span aria-hidden>{g.emoji}</span> {g.label}
+                    </h2>
+                  )}
+                  <ul className="carte-holo rounded-2xl overflow-hidden divide-y divide-violet/10">
+                    {g.items.map((c) => (
+                      <li key={c.name} className="grid md:grid-cols-[minmax(200px,280px)_1fr] gap-x-8 gap-y-1.5 px-5 md:px-6 py-4">
+                        <div>
+                          <code className="font-display font-semibold text-lilac">!{c.name}</code>
+                          {["subscriber", "vip", "broadcaster"].includes(c.permission) && (
+                            <span className="ml-2 align-middle rounded-full border border-lilac/30 px-2 py-0.5 text-[0.7rem] text-lilac">
+                              {c.permissionLabel}
+                            </span>
+                          )}
+                          {c.usage && <span className="ml-2 text-xs text-ink-soft/70">{c.usage}</span>}
+                          {c.aliases.length > 0 && (
+                            <span className="block text-xs text-ink-soft/50 mt-0.5">aussi {c.aliases.map((a) => `!${a}`).join(", ")}</span>
+                          )}
+                        </div>
+                        <p className="text-sm text-ink-soft break-words">{lisible(c.description)}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
               ))}
-            </ul>
+            </div>
           </>
         )
       ) : groupes.length === 0 ? (
