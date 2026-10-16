@@ -9,6 +9,7 @@ import DerniersContenus from "@/components/DerniersContenus";
 import CommunauteApercu from "@/components/CommunauteApercu";
 import PartenariatsApercu from "@/components/PartenariatsApercu";
 import BandeauPartenaires from "@/components/BandeauPartenaires";
+import ExplorerAccueil from "@/components/ExplorerAccueil";
 
 export const metadata: Metadata = {
   title: "Cycylive | Stream, gaming & création de contenu",
@@ -23,6 +24,8 @@ export const metadata: Metadata = {
   },
 };
 
+export const revalidate = 300;
+
 export default function AccueilPage() {
   return (
     <>
@@ -30,6 +33,7 @@ export default function AccueilPage() {
       <StatutTwitch />
       <StatsRapides />
       <Planning />
+      <ExplorerAccueil />
       <AProposCourt />
       <TimelineApercu />
       <DerniersContenus />

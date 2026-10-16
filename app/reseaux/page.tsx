@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
 import { lireContenus } from "@/lib/contenusStore";
 import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
@@ -110,16 +111,17 @@ export default async function ReseauxPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
-      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-6">
-        Réseaux
-      </h1>
-
-      <nav className="flex flex-wrap gap-2 mb-10 text-xs">
-        <a href="#twitch" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Twitch</a>
-        <a href="#tiktok" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">TikTok</a>
-        <a href="#instagram" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">Instagram</a>
-        <a href="#youtube" className="rounded-full border border-violet/20 px-3 py-1.5 text-ink-soft hover:text-ink hover:border-violet/40 transition-all">YouTube</a>
-      </nav>
+      <EntetePage
+        surtitre="📱 Réseaux"
+        titre="Me retrouver partout"
+        intro="Les lives sur Twitch, et le reste du temps des clips, des coulisses et des vidéos sur mes autres réseaux."
+        sommaire={[
+          { href: "#twitch", label: "Twitch" },
+          { href: "#tiktok", label: "TikTok" },
+          { href: "#instagram", label: "Instagram" },
+          { href: "#youtube", label: "YouTube" },
+        ]}
+      />
 
       <BlocPlateforme
         id="twitch"

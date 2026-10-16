@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { liens } from "@/data/liens";
 import {
   IconTwitch,
@@ -16,9 +17,30 @@ const reseaux = [
   { icon: IconDiscord, href: liens.discord, label: "Discord" },
 ];
 
+const plan = [
+  { titre: "Découvrir", liens: [["À propos", "/a-propos"], ["Réseaux", "/reseaux"], ["Statistiques", "/statistiques"], ["Calendrier", "/calendrier"]] },
+  { titre: "Jouer", liens: [["Tous les jeux", "/jeux"], ["Salle d'arcade", "/jeux#arcade"], ["Ticket à gratter", "/jeux/gratter"], ["Compagnon", "/jeux/compagnon"]] },
+  { titre: "Cycy_Bot & gaming", liens: [["Cycy_Bot", "/cycybot"], ["Leaderboard", "/cycybot/leaderboard"], ["Commandes", "/cycybot/commandes"], ["Valorant & clips", "/gaming"]] },
+  { titre: "Soutenir", liens: [["Soutenir la chaîne", "/soutenir"], ["Bons plans", "/partenariats#bons-plans"], ["Partenaires", "/partenariats"], ["Me contacter", "/contact"]] },
+];
+
 export default function Footer() {
   return (
     <footer className="border-t border-violet/10 mt-16 md:mt-24">
+      <nav aria-label="Plan du site" className="mx-auto max-w-6xl px-5 md:px-8 pt-10 grid grid-cols-2 md:grid-cols-4 gap-8">
+        {plan.map((col) => (
+          <div key={col.titre}>
+            <p className="eyebrow text-lilac/80 mb-3">{col.titre}</p>
+            <ul className="space-y-2 text-sm">
+              {col.liens.map(([label, href]) => (
+                <li key={href}>
+                  <Link href={href} className="text-ink-soft hover:text-ink transition-colors">{label}</Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </nav>
       <div className="hidden md:flex mx-auto max-w-6xl px-8 py-10 flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-3">
           <Image

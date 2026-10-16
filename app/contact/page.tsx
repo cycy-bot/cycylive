@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import EntetePage from "@/components/EntetePage";
 import { useTextes } from "@/components/useTextes";
 import TexteRiche from "@/components/TexteRiche";
 
@@ -59,10 +60,7 @@ export default function ContactPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-5 md:px-8 py-8 md:py-12">
-      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
-        {textes.contact.titre}
-      </h1>
-      <TexteRiche html={textes.contact.texte} className="text-ink-soft mb-10" />
+      <EntetePage surtitre="✉️ Contact" titre={textes.contact.titre} intro={<TexteRiche html={textes.contact.texte} />} />
 
       {statut === "succes" ? (
         <div className="carte-holo rounded-2xl p-8 border border-violet/20 text-center">

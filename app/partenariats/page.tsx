@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EntetePage from "@/components/EntetePage";
 import Link from "next/link";
 import { liens } from "@/data/liens";
 import { lireTextes } from "@/lib/textesStore";
@@ -76,12 +77,9 @@ export default async function PartenariatsPage() {
   const avecAffilie = partenaires.some((p) => p.affilie) || bonsPlans.some((b) => b.affilie);
 
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
+    <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="planete" />
-      <p className="eyebrow text-lilac mb-3">🤝 Partenaires</p>
-      <h1 className="text-3xl md:text-5xl font-semibold text-ink glow-text mb-4">
-        Partenaires & bons plans
-      </h1>
+      <EntetePage surtitre="🤝 Partenaires" titre="Partenaires & bons plans" className="mb-4" />
       <TexteRiche
         html={
           "Je sélectionne mes partenariats avec attention pour qu'ils restent cohérents avec mon univers et utiles à ma communauté.<br><br>" +

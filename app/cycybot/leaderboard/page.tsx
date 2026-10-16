@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import EntetePage from "@/components/EntetePage";
 import { lireClassement } from "@/lib/cycybot";
 import AccentCosmique from "@/components/AccentCosmique";
 import LeaderboardCycyBot from "@/components/LeaderboardCycyBot";
@@ -22,19 +22,15 @@ export default async function LeaderboardPage() {
   const initial = await lireClassement("messages", "global");
 
   return (
-    <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
+    <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="constellation" />
 
-      <Link href="/cycybot" className="text-sm text-ink-soft hover:text-ink transition-colors">
-        ‹ Cycy_Bot
-      </Link>
-      <h1 className="text-4xl md:text-5xl leading-[1.2] pb-1 font-semibold text-ink glow-text mt-3 mb-3">
-        Leaderboard
-      </h1>
-      <p className="text-ink-soft text-lg mb-10 max-w-2xl">
-        Les Cycyliens qui font vivre la galaxie. Tape <code className="text-lilac">!top</code> dans le chat pour
-        retrouver cette page à tout moment.
-      </p>
+      <EntetePage
+        retour={{ href: "/cycybot", label: "Cycy_Bot" }}
+        surtitre="🏆 Leaderboard"
+        titre="Les Cycyliens à l'honneur"
+        intro={<>Ceux qui font vivre la galaxie, live après live. Tape <code className="text-lilac">!top</code> dans le chat pour retrouver cette page à tout moment.</>}
+      />
 
       <LeaderboardCycyBot initial={initial} />
     </div>

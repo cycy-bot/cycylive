@@ -29,12 +29,20 @@ export default async function PartenariatsApercu() {
             html={textes.partenariats.intro}
             className="text-ink-soft leading-relaxed mb-6 max-w-md"
           />
-          <Link
-            href="/partenariats"
-            className="inline-flex rounded-full px-6 py-3 border border-violet/40 bg-violet/10 text-ink font-medium hover:bg-violet/20 transition-all"
-          >
-            {textes.partenariats.cta}
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/partenariats#bons-plans"
+              className="inline-flex rounded-full px-6 py-3 bg-violet text-ink font-medium hover:bg-violet-light hover:shadow-glow transition-all"
+            >
+              🏷️ Voir les codes promo
+            </Link>
+            <Link
+              href="/partenariats"
+              className="inline-flex rounded-full px-6 py-3 border border-violet/40 bg-violet/10 text-ink font-medium hover:bg-violet/20 transition-all"
+            >
+              {textes.partenariats.cta}
+            </Link>
+          </div>
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
           {typesCollab.map(({ label, icon: Icon }) => (

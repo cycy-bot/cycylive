@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EntetePage from "@/components/EntetePage";
 import Link from "next/link";
 import { liens } from "@/data/liens";
 import { lienPaypal, montantsRapides } from "@/data/soutien";
@@ -58,14 +59,11 @@ export default async function SoutenirPage() {
       <AccentCosmique variante="lune" />
 
       {/* En-tête */}
-      <header className="mb-10 max-w-3xl">
-        <p className="eyebrow text-lilac mb-3">💜 Soutenir la chaîne</p>
-        <h1 className="text-4xl md:text-5xl leading-[1.15] font-semibold text-ink glow-text">Aide Cycylive à briller plus fort</h1>
-        <p className="mt-4 text-lg text-ink-soft leading-relaxed">
-          Que tu aies cinq minutes ou cinq euros, il y a toujours une façon de donner un coup de pouce. Et la plupart sont
-          gratuites&nbsp;!
-        </p>
-      </header>
+      <EntetePage
+        surtitre="💜 Soutenir la chaîne"
+        titre="Aide Cycylive à briller plus fort"
+        intro={<>Que tu aies cinq minutes ou cinq euros, il y a toujours une façon de donner un coup de pouce. Et la plupart sont gratuites&nbsp;!</>}
+      />
 
       {/* Les 3 façons principales */}
       <div className="grid gap-4 md:grid-cols-3 mb-14">

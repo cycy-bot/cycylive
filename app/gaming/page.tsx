@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
 import { lireGaming } from "@/lib/gamingStore";
 import { lireTimeline } from "@/lib/timelineStore";
@@ -93,22 +94,16 @@ export default async function GamingPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
-      <header className="mb-10">
-        <p className="eyebrow text-lilac mb-3">🎮 Gaming</p>
-        <h1 className="text-4xl md:text-5xl font-semibold text-ink glow-text mb-4">Les jeux de mes lives</h1>
-        <TexteRiche html={gaming.intro} className="text-ink-soft text-lg leading-relaxed max-w-2xl" />
-        <nav aria-label="Sur cette page" className="mt-5 flex flex-wrap gap-2">
-          {[
-            ["#valorant", "🎯 Valorant"],
-            ["#clips", "🎬 Derniers clips"],
-            ...(gaming.autresJeux.length ? [["#autres-jeux", "🕹️ Autres jeux"]] : []),
-          ].map(([href, label]) => (
-            <a key={href} href={href} className="rounded-full border border-violet/20 bg-card px-4 py-2 text-sm text-ink-soft hover:text-ink hover:border-violet/50 transition-all">
-              {label}
-            </a>
-          ))}
-        </nav>
-      </header>
+      <EntetePage
+        surtitre="🎮 Gaming"
+        titre="Les jeux de mes lives"
+        intro={<TexteRiche html={gaming.intro} />}
+        sommaire={[
+          { href: "#valorant", label: "🎯 Valorant" },
+          { href: "#clips", label: "🎬 Derniers clips" },
+          ...(gaming.autresJeux.length ? [{ href: "#autres-jeux", label: "🕹️ Autres jeux" }] : []),
+        ]}
+      />
 
       {/* ── Valorant ── */}
       <section id="valorant" className="scroll-mt-24 mb-14" aria-labelledby="valorant-titre">

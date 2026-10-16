@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import EntetePage from "@/components/EntetePage";
 import { lireCycyBot } from "@/lib/cycybot";
 import AccentCosmique from "@/components/AccentCosmique";
 import CommandesCycyBot from "@/components/CommandesCycyBot";
@@ -24,16 +24,12 @@ export default async function CommandesPage() {
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="fusee" />
 
-      <Link href="/cycybot" className="text-sm text-ink-soft hover:text-ink transition-colors">
-        ‹ Cycy_Bot
-      </Link>
-      <h1 className="text-4xl md:text-5xl leading-[1.2] pb-1 font-semibold text-ink glow-text mt-3 mb-3">
-        Commandes
-      </h1>
-      <p className="text-ink-soft text-lg mb-10 max-w-2xl">
-        Dans le chat Twitch pendant les lives, et sur le Discord tout le temps. Cette liste se met à jour
-        automatiquement avec Cycy_Bot.
-      </p>
+      <EntetePage
+        retour={{ href: "/cycybot", label: "Cycy_Bot" }}
+        surtitre="⌨️ Commandes"
+        titre="Les commandes de Cycy_Bot"
+        intro="Dans le chat Twitch pendant les lives, et sur le Discord tout le temps. Cette liste se met à jour automatiquement avec Cycy_Bot."
+      />
 
       {donnees ? (
         <CommandesCycyBot toutLeMonde={donnees.commands.everyone} groupesTwitch={donnees.commands.groups ?? []} discord={donnees.discord?.commands ?? []} />

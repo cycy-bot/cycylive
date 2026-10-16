@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import EntetePage from "@/components/EntetePage";
 import Link from "next/link";
 import { liens } from "@/data/liens";
 import { obtenirNombreFollowers, estConnecteeATwitch } from "@/lib/twitchOAuth";
@@ -46,11 +47,7 @@ export default async function StatistiquesPage() {
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="constellation" />
-      <header className="mb-10 max-w-3xl">
-        <p className="eyebrow text-lilac mb-3">📊 Statistiques</p>
-        <h1 className="text-4xl md:text-5xl font-semibold text-ink glow-text leading-[1.15]">La chaîne en chiffres</h1>
-        <p className="mt-4 text-lg text-ink-soft leading-relaxed">Chaque chiffre ici, c&apos;est grâce à vous. Voici où en est Cycylive, mis à jour automatiquement.</p>
-      </header>
+      <EntetePage surtitre="📊 Statistiques" titre="La chaîne en chiffres" intro="Chaque chiffre ici, c'est grâce à vous. Voici où en est Cycylive, mis à jour automatiquement." />
 
       {classements.length > 0 && (
         <div className={`grid gap-4 mb-4 ${classements.length > 1 ? "md:grid-cols-2" : ""}`}>

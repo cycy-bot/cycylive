@@ -203,3 +203,104 @@ export function IconPlanetRing({ className }: IconProps) {
     </svg>
   );
 }
+
+// ── Icônes d'interface (traits fins + remplissage léger, même style que le cristal) ──
+
+const trait = { stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+
+export function IconUsers({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <circle cx="9" cy="8.5" r="3.5" {...trait} fill="currentColor" fillOpacity="0.18" />
+      <path d="M2.5 19.5c.6-3.4 3.3-5.5 6.5-5.5s5.9 2.1 6.5 5.5" {...trait} />
+      <circle cx="17" cy="9.5" r="2.6" {...trait} opacity="0.7" />
+      <path d="M17.5 14.2c2.2.3 3.7 2 4 4.8" {...trait} opacity="0.7" />
+    </svg>
+  );
+}
+
+export function IconEye({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" {...trait} fill="currentColor" fillOpacity="0.12" />
+      <circle cx="12" cy="12" r="3" {...trait} fill="currentColor" fillOpacity="0.35" />
+    </svg>
+  );
+}
+
+export function IconTrophy({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" {...trait} fill="currentColor" fillOpacity="0.18" />
+      <path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 4M17 6h2.5a2.5 2.5 0 0 1-2.6 4M12 14v3M8.5 20h7M9.5 17h5v3h-5z" {...trait} />
+    </svg>
+  );
+}
+
+export function IconClock({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <circle cx="12" cy="12" r="9" {...trait} fill="currentColor" fillOpacity="0.12" />
+      <path d="M12 7v5l3.2 2" {...trait} />
+    </svg>
+  );
+}
+
+export function IconCalendar({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <rect x="3.5" y="5" width="17" height="15" rx="3" {...trait} fill="currentColor" fillOpacity="0.12" />
+      <path d="M3.5 10h17M8 3v4M16 3v4" {...trait} />
+      <circle cx="12" cy="14.5" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconHeart({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M12 20s-7.5-4.4-7.5-10A4.3 4.3 0 0 1 12 7.3 4.3 4.3 0 0 1 19.5 10c0 5.6-7.5 10-7.5 10Z" {...trait} fill="currentColor" fillOpacity="0.2" />
+    </svg>
+  );
+}
+
+export function IconGamepad({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M7 7h10a5 5 0 0 1 4.7 6.7l-1 2.8a2.3 2.3 0 0 1-3.9.7L15 15H9l-1.8 2.2a2.3 2.3 0 0 1-3.9-.7l-1-2.8A5 5 0 0 1 7 7Z" {...trait} fill="currentColor" fillOpacity="0.15" />
+      <path d="M8 10v3M6.5 11.5h3" {...trait} />
+      <circle cx="15.5" cy="10.6" r="1" fill="currentColor" />
+      <circle cx="17.3" cy="12.6" r="1" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconChart({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M4 20V4M4 20h16" {...trait} />
+      <path d="M7.5 15.5 11 12l3 2.5 5.5-6" {...trait} />
+      <circle cx="19.5" cy="8.5" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconRobot({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <rect x="4" y="7" width="16" height="12" rx="4.5" {...trait} fill="currentColor" fillOpacity="0.15" />
+      <path d="M12 7V4" {...trait} />
+      <circle cx="12" cy="3.2" r="1.2" fill="currentColor" />
+      <circle cx="9.3" cy="12.8" r="1.4" fill="currentColor" />
+      <circle cx="14.7" cy="12.8" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
+export function IconArrowRight({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M5 12h14M13 6l6 6-6 6" {...trait} />
+    </svg>
+  );
+}
