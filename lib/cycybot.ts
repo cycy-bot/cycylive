@@ -21,6 +21,8 @@ export type DonneesCycyBot = {
   commands: { everyone: CommandeCycyBot[]; mods: CommandeCycyBot[]; groups?: GroupeCommandesTwitch[] };
   transmission?: LigneConsole[];
   discord?: DiscordCycyBot | null;
+  /** Rank Valorant (même source que la commande !rank du chat). */
+  valorant?: { rank: { tier: string; division: number | null; rr: number | null; label: string; text: string; updatedAt: string } | null };
   updatedAt: string;
 };
 

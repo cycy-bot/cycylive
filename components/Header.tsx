@@ -48,18 +48,27 @@ const navItems: (LienNav | GroupeNav)[] = [
     items: [
       { label: "Tous les jeux", href: "/jeux" },
       { label: "Salle d'arcade", href: "/jeux#arcade" },
-      { label: "Cycy Runner", href: "/jeux/runner" },
       { label: "Ticket à gratter", href: "/jeux/gratter" },
       { label: "Compagnon", href: "/jeux/compagnon" },
     ],
   },
   {
     type: "groupe",
+    label: "Partenaires",
+    items: [
+      { label: "Bons plans & codes promo", href: "/partenariats#bons-plans" },
+      { label: "Mes partenaires", href: "/partenariats#partenaires" },
+      { label: "Devenir partenaire", href: "/partenariats#collaborer" },
+    ],
+  },
+  {
+    type: "groupe",
     label: "Soutenir",
     items: [
+      { label: "Toutes les façons d'aider", href: "/soutenir" },
       { label: "Faire un don", href: "/soutenir#don" },
       { label: "S'abonner & Prime Gaming", href: "/soutenir#abonnement" },
-      { label: "Partenaires & bons plans", href: "/partenariats" },
+      { label: "Soutenir gratuitement", href: "/soutenir#gratuit" },
     ],
   },
 ];
@@ -91,7 +100,10 @@ function CTATwitch({ enLigne, className }: { enLigne: boolean; className?: strin
           Voir le live
         </>
       ) : (
-        "Voir la chaîne Twitch"
+        <>
+          <span className="xl:hidden">Twitch</span>
+          <span className="hidden xl:inline">Voir la chaîne Twitch</span>
+        </>
       )}
     </a>
   );
@@ -130,7 +142,7 @@ export default function Header() {
           </span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-7 text-sm text-ink-soft">
+        <nav className="hidden lg:flex items-center gap-5 xl:gap-7 text-sm text-ink-soft">
           {navItems.map((item) =>
             item.type === "lien" ? (
               <Link key={item.href} href={item.href} className="hover:text-ink transition-colors">
@@ -153,7 +165,7 @@ export default function Header() {
                   />
                 </button>
                 {groupeOuvert === item.label && (
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-48 rounded-2xl border border-violet/15 bg-nebula/95 backdrop-blur-md shadow-glow-sm py-2 z-50">
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 rounded-2xl border border-violet/15 bg-nebula/95 backdrop-blur-md shadow-glow-sm py-2 z-50">
                     {item.items.map((sous) => (
                       <Link
                         key={sous.href}
@@ -171,12 +183,12 @@ export default function Header() {
           )}
         </nav>
 
-        <CTATwitch enLigne={enLigne} className="hidden md:inline-flex" />
+        <CTATwitch enLigne={enLigne} className="hidden lg:inline-flex" />
 
         <button
           aria-label="Ouvrir le menu"
           onClick={() => setOuvert(!ouvert)}
-          className="md:hidden text-ink p-2"
+          className="lg:hidden text-ink p-2"
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
@@ -185,7 +197,7 @@ export default function Header() {
       </div>
 
       {ouvert && (
-        <nav className="md:hidden border-t border-violet/10 bg-void/95 px-5 py-4 flex flex-col gap-1 text-ink-soft">
+        <nav className="lg:hidden border-t border-violet/10 bg-void/95 px-5 py-4 flex flex-col gap-1 text-ink-soft">
           {navItems.map((item) =>
             item.type === "lien" ? (
               <Link

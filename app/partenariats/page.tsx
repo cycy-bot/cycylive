@@ -78,41 +78,36 @@ export default async function PartenariatsPage() {
   return (
     <div className="mx-auto max-w-4xl px-5 md:px-8 py-8 md:py-12">
       <AccentCosmique variante="planete" />
-      <h1 className="text-3xl md:text-4xl font-semibold text-ink glow-text mb-4">
-        Partenaires & Bons plans
+      <p className="eyebrow text-lilac mb-3">🤝 Partenaires</p>
+      <h1 className="text-3xl md:text-5xl font-semibold text-ink glow-text mb-4">
+        Partenaires & bons plans
       </h1>
       <TexteRiche
         html={
           "Je sélectionne mes partenariats avec attention pour qu'ils restent cohérents avec mon univers et utiles à ma communauté.<br><br>" +
           "Tu retrouveras ici les marques avec lesquelles je collabore, les bons plans associés et les offres que j'ai envie de partager avec vous."
         }
-        className="text-ink-soft leading-relaxed mb-10 max-w-2xl"
+        className="text-ink-soft leading-relaxed mb-6 max-w-2xl"
       />
-
-      {partenaires.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Mes partenaires</h2>
-          {/* Mis en avant (ou partenaire unique) en grand, puis les autres en grille */}
-          {enGrand.length > 0 && (
-            <div className="space-y-4 mb-4">
-              {enGrand.map((p) => (
-                <CartePartenaire key={p.id} partenaire={p} grande />
-              ))}
-            </div>
-          )}
-          {enGrille.length > 0 && (
-            <div className="grid sm:grid-cols-2 gap-4">
-              {enGrille.map((p) => (
-                <CartePartenaire key={p.id} partenaire={p} />
-              ))}
-            </div>
-          )}
-        </section>
+      <nav aria-label="Sommaire" className="mb-10 flex flex-wrap gap-2">
+        {[
+          ...(bonsPlans.length ? [{ href: "#bons-plans", label: `🏷️ Bons plans (${bonsPlans.length})` }] : []),
+          ...(partenaires.length ? [{ href: "#partenaires", label: `🤝 Partenaires (${partenaires.length})` }] : []),
+          { href: "#collaborer", label: "💼 Devenir partenaire" },
+        ].map((l) => (
+          <a key={l.href} href={l.href} className="rounded-full border border-violet/20 bg-card px-4 py-2 text-sm text-ink-soft hover:text-ink hover:border-violet/50 transition-all">
+            {l.label}
+          </a>
+        ))}
+      </nav>
+      {bonsPlans.length === 0 && partenaires.length === 0 && (
+        <p id="bons-plans" className="carte-holo rounded-2xl p-6 text-ink-soft mb-12 scroll-mt-28">Les premiers bons plans arrivent très bientôt, reviens vite&nbsp;!</p>
       )}
 
       {bonsPlans.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">Bons plans</h2>
+        <section id="bons-plans" className="mb-12 scroll-mt-28">
+          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-1">🏷️ Bons plans & codes promo</h2>
+          <p className="text-sm text-ink-soft mb-5">Copie le code, profite de la réduction : tu économises et la chaîne est soutenue au passage.</p>
           <div className="space-y-3">
             {bonsPlans.map((b) => (
               <div
@@ -153,15 +148,36 @@ export default async function PartenariatsPage() {
         </section>
       )}
 
+      {partenaires.length > 0 && (
+        <section id="partenaires" className="mb-12 scroll-mt-28">
+          <h2 className="text-xl md:text-2xl font-semibold text-ink mb-5">🤝 Mes partenaires</h2>
+          {/* Mis en avant (ou partenaire unique) en grand, puis les autres en grille */}
+          {enGrand.length > 0 && (
+            <div className="space-y-4 mb-4">
+              {enGrand.map((p) => (
+                <CartePartenaire key={p.id} partenaire={p} grande />
+              ))}
+            </div>
+          )}
+          {enGrille.length > 0 && (
+            <div className="grid sm:grid-cols-2 gap-4">
+              {enGrille.map((p) => (
+                <CartePartenaire key={p.id} partenaire={p} />
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {avecAffilie && (
         <p className="text-xs text-ink-soft/60 -mt-6 mb-12">
           Les liens marqués « Lien affilié » peuvent me rapporter une petite commission si tu achètes, sans aucun surcoût pour toi. Merci de soutenir la chaîne 💜
         </p>
       )}
 
-      <section className="carte-holo rounded-3xl p-6 md:p-8 border border-violet/15">
+      <section id="collaborer" className="carte-holo rounded-3xl p-6 md:p-8 border border-violet/15 scroll-mt-28">
         <h2 className="text-xl md:text-2xl font-semibold text-ink mb-4">
-          Envie de travailler ensemble ?
+          💼 Envie de travailler ensemble ?
         </h2>
         <TexteRiche
           html={textes.partenariats.intro}

@@ -174,3 +174,18 @@ export async function obtenirNombreFollowers(): Promise<number | null> {
     return null;
   }
 }
+
+/** Token Twitch de la chaîne (rafraîchi si besoin), pour les autres appels Helix (clips…). */
+export async function obtenirAccesTwitch(): Promise<{ clientId: string; token: string; broadcasterId: string } | null> {
+  const clientId = process.env.TWITCH_CLIENT_ID;
+  const redis = obtenirClient();
+  if (!clientId || !redis) return null;
+  let oauth = await redis.get<TwitchOAuth>(CLE_OAUTH);
+  if (!oauth) return null;
+  if (oauth.expire_le < Date.now()) {
+    const rafraichi = await rafraichirToken(oauth);
+    if (!rafraichi) return null;
+    oauth = rafraichi;
+  }
+  return { clientId, token: oauth.access_token, broadcasterId: oauth.broadcaster_id };
+}

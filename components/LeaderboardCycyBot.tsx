@@ -49,7 +49,7 @@ function Avatar({ ligne, taille, anneau }: { ligne: LigneClassement; taille: str
     />
   ) : (
     <span
-      className={`${taille} rounded-full ring-4 ${anneau} bg-card flex items-center justify-center font-display font-semibold text-lilac text-xl`}
+      className={`${taille} rounded-full ring-4 ${anneau} bg-card flex items-center justify-center font-display font-semibold text-lilac`}
       aria-hidden
     >
       {(ligne.name || "?").charAt(0).toUpperCase()}
@@ -57,11 +57,11 @@ function Avatar({ ligne, taille, anneau }: { ligne: LigneClassement; taille: str
   );
 }
 
-// Couleurs du podium : or, argent, bronze, en version « lumière d'étoile »
+// Couleurs du podium : or, argent, bronze
 const PODIUM = {
-  1: { anneau: "ring-amber-300", glow: "shadow-[0_0_40px_rgba(252,211,77,0.45)]", socle: "h-28", medaille: "bg-amber-300 text-void", taille: "w-24 h-24 md:w-28 md:h-28" },
-  2: { anneau: "ring-slate-300", glow: "shadow-[0_0_30px_rgba(203,213,225,0.35)]", socle: "h-20", medaille: "bg-slate-300 text-void", taille: "w-20 h-20 md:w-24 md:h-24" },
-  3: { anneau: "ring-orange-400", glow: "shadow-[0_0_30px_rgba(251,146,60,0.35)]", socle: "h-14", medaille: "bg-orange-400 text-void", taille: "w-20 h-20 md:w-24 md:h-24" },
+  1: { anneau: "ring-amber-300", glow: "shadow-[0_0_50px_rgba(252,211,77,0.5)]", socle: "h-32 md:h-36", couleur: "from-amber-300/40 via-amber-300/10", texte: "text-amber-200", taille: "w-24 h-24 md:w-32 md:h-32 text-4xl md:text-5xl" },
+  2: { anneau: "ring-slate-300", glow: "shadow-[0_0_34px_rgba(203,213,225,0.35)]", socle: "h-24 md:h-28", couleur: "from-slate-300/30 via-slate-300/5", texte: "text-slate-200", taille: "w-20 h-20 md:w-24 md:h-24 text-3xl md:text-4xl" },
+  3: { anneau: "ring-orange-400", glow: "shadow-[0_0_34px_rgba(251,146,60,0.35)]", socle: "h-16 md:h-20", couleur: "from-orange-400/30 via-orange-400/5", texte: "text-orange-200", taille: "w-20 h-20 md:w-24 md:h-24 text-3xl md:text-4xl" },
 } as const;
 
 function Marche({ ligne, type }: { ligne: LigneClassement | undefined; type: TypeClassement }) {
@@ -69,30 +69,24 @@ function Marche({ ligne, type }: { ligne: LigneClassement | undefined; type: Typ
   const style = PODIUM[ligne.rank as 1 | 2 | 3];
   return (
     <div className="flex-1 flex flex-col items-center min-w-0">
-      {ligne.rank === 1 && (
-        <span className="text-2xl mb-1 animate-pulse" aria-hidden>
-          ✦
-        </span>
-      )}
-      <p className="font-display font-semibold text-ink text-sm md:text-base truncate max-w-full mb-2 px-1">
+      <div className={`relative rounded-full ${style.glow}`}>
+        {ligne.rank === 1 && (
+          <span className="absolute -top-7 left-1/2 -translate-x-1/2 text-3xl drop-shadow-[0_0_10px_rgba(252,211,77,0.8)]" aria-hidden>
+            👑
+          </span>
+        )}
+        <Avatar ligne={ligne} taille={style.taille} anneau={style.anneau} />
+      </div>
+      <p className="mt-3 font-display font-semibold text-ink text-sm md:text-lg truncate max-w-full px-1" title={ligne.name}>
         {ligne.name}
       </p>
-      <div className={`relative rounded-full ${style.glow}`}>
-        <Avatar ligne={ligne} taille={style.taille} anneau={style.anneau} />
-        <span
-          className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full ${style.medaille} font-display font-bold text-sm flex items-center justify-center ring-4 ring-void`}
-          aria-label={`${ligne.rank}e place`}
-        >
-          {ligne.rank}
-        </span>
-      </div>
-      <p className="mt-4 rounded-full bg-violet/20 border border-violet/30 px-3 py-1 text-sm font-semibold text-ink">
-        {formatValeur(type, ligne.value)}
-      </p>
+      <p className={`font-display text-sm md:text-lg font-bold tabular-nums ${style.texte}`}>{formatValeur(type, ligne.value)}</p>
       <div
-        className={`mt-3 w-full ${style.socle} rounded-t-2xl bg-gradient-to-b from-violet/35 to-violet/5 border-x border-t border-violet/25`}
+        className={`relative mt-3 w-full ${style.socle} rounded-t-2xl bg-gradient-to-b ${style.couleur} to-transparent border-x border-t border-white/10 flex justify-center`}
         aria-hidden
-      />
+      >
+        <span className={`mt-2 font-display text-3xl md:text-5xl font-bold ${style.texte} opacity-80`}>{ligne.rank}</span>
+      </div>
     </div>
   );
 }
@@ -136,23 +130,21 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
   return (
     <div>
       {/* Choix du classement */}
-      <div role="tablist" aria-label="Type de classement" className="flex flex-wrap gap-2 mb-4">
+      <div role="tablist" aria-label="Type de classement" className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4">
         {TYPES.map((t) => (
           <button
             key={t.id}
             role="tab"
             aria-selected={type === t.id}
             onClick={() => setType(t.id)}
-            className={`rounded-full px-4 py-2 text-sm font-medium border transition-all ${
+            className={`rounded-2xl px-3 py-3 text-center border transition-all ${
               type === t.id
-                ? "bg-violet text-white border-violet shadow-glow-sm"
-                : "bg-card border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50"
+                ? "bg-violet/25 border-violet-light text-ink shadow-glow-sm"
+                : "bg-card/70 border-violet/15 text-ink-soft hover:text-ink hover:border-violet/40"
             }`}
           >
-            <span aria-hidden className="mr-1.5">
-              {t.emoji}
-            </span>
-            {t.label}
+            <span aria-hidden className="block text-2xl">{t.emoji}</span>
+            <span className="mt-1 block text-xs md:text-sm font-semibold">{t.label}</span>
           </button>
         ))}
       </div>
@@ -205,8 +197,12 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
         ) : (
           <>
             {/* Podium */}
-            <div className="carte-holo liseret-glow rounded-3xl px-4 md:px-10 pt-8 overflow-hidden mb-6">
-              <div className="flex items-end justify-center gap-3 md:gap-8 max-w-2xl mx-auto">
+            <div
+              className="relative liseret-glow rounded-3xl px-4 md:px-10 pt-12 overflow-hidden mb-6 border border-violet/20"
+              style={{ background: "radial-gradient(ellipse 60% 70% at 50% 0%, rgba(161,92,255,.35), transparent 70%), radial-gradient(ellipse 90% 60% at 50% 110%, rgba(123,56,255,.25), transparent 60%), #0d0a17" }}
+            >
+              <div className="pointer-events-none absolute inset-0 opacity-60" aria-hidden style={{ backgroundImage: "radial-gradient(1px 1px at 12% 20%, #fff, transparent), radial-gradient(1px 1px at 78% 14%, #fff, transparent), radial-gradient(1.5px 1.5px at 30% 60%, #e0b3ff, transparent), radial-gradient(1px 1px at 90% 70%, #fff, transparent), radial-gradient(1px 1px at 55% 35%, #fff, transparent), radial-gradient(1.5px 1.5px at 8% 80%, #e0b3ff, transparent)" }} />
+              <div className="relative flex items-end justify-center gap-3 md:gap-8 max-w-2xl mx-auto">
                 <Marche ligne={podium[1]} type={type} />
                 <Marche ligne={podium[0]} type={type} />
                 <Marche ligne={podium[2]} type={type} />
@@ -216,16 +212,24 @@ export default function LeaderboardCycyBot({ initial }: { initial: Classement | 
             {/* Suite du classement */}
             {suite.length > 0 && (
               <ol className="carte-holo rounded-2xl overflow-hidden divide-y divide-violet/10">
-                {suite.map((l) => (
-                  <li key={l.login + l.rank} className="flex items-center gap-4 px-4 md:px-6 py-3">
-                    <span className="w-8 text-center font-display font-semibold text-ink-soft">{l.rank}</span>
-                    <Avatar ligne={l} taille="w-10 h-10" anneau="ring-violet/30" />
-                    <span className="flex-1 min-w-0 truncate font-medium text-ink">{l.name}</span>
-                    <span className="rounded-full bg-violet/15 px-3 py-1 text-sm font-semibold text-lilac whitespace-nowrap">
-                      {formatValeur(type, l.value)}
-                    </span>
-                  </li>
-                ))}
+                {suite.map((l) => {
+                  const part = lignes[0]?.value ? Math.max(4, Math.round((l.value / lignes[0].value) * 100)) : 0;
+                  return (
+                    <li key={l.login + l.rank} className="relative flex items-center gap-3 md:gap-4 px-4 md:px-6 py-3">
+                      <span className="w-8 shrink-0 text-center font-display text-lg font-semibold text-ink-soft/80 tabular-nums">{l.rank}</span>
+                      <Avatar ligne={l} taille="w-10 h-10 shrink-0 text-lg" anneau="ring-violet/30" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-ink">{l.name}</p>
+                        <div className="mt-1.5 h-1.5 rounded-full bg-violet/10 overflow-hidden" aria-hidden>
+                          <div className="h-full rounded-full bg-gradient-to-r from-violet to-lilac" style={{ width: `${part}%` }} />
+                        </div>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-violet/15 px-3 py-1 text-sm font-semibold text-lilac whitespace-nowrap tabular-nums">
+                        {formatValeur(type, l.value)}
+                      </span>
+                    </li>
+                  );
+                })}
               </ol>
             )}
 
