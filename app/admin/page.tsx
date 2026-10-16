@@ -11,6 +11,9 @@ import { ILLUSTRATIONS_JEU, illustrationPour } from "@/lib/illustrationJeu";
 import type { DonneesGaming } from "@/lib/gamingStore";
 import { AFFICHAGES_PARTENAIRE, type Partenaire } from "@/data/partners";
 import AdminArcade from "@/components/admin/AdminArcade";
+import Icone from "@/components/icones/Icone";
+import NavigationAdmin, { SousNavAdmin, type RubriqueAdmin } from "@/components/admin/NavigationAdmin";
+import VueEnsembleAdmin from "@/components/admin/VueEnsembleAdmin";
 import AdminCalendrier from "@/components/admin/AdminCalendrier";
 import { calendrierVide, type DonneesCalendrier } from "@/data/calendrier";
 import ChampImage from "@/components/admin/ChampImage";
@@ -18,18 +21,21 @@ import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import EditeurRiche from "@/components/admin/EditeurRiche";
 
-type Onglet = "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "valorant" | "partenaires" | "arcade";
+type Onglet = "accueil" | "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "gaming" | "valorant" | "partenaires" | "arcade";
 
-const ONGLETS: { valeur: Onglet; label: string; cles: string[] }[] = [
-  { valeur: "planning", label: "📅 Planning", cles: ["planning"] },
-  { valeur: "calendrier", label: "🗓️ Calendrier", cles: ["calendrier"] },
-  { valeur: "contenus", label: "🎬 Derniers contenus", cles: ["contenus"] },
-  { valeur: "textes", label: "✏️ Textes", cles: ["textes"] },
-  { valeur: "timeline", label: "🕰️ Timeline", cles: ["timeline"] },
-  { valeur: "apropos", label: "💜 À propos", cles: ["apropos"] },
-  { valeur: "valorant", label: "🎮 Gaming", cles: ["gaming", "news", "clips", "profil"] },
-  { valeur: "partenaires", label: "🤝 Partenaires", cles: ["partenaires", "bonsPlans", "textes"] },
-  { valeur: "arcade", label: "🕹️ Jeux", cles: [] },
+// Rubriques de l'admin, rangées par thème (voir components/admin/NavigationAdmin.tsx)
+const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
+  { valeur: "accueil", label: "Vue d'ensemble", icone: "maison", groupe: "Général", description: "Connexions et accès rapide à toutes les rubriques", cles: [] },
+  { valeur: "planning", label: "Planning", icone: "horloge", groupe: "Lives", description: "La semaine type : jours, jeux et horaires", motsCles: "horaires semaine jours off", cles: ["planning"] },
+  { valeur: "calendrier", label: "Calendrier", icone: "calendrier", groupe: "Lives", description: "Exceptions, événements et lives spéciaux", motsCles: "exception événement vacances", cles: ["calendrier"] },
+  { valeur: "contenus", label: "Derniers contenus", icone: "clap", groupe: "Contenus", description: "Vidéos TikTok, YouTube et Instagram de l'accueil", motsCles: "vidéos tiktok youtube instagram", cles: ["contenus"] },
+  { valeur: "textes", label: "Textes du site", icone: "document", groupe: "Contenus", description: "Titres et textes de chaque page", motsCles: "hero accueil titre contact soutenir", cles: ["textes"] },
+  { valeur: "apropos", label: "À propos", icone: "coeur", groupe: "Contenus", description: "Les sections de la page À propos", cles: ["apropos"] },
+  { valeur: "timeline", label: "Timeline", icone: "journal", groupe: "Contenus", description: "Les grandes étapes de la chaîne", motsCles: "histoire étapes dates", cles: ["timeline"] },
+  { valeur: "gaming", label: "Gaming", icone: "manette", groupe: "Gaming & jeux", description: "Intro, autres jeux et jeux du moment", motsCles: "illustration horreur palworld", cles: ["gaming"] },
+  { valeur: "valorant", label: "Valorant", icone: "tactique", groupe: "Gaming & jeux", description: "News, clips marquants et profil (rank, agents)", motsCles: "rank riot agents maps clips news", cles: ["news", "clips", "profil"] },
+  { valeur: "arcade", label: "Jeux du site", icone: "joystick", groupe: "Gaming & jeux", description: "Arcade, records et réglages des mini-jeux", motsCles: "arcade runner records gratter compagnon", cles: [] },
+  { valeur: "partenaires", label: "Partenaires", icone: "poignee", groupe: "Partenariats", description: "Partenaires, bandeau de l'accueil et bons plans", motsCles: "codes promo réduction affiliation bons plans bandeau", cles: ["partenaires", "bonsPlans", "textes"] },
 ];
 
 // Données enregistrées par chaque route (pour savoir ce qui n'est plus « modifié »)
@@ -112,7 +118,7 @@ const SECTIONS_TEXTES: SectionTexte[] = [
 ];
 
 export default function AdminPage() {
-  const [onglet, setOnglet] = useState<Onglet>("planning");
+  const [onglet, setOnglet] = useState<Onglet>("accueil");
   const [motDePasse, setMotDePasse] = useState("");
 
   const [planning, setPlanning] = useState<JourPlanning[]>([]);
@@ -245,6 +251,7 @@ export default function AdminPage() {
     } catch {}
     const depuisUrl = window.location.hash.replace("#", "");
     if (ONGLETS.some((o) => o.valeur === depuisUrl)) setOnglet(depuisUrl as Onglet);
+    else if (depuisUrl === "jeux") setOnglet("arcade");
     if (!memo) {
       setVerificationSession(false);
       return;
@@ -641,7 +648,7 @@ export default function AdminPage() {
     return (
       <div className="mx-auto max-w-md px-5 py-20">
         <form onSubmit={seConnecter} className="carte-holo rounded-3xl border border-violet/15 p-7 md:p-8">
-          <p className="text-4xl mb-3" aria-hidden>🔐</p>
+          <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-violet/15 ring-1 ring-violet/25 text-lilac mb-4" aria-hidden><Icone nom="cadenas" className="w-7 h-7" /></span>
           <h1 className="text-2xl font-semibold text-ink glow-text mb-1">Administration</h1>
           <p className="text-sm text-ink-soft mb-6">Entre ton mot de passe pour modifier le site. Tu restes connectée tant que l’onglet est ouvert.</p>
           <label htmlFor="motdepasse" className="block text-sm text-ink-soft mb-1.5">
@@ -669,8 +676,20 @@ export default function AdminPage() {
     );
   }
 
+  const courante = ONGLETS.find((o) => o.valeur === onglet) ?? ONGLETS[0];
+  const resumes: Partial<Record<Onglet, string>> = {
+    planning: `${planning.filter((j) => !j.off).length} jour(s) de live par semaine`,
+    calendrier: `${Object.keys(calendrier.exceptions).length} exception(s) · ${calendrier.evenements.length} événement(s)`,
+    contenus: `${contenus.length} contenu(s)`,
+    apropos: `${sectionsApropos.length} section(s)`,
+    timeline: `${timeline.length} étape(s)`,
+    gaming: `${gaming.autresJeux.length} autre(s) jeu(x) · ${gaming.jeuxDuMoment.length} du moment`,
+    valorant: `${profilValorant.rankActuel || "Rank non renseigné"} · ${clipsValorant.length} clip(s) · ${newsValorant.length} news`,
+    partenaires: `${partenaires.filter((p) => p.active).length} partenaire(s) actif(s) · ${bonsPlans.length} bon(s) plan(s)`,
+  };
+
   return (
-    <div className="mx-auto max-w-3xl px-5 md:px-8 pt-10 pb-28">
+    <div className="mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-28">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-3xl font-semibold text-ink glow-text">Administration</h1>
         <div className="flex flex-wrap gap-2 text-sm">
@@ -686,59 +705,41 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="carte-holo rounded-2xl p-4 mb-6 flex items-center justify-between gap-4 border border-violet/12 text-sm">
-        <div>
-          <p className="text-ink font-medium mb-0.5">
-            <span aria-hidden className={`inline-block h-2 w-2 rounded-full mr-2 align-middle ${twitchConnecte ? "bg-emerald-400" : twitchConnecte === null ? "bg-ink-soft/40" : "bg-amber-400"}`} />
-            Compteur de followers Twitch
-          </p>
-          <p className="text-ink-soft/70">
-            {twitchConnecte === null
-              ? "Vérification..."
-              : twitchConnecte
-              ? `Connecté — ${twitchFollowers ?? "?"} followers`
-              : "Pas encore connecté : le compteur de l’accueil est masqué"}
-          </p>
-        </div>
-        <a
-          href="/api/twitch-connect"
-          className="shrink-0 rounded-full px-4 py-2 border border-violet/30 text-ink-soft hover:bg-violet/10 transition-all"
-        >
-          {twitchConnecte ? "Reconnecter" : "Connecter Twitch"}
-        </a>
-      </div>
+      <div className="lg:grid lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10">
+      <NavigationAdmin rubriques={ONGLETS} active={onglet} modifiees={ongletsModifies.map((o) => o.valeur)} onChoisir={changerOnglet} />
 
-      <nav aria-label="Sections de l’administration" className="sticky top-20 z-40 -mx-5 md:-mx-8 px-5 md:px-8 py-3 mb-8 bg-void/85 backdrop-blur-md border-b border-violet/10">
-        <div className="flex flex-wrap gap-2">
-          {ONGLETS.map((o) => {
-            const modifie = ongletsModifies.some((m) => m.valeur === o.valeur);
-            return (
-              <button
-                key={o.valeur}
-                onClick={() => changerOnglet(o.valeur)}
-                aria-current={onglet === o.valeur ? "page" : undefined}
-                title={modifie ? "Modifications non enregistrées" : undefined}
-                className={`relative rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                  onglet === o.valeur
-                    ? "bg-violet text-ink"
-                    : "border border-violet/20 text-ink-soft hover:bg-violet/10"
-                }`}
-              >
-                {o.label}
-                {modifie && <span aria-hidden className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-400 ring-2 ring-void" />}
-              </button>
-            );
-          })}
+      <div className="min-w-0 max-w-3xl">
+      {ongletsModifies.length > 0 && (
+        <div className="sticky top-[9.5rem] lg:top-24 z-30 mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/30 bg-[#2a2010]/95 backdrop-blur px-3 py-2 text-xs text-amber-100">
+          <span>✎ Pas encore enregistré : {ongletsModifies.map((o) => o.label).join(", ")}. Pense au bouton « Enregistrer » de la section.</span>
+          <button onClick={annulerModifs} className="ml-auto underline underline-offset-2 hover:text-ink">
+            Tout annuler
+          </button>
         </div>
-        {ongletsModifies.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-100">
-            <span>✎ Pas encore enregistré : {ongletsModifies.map((o) => o.label.replace(/^\S+\s/, "")).join(", ")}. Pense au bouton « Enregistrer » de la section.</span>
-            <button onClick={annulerModifs} className="ml-auto underline underline-offset-2 hover:text-ink">
-              Tout annuler
-            </button>
+      )}
+
+      {onglet !== "accueil" && (
+        <div className="mb-6 flex items-center gap-3">
+          <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet/15 ring-1 ring-violet/25 text-lilac">
+            <Icone nom={courante.icone} className="w-6 h-6" />
+          </span>
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-ink-soft/50">{courante.groupe}</p>
+            <h2 className="text-xl font-semibold text-ink leading-tight">{courante.label}</h2>
           </div>
-        )}
-      </nav>
+        </div>
+      )}
+
+      {onglet === "accueil" && (
+        <VueEnsembleAdmin
+          rubriques={ONGLETS.filter((o) => o.valeur !== "accueil")}
+          resumes={resumes}
+          modifiees={ongletsModifies.map((o) => o.valeur)}
+          onChoisir={changerOnglet}
+          twitchConnecte={twitchConnecte}
+          twitchFollowers={twitchFollowers}
+        />
+      )}
 
       {onglet === "planning" && (
         <>
@@ -747,7 +748,7 @@ export default function AdminPage() {
             de fin (facultative, ex. « 1h ») et le jeu si tu veux. Le jeu est optionnel : sans jeu, le site affiche
             "Stream". C'est ton planning habituel, répété chaque semaine : pour
             changer une date précise (live annulé, horaire décalé…), va dans{" "}
-            <button type="button" onClick={() => setOnglet("calendrier")} className="text-lilac underline">🗓️ Calendrier</button>.
+            <button type="button" onClick={() => changerOnglet("calendrier")} className="text-lilac underline">Calendrier</button>.
           </p>
 
           <div className="space-y-3 mb-8">
@@ -1105,7 +1106,7 @@ export default function AdminPage() {
                     placeholder="Titre de la section"
                     value={section.titre}
                     onChange={(e) => modifierSection(index, { titre: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                     disabled={section.type === "timeline"}
                   />
                   <div className="flex items-center gap-1 shrink-0">
@@ -1179,9 +1180,10 @@ export default function AdminPage() {
         </>
       )}
 
-      {onglet === "valorant" && (
+      {onglet === "gaming" && (
         <>
-          <h2 className="text-ink font-medium mb-3">Introduction Gaming</h2>
+          <SousNavAdmin liens={[{ id: "adm-intro-gaming", label: "Introduction" }, { id: "adm-autres-jeux", label: "Autres jeux" }, { id: "adm-jeux-moment", label: "Jeux du moment" }]} />
+          <h2 id="adm-intro-gaming" className="scroll-mt-32 text-ink font-medium mb-3">Introduction Gaming</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Le texte en haut de la page /gaming, avant le bloc Valorant.
           </p>
@@ -1202,7 +1204,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer l'introduction"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Autres jeux</h2>
+          <h2 id="adm-autres-jeux" className="scroll-mt-32 text-ink font-medium mb-3">Autres jeux</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Les jeux affichés en cartes sous le bloc Valorant.
           </p>
@@ -1218,7 +1220,7 @@ export default function AdminPage() {
                     placeholder="Nom du jeu"
                     value={jeu.nom}
                     onChange={(e) => modifierAutreJeu(index, { nom: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -1255,7 +1257,7 @@ export default function AdminPage() {
                   <select
                     value={jeu.illustration ?? ""}
                     onChange={(e) => modifierAutreJeu(index, { illustration: e.target.value || undefined })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   >
                     <option value="">Automatique ({illustrationPour(jeu.nom).label})</option>
                     {ILLUSTRATIONS_JEU.map((i) => (
@@ -1289,7 +1291,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les autres jeux"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Jeux du moment</h2>
+          <h2 id="adm-jeux-moment" className="scroll-mt-32 text-ink font-medium mb-3">Jeux du moment</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Section facultative : laisse-la vide pour qu'elle n'apparaisse pas du tout sur le site.
           </p>
@@ -1304,7 +1306,7 @@ export default function AdminPage() {
                   placeholder="Nom du jeu"
                   value={jeu.nom}
                   onChange={(e) => modifierJeuDuMoment(index, { nom: e.target.value })}
-                  className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
                 <select
                   value={jeu.statut}
@@ -1341,8 +1343,13 @@ export default function AdminPage() {
           >
             {enregistrement ? "Enregistrement..." : "Enregistrer les jeux du moment"}
           </button>
+        </>
+      )}
 
-          <h2 className="text-ink font-medium mb-3">News Valorant</h2>
+      {onglet === "valorant" && (
+        <>
+          <SousNavAdmin liens={[{ id: "adm-news", label: "News" }, { id: "adm-clips", label: "Clips marquants" }, { id: "adm-profil", label: "Profil & rank" }]} />
+          <h2 id="adm-news" className="scroll-mt-32 text-ink font-medium mb-3">News Valorant</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Ajoute des liens vers des news Valorant (le site officiel n'a
             pas de flux automatique fiable, donc tu les ajoutes toi-même).
@@ -1360,7 +1367,7 @@ export default function AdminPage() {
                     placeholder="Titre de la news"
                     value={n.titre}
                     onChange={(e) => modifierNews(index, { titre: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -1413,7 +1420,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les news"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Clips marquants</h2>
+          <h2 id="adm-clips" className="scroll-mt-32 text-ink font-medium mb-3">Clips marquants</h2>
           <div className="space-y-3 mb-4">
             {clipsValorant.map((c, index) => (
               <div
@@ -1426,7 +1433,7 @@ export default function AdminPage() {
                     placeholder="Titre du clip"
                     value={c.titre}
                     onChange={(e) => modifierClip(index, { titre: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                   <div className="flex items-center gap-1 shrink-0">
                     <button
@@ -1479,7 +1486,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les clips"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Mon rapport à Valorant</h2>
+          <h2 id="adm-profil" className="scroll-mt-32 text-ink font-medium mb-3">Mon rapport à Valorant</h2>
           <div className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12 mb-4">
             <div>
               <label className="block text-xs text-ink-soft/70 mb-1">
@@ -1517,14 +1524,14 @@ export default function AdminPage() {
                   placeholder="Pseudo (avant le #)"
                   value={profilValorant.riotName}
                   onChange={(e) => setProfilValorant((p) => ({ ...p, riotName: e.target.value }))}
-                  className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
                 <input
                   type="text"
                   placeholder="Tag (après le #)"
                   value={profilValorant.riotTag}
                   onChange={(e) => setProfilValorant((p) => ({ ...p, riotTag: e.target.value }))}
-                  className="w-28 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                  className="w-24 shrink-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
               </div>
               <select
@@ -1621,7 +1628,8 @@ export default function AdminPage() {
 
       {onglet === "partenaires" && (
         <>
-          <h2 className="text-ink font-medium mb-3">Mes partenaires</h2>
+          <SousNavAdmin liens={[{ id: "adm-partenaires", label: "Mes partenaires" }, { id: "adm-bandeau", label: "Bandeau de l'accueil" }, { id: "adm-bons-plans", label: "Bons plans" }]} />
+          <h2 id="adm-partenaires" className="scroll-mt-32 text-ink font-medium mb-3">Mes partenaires</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Décoche "Actif" pour masquer un partenaire sans le supprimer. Tu peux coller l'adresse d'une image ou envoyer un fichier : il est compressé automatiquement. Coche « Lien affilié » pour que la mention s'affiche (obligatoire pour les liens d'affiliation).
           </p>
@@ -1706,14 +1714,14 @@ export default function AdminPage() {
                     placeholder="Code promo (optionnel)"
                     value={p.promoCode ?? ""}
                     onChange={(e) => modifierPartenaire(index, { promoCode: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                   <input
                     type="text"
                     placeholder="Réduction (ex: -10%)"
                     value={p.reduction ?? ""}
                     onChange={(e) => modifierPartenaire(index, { reduction: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                 </div>
                 <input
@@ -1740,7 +1748,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les partenaires"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Bandeau de l'accueil</h2>
+          <h2 id="adm-bandeau" className="scroll-mt-32 text-ink font-medium mb-3">Bandeau de l'accueil</h2>
           <div className="carte-holo rounded-2xl p-4 space-y-3 border border-violet/12 mb-4">
             <p className="text-ink-soft text-sm">
               Le bandeau en bas de la page d'accueil montre le logo et le nom de tes partenaires actifs. Un clic mène à leur fiche sur la page partenaires. Décoche « Dans le bandeau de l'accueil » sur un partenaire pour l'en retirer.
@@ -1804,7 +1812,7 @@ export default function AdminPage() {
             {enregistrement ? "Enregistrement..." : "Enregistrer le bandeau"}
           </button>
 
-          <h2 className="text-ink font-medium mb-3">Bons plans</h2>
+          <h2 id="adm-bons-plans" className="scroll-mt-32 text-ink font-medium mb-3">Bons plans</h2>
           <div className="space-y-3 mb-4">
             {bonsPlans.map((b, index) => (
               <div key={b.id} className="carte-holo rounded-2xl p-4 space-y-2.5 border border-violet/12">
@@ -1856,14 +1864,14 @@ export default function AdminPage() {
                     placeholder="Code promo (optionnel)"
                     value={b.promoCode ?? ""}
                     onChange={(e) => modifierBonPlan(index, { promoCode: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                   <input
                     type="text"
                     placeholder="Date de fin (optionnel)"
                     value={b.dateFin ?? ""}
                     onChange={(e) => modifierBonPlan(index, { dateFin: e.target.value })}
-                    className="flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                    className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                   />
                 </div>
                 <input
@@ -1891,6 +1899,9 @@ export default function AdminPage() {
           </button>
         </>
       )}
+
+      </div>
+      </div>
 
       {message && (
         <div className="fixed bottom-5 inset-x-0 z-50 flex justify-center px-4 pointer-events-none">

@@ -500,6 +500,11 @@ export const BANQUE = {
     <path {...F} d="M3.5 10.5 12 3.5l8.5 7V20a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 20Z" />
     <path {...T} d="M9.5 21.5V15h5v6.5" />
   </>),
+  loupe: I("Rechercher", "Navigation", <>
+    <circle {...F} cx="10.5" cy="10.5" r="6.5" />
+    <path {...T} d="m15.5 15.5 5 5" />
+    {eclat(10.5, 10.5, 1.8)}
+  </>),
   fleche: I("Suivant", "Navigation", <>
     <path {...T} d="M4.5 12h15M13.5 6l6 6-6 6" />
   </>),
