@@ -46,8 +46,9 @@ const navItems: (LienNav | GroupeNav)[] = [
     type: "groupe",
     label: "Jeux",
     items: [
-      { label: "Cycy Runner", href: "/jeux" },
-      { label: "Salle d'arcade", href: "/jeux/arcade" },
+      { label: "Tous les jeux", href: "/jeux" },
+      { label: "Salle d'arcade", href: "/jeux#arcade" },
+      { label: "Cycy Runner", href: "/jeux/runner" },
       { label: "Ticket à gratter", href: "/jeux/gratter" },
       { label: "Compagnon", href: "/jeux/compagnon" },
     ],

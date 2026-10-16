@@ -1,14 +1,23 @@
 import type { Metadata } from "next";
-import SalleArcade from "@/components/arcade/SalleArcade";
+import VitrineJeux from "@/components/arcade/VitrineJeux";
+import RedirectionAncre from "@/components/arcade/RedirectionAncre";
+import { lireRecords } from "@/lib/recordsJeux";
 
+// Ancienne adresse de la salle d'arcade (/jeux/arcade#reflexes…) : on ouvre le bon jeu, sinon la vitrine.
 export const metadata: Metadata = {
-  title: "Jeux · Salle d'arcade | Cycylive",
-  description:
-    "Cinq mini-jeux gratuits : réflexes Valorant, rythme cosmique, puzzle des constellations, memory galactique et quiz. Chacun a son tableau des records, sans compte.",
-  alternates: { canonical: "/jeux/arcade" },
-  openGraph: { title: "Salle d'arcade | Cycylive", description: "Cinq mini-jeux et leurs tableaux des records.", url: "/jeux/arcade" },
+  title: "Salle d'arcade | Cycylive",
+  description: "Six jeux gratuits et leurs tableaux des records : Cycy Runner, réflexes Valorant, rythme cosmique, constellations, memory et quiz.",
+  alternates: { canonical: "/jeux" },
 };
 
-export default function ArcadePage() {
-  return <SalleArcade />;
+export const revalidate = 60;
+
+export default async function ArcadePage() {
+  const records = await lireRecords().catch(() => ({}));
+  return (
+    <>
+      <RedirectionAncre />
+      <VitrineJeux records={records} />
+    </>
+  );
 }

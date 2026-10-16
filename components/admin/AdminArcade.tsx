@@ -60,7 +60,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
         ))}
       </div>
       <p className="text-ink-soft mb-4 text-sm">
-        Les jeux sont sur <a href="/jeux" target="_blank" className="text-lilac underline">cycylive.fr/jeux</a> et dans la <a href="/jeux/arcade" target="_blank" className="text-lilac underline">salle d&apos;arcade</a>. Chaque pseudo garde son
+        Les jeux sont sur <a href="/jeux" target="_blank" className="text-lilac underline">cycylive.fr/jeux</a> (vitrine de tous les jeux). Chaque pseudo garde son
         meilleur score. Les scores impossibles (trop élevés pour la durée de la partie) sont refusés automatiquement. Tu peux retirer un
         pseudo (inapproprié, triche…) ou remettre tout le classement à zéro, par exemple pour lancer une saison.
       </p>

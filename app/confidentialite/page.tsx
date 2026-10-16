@@ -80,7 +80,7 @@ export default function ConfidentialitePage() {
         écris à {liens.mailPro}.
       </p>
       <p className="mb-4">
-        Sur Cycy Runner (/jeux), le pseudo que tu choisis librement
+        Sur les jeux à records (Cycy Runner et la salle d'arcade, /jeux), le pseudo que tu choisis librement
         est enregistré avec ton meilleur score et sa date, pour l'afficher
         au tableau des records (stockage Upstash). Aucun compte n'est créé.
         Pour limiter les abus, ton adresse IP sert à compter les parties et

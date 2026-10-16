@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { liens } from "@/data/liens";
-import { lireCycyBot, type DiscordCycyBot, type ObjetMarche } from "@/lib/cycybot";
+import { lireCycyBot } from "@/lib/cycybot";
+import { CarteBloc, Pastilles, nf, type Bloc } from "@/components/cycybot/Blocs";
+import SectionGalaxie from "@/components/cycybot/SectionGalaxie";
 import AccentCosmique from "@/components/AccentCosmique";
 import ConsoleCycyBot from "@/components/ConsoleCycyBot";
 import { IconDiscord, IconTwitch } from "@/components/Icons";
@@ -34,8 +36,6 @@ const fonctionsTwitch = [
 const aEssayer = ["attraper", "eclats", "watchtime", "8ball"];
 
 // ── Discord ─────────────────────────────────────────────────
-type Bloc = { id: string; emoji: string; titre: string; texte: string; commandes: string[] };
-
 const blocsDiscord: Bloc[] = [
   { id: "passeport", emoji: "🪪", titre: "Le passeport galactique", texte: "Ta carte d'identité de Cycylien : infos, rang, succès et tampons, avec plus de 30 thèmes à débloquer, des cadres, des titres et des effets de nom.", commandes: ["passeport", "rank", "leaderboard"] },
   { id: "jeux", emoji: "🎮", titre: "Des jeux chaque jour", texte: "Explorer la galaxie, chasser les étoiles, ouvrir un coffre, le quiz, le mot mystère, les duels et le défi galactique du jour : de quoi monter d'orbite.", commandes: ["jeux", "explorer", "quiz", "duel"] },
@@ -45,156 +45,6 @@ const blocsDiscord: Bloc[] = [
   { id: "vocaux", emoji: "🔊", titre: "Des vocaux rien qu'à toi", texte: "Rejoins le salon de création et ton propre vocal apparaît : nom, limite, verrou, invités… tu gères tout, il disparaît quand il se vide.", commandes: ["vocal"] },
 ];
 
-const blocsGalaxie: Bloc[] = [
-  { id: "eclats", emoji: "✦", titre: "Les Éclats Stellaires", texte: "La monnaie de la galaxie. Elle se gagne en jouant, en attrapant des cartes, en regardant les lives, en réussissant des expéditions… Tes Points Stellaires, eux, restent ton XP.", commandes: ["eclats"] },
-  { id: "expeditions", emoji: "🚀", titre: "Les expéditions spatiales", texte: "Monte un équipage jusqu'à quatre et pars en mission. Quand le radar détecte quelque chose, à vous de choisir : investiguer, continuer… ou tirer dessus.", commandes: ["expedition"] },
-  { id: "marche", emoji: "🕶️", titre: "Le Marché Noir Astral", texte: "Nouvel arrivage chaque jour, raretés chaque semaine et un mystérieux objet clandestin. Thèmes, cadres, titres, boosters : jamais de cartes exclusives, elles se méritent.", commandes: ["marche"] },
-  { id: "predictions", emoji: "🔮", titre: "Les prédictions", texte: "Pendant les lives, mise tes Éclats : « Cycy gagne la game ? », « Ace ce soir ? »… Le pot est partagé entre ceux qui ont vu juste.", commandes: [] },
-  { id: "question", emoji: "💫", titre: "La question du jour", texte: "Chaque jour, une question à la commu. On vote avec un bouton, les résultats tombent le lendemain et restent dans les archives.", commandes: ["question"] },
-  { id: "anomalies", emoji: "🌌", titre: "Les anomalies", texte: "Une à trois fois par semaine, sans prévenir : pluie de météores, distorsion temporelle, XP ×2, faille à cartes ou éclipse. Il faut être là.", commandes: [] },
-  { id: "chronique", emoji: "📖", titre: "La Chronique CycyLive", texte: "Les grands moments de la commu deviennent des chapitres. Les présents reçoivent un tampon unique sur leur passeport, impossible à obtenir après coup.", commandes: ["chronique"] },
-];
-
-const nf = (n: number) => n.toLocaleString("fr-FR");
-const etoiles = (n: number) => "⭐".repeat(Math.max(1, Math.min(5, n)));
-const duree = (h: number) => (h >= 1 ? `${h.toLocaleString("fr-FR")} h` : `${Math.round(h * 60)} min`);
-const dateFr = (iso: string) => iso.split("-").reverse().join("/");
-
-function Pastilles({ noms }: { noms: string[] }) {
-  if (!noms.length) return null;
-  return (
-    <div className="flex flex-wrap gap-1.5 mt-3">
-      {noms.map((n) => (
-        <code key={n} className="rounded-md bg-violet/15 px-2 py-0.5 text-xs font-display font-semibold text-lilac">
-          /{n}
-        </code>
-      ))}
-    </div>
-  );
-}
-
-function CarteBloc({ bloc, children }: { bloc: Bloc; children?: React.ReactNode }) {
-  return (
-    <div id={bloc.id} className="carte-holo rounded-2xl p-5 hover:shadow-glow-sm transition-all scroll-mt-24 flex flex-col">
-      <span className="text-2xl" aria-hidden>
-        {bloc.emoji}
-      </span>
-      <h3 className="text-ink font-semibold mt-3 mb-1.5">{bloc.titre}</h3>
-      <p className="text-sm text-ink-soft leading-relaxed">{bloc.texte}</p>
-      {children}
-      <div className="mt-auto">
-        <Pastilles noms={bloc.commandes} />
-      </div>
-    </div>
-  );
-}
-
-// Encarts « en direct » alimentés par le bot
-function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
-  if (id === "marche" && d.market && (d.market.daily.length || d.market.weekly.length)) {
-    const ligne = (o: ObjetMarche) => (
-      <li key={o.name} className="flex justify-between gap-3">
-        <span className="truncate">
-          {o.emoji} {o.name}
-        </span>
-        <span className="shrink-0 text-lilac">
-          {nf(o.price)} {o.currency === "fragments" ? "🧩" : "✦"}
-        </span>
-      </li>
-    );
-    return (
-      <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">En vente en ce moment</p>
-        <ul className="space-y-1">
-          {d.market.daily.map(ligne)}
-          {d.market.weekly.map(ligne)}
-          {d.market.hasSecret && (
-            <li className="flex justify-between gap-3">
-              <span>🔒 Objet clandestin ???</span>
-              <span className="text-lilac">?</span>
-            </li>
-          )}
-        </ul>
-      </div>
-    );
-  }
-  if (id === "expeditions" && d.destinations.length) {
-    return (
-      <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">Destinations du jour</p>
-        <ul className="space-y-1">
-          {d.destinations.map((x) => (
-            <li key={x.name} className="flex justify-between gap-3">
-              <span className="truncate">
-                {x.emoji} {x.name}
-              </span>
-              <span className="shrink-0">
-                {duree(x.hours)} · {etoiles(x.difficulty)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-  if (id === "question" && (d.question || d.lastQuestion)) {
-    return (
-      <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        {d.question ? (
-          <>
-            <p className="uppercase tracking-wide text-ink-soft/50 mb-1.5">Aujourd&apos;hui</p>
-            <p className="text-ink font-medium mb-1.5">{d.question.q}</p>
-            <p>
-              {d.question.options.join(" · ")} · {d.question.votes} vote{d.question.votes > 1 ? "s" : ""}
-            </p>
-          </>
-        ) : null}
-        {d.lastQuestion ? (
-          <div className={d.question ? "mt-3 pt-3 border-t border-violet/10" : ""}>
-            <p className="uppercase tracking-wide text-ink-soft/50 mb-1.5">Résultats de la dernière</p>
-            <p className="text-ink font-medium mb-2">{d.lastQuestion.q}</p>
-            {d.lastQuestion.options.map((o) => (
-              <div key={o.label} className="mb-1.5">
-                <div className="flex justify-between">
-                  <span>{o.label}</span>
-                  <span>{o.pct} %</span>
-                </div>
-                <div className="h-1.5 rounded-full bg-violet/10 overflow-hidden">
-                  <div className="h-full rounded-full bg-gradient-to-r from-violet to-lilac" style={{ width: `${o.pct}%` }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : null}
-      </div>
-    );
-  }
-  if (id === "anomalies" && d.anomaly) {
-    return (
-      <div className="mt-4 rounded-xl bg-red-500/10 border border-red-400/30 p-3 text-xs text-ink">
-        ⚠️ Anomalie en cours : <strong>{d.anomaly.emoji} {d.anomaly.label}</strong>, file sur le Discord !
-      </div>
-    );
-  }
-  if (id === "chronique" && d.chapters.length) {
-    return (
-      <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">Derniers chapitres</p>
-        <ul className="space-y-1">
-          {d.chapters.slice(0, 4).map((c) => (
-            <li key={c.num} className="flex justify-between gap-3">
-              <span className="truncate">
-                {String(c.num).padStart(3, "0")} · {c.emoji} {c.title}
-              </span>
-              <span className="shrink-0">{dateFr(c.date)}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    );
-  }
-  return null;
-}
 
 export default async function CycyBotPage() {
   const donnees = await lireCycyBot();
@@ -398,24 +248,8 @@ export default async function CycyBotPage() {
         </div>
       </section>
 
-      {/* ── Galaxie ── */}
-      <section id="galaxie" className="mb-16 scroll-mt-24" aria-labelledby="galaxie-titre">
-        <p className="eyebrow mb-2">✦ Nouveau</p>
-        <h2 id="galaxie-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-2">
-          Éclats, expéditions &amp; Marché noir
-        </h2>
-        <p className="text-ink-soft mb-8 max-w-2xl">
-          Une économie à part entière, avec des surprises toute la semaine. Les encarts ci-dessous sont mis à jour en
-          direct par Cycy_Bot.
-        </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {blocsGalaxie.map((b) => (
-            <CarteBloc key={b.id} bloc={b}>
-              {discord && <EnDirect d={discord} id={b.id} />}
-            </CarteBloc>
-          ))}
-        </div>
-      </section>
+      {/* ── Galaxie : Éclats, Marché noir, expéditions… ── */}
+      <SectionGalaxie discord={discord} />
 
       {/* ── Lier Twitch et Discord ── */}
       <section className="mb-16 carte-holo rounded-2xl p-6 md:p-8" aria-labelledby="lier-titre">

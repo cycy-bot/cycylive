@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
-import BorneArcade from "@/components/arcade/BorneArcade";
-import ClassementArcade from "@/components/arcade/ClassementArcade";
+import VitrineJeux from "@/components/arcade/VitrineJeux";
+import RedirectionAncre from "@/components/arcade/RedirectionAncre";
+import { lireRecords } from "@/lib/recordsJeux";
 
 export const metadata: Metadata = {
-  title: "Jeux · Cycy Runner | Cycylive",
+  title: "Jeux | Cycylive",
   description:
-    "Fais courir CycyBot sur sa planète, évite les astéroïdes et les comètes, et inscris ton pseudo au tableau des records. Sans compte, essais illimités.",
+    "Les jeux gratuits de Cycylive : Cycy Runner, réflexes Valorant, rythme cosmique, constellations, memory et quiz avec leurs records, plus le ticket à gratter et le compagnon qui font gagner des récompenses sur le Discord.",
   alternates: { canonical: "/jeux" },
-  openGraph: { title: "Cycy Runner | Cycylive", description: "Bats ton record et inscris ton pseudo au classement.", url: "/jeux" },
+  openGraph: { title: "Les jeux de Cycylive", description: "Six jeux à records et deux récompenses du jour pour le Discord.", url: "/jeux" },
 };
 
-export default function RunnerPage() {
+export const revalidate = 60;
+
+export default async function JeuxPage() {
+  const records = await lireRecords().catch(() => ({}));
   return (
-    <div className="space-y-6">
-      <BorneArcade />
-      <ClassementArcade />
-    </div>
+    <>
+      <RedirectionAncre />
+      <VitrineJeux records={records} />
+    </>
   );
 }
