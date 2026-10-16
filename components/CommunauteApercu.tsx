@@ -32,7 +32,7 @@ export default async function CommunauteApercu() {
           <DiscordEnLigne afficherBouton={false} />
 
           <div>
-            <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
+            <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">
               Dernières annonces
             </p>
             <AnnoncesDiscord limite={3} />

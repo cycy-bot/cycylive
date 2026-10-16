@@ -23,7 +23,7 @@ function CarteVideo({ c, largeur }: { c: ContenuAvecMiniature; largeur: string }
       className={`snap-start shrink-0 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm hover:border-violet/30 transition-all ${largeur}`}
     >
       <div
-        className={`relative bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden ${
+        className={`relative bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden ${
           c.format === "vertical" ? "aspect-[9/16]" : "aspect-video"
         }`}
       >
@@ -138,7 +138,7 @@ export default async function ReseauxPage() {
             ))}
           </CarouselFleches>
         ) : (
-          <p className="text-ink-soft/50 text-sm">Aucun clip pour l'instant.</p>
+          <p className="text-ink-soft/60 text-sm">Aucun clip pour l'instant.</p>
         )}
       </BlocPlateforme>
 
@@ -157,7 +157,7 @@ export default async function ReseauxPage() {
             ))}
           </CarouselFleches>
         ) : (
-          <p className="text-ink-soft/50 text-sm">Aucune vidéo pour l'instant.</p>
+          <p className="text-ink-soft/60 text-sm">Aucune vidéo pour l'instant.</p>
         )}
       </BlocPlateforme>
 
@@ -179,7 +179,7 @@ export default async function ReseauxPage() {
                 rel="noopener noreferrer"
                 className="carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm hover:border-violet/30 transition-all"
               >
-                <div className="relative aspect-square bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden">
+                <div className="relative aspect-square bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
                   {c.miniature ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
@@ -196,7 +196,7 @@ export default async function ReseauxPage() {
             ))}
           </div>
         ) : (
-          <p className="text-ink-soft/50 text-sm">Aucun contenu pour l'instant.</p>
+          <p className="text-ink-soft/60 text-sm">Aucun contenu pour l'instant.</p>
         )}
       </BlocPlateforme>
 
@@ -215,7 +215,7 @@ export default async function ReseauxPage() {
             ))}
           </CarouselFleches>
         ) : (
-          <p className="text-ink-soft/50 text-sm">Aucune vidéo pour l'instant.</p>
+          <p className="text-ink-soft/60 text-sm">Aucune vidéo pour l'instant.</p>
         )}
       </BlocPlateforme>
 

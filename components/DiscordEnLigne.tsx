@@ -105,7 +105,7 @@ export default function DiscordEnLigne({
             </div>
           ))}
           {restants > 0 && (
-            <span className="flex items-center px-3 py-1 rounded-full bg-white/[0.02] text-xs text-ink-soft/50">
+            <span className="flex items-center px-3 py-1 rounded-full bg-white/[0.02] text-xs text-ink-soft/60">
               +{restants} autres
             </span>
           )}

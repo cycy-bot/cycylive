@@ -21,6 +21,11 @@ const nextConfig = {
     ];
     return [
       { source: "/:path*", headers: securite },
+      // Images du site : gardées en cache une semaine par le navigateur (revalidées en arrière-plan)
+      ...["/images/:path*", "/logo/:path*", "/icones/:path*"].map((source) => ({
+        source,
+        headers: [{ key: "Cache-Control", value: "public, max-age=604800, stale-while-revalidate=86400" }],
+      })),
       { source: "/admin/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
       { source: "/admin", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }, { key: "Cache-Control", value: "no-store" }] },
     ];

@@ -121,7 +121,7 @@ export default async function StatistiquesPage() {
         <div className="mb-6">
           <DiscordEnLigne />
         </div>
-        <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Dernières annonces</p>
+        <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">Dernières annonces</p>
         <AnnoncesDiscord limite={5} />
       </section>
 

@@ -114,7 +114,7 @@ export default function ClassementArcade({ jeu = "runner", titre = "Tableau des 
                     {s.nom}
                     {estMoi(s.nom) && <span className="ml-2 text-[10px] uppercase tracking-wide text-lilac">toi</span>}
                   </span>
-                  <span className="shrink-0 text-xs text-ink-soft/50">{quand(s.date)}</span>
+                  <span className="shrink-0 text-xs text-ink-soft/60">{quand(s.date)}</span>
                   <span className="shrink-0 font-mono font-semibold text-lilac tabular-nums">{s.score.toLocaleString("fr-FR")}</span>
                 </li>
               ))}

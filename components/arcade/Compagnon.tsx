@@ -909,7 +909,7 @@ export default function Compagnon() {
                 Ouvrir Discord
               </a>
             </div>
-            <p className="text-[11px] text-ink-soft/50 mt-2">Code valable 48 h · une récompense par jour</p>
+            <p className="text-[11px] text-ink-soft/60 mt-2">Code valable 48 h · une récompense par jour</p>
           </div>
         ) : (
           <div>

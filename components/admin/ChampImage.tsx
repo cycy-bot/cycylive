@@ -94,7 +94,7 @@ export default function ChampImage({
             className={`${forme === "carre" ? "h-14 w-14" : "h-14 w-28"} rounded-md object-cover bg-void shrink-0 border border-violet/20`}
           />
         ) : (
-          <div className={`${forme === "carre" ? "h-14 w-14" : "h-14 w-28"} rounded-md bg-void/60 border border-dashed border-violet/25 shrink-0 flex items-center justify-center text-ink-soft/40 text-xs`}>
+          <div className={`${forme === "carre" ? "h-14 w-14" : "h-14 w-28"} rounded-md bg-void/60 border border-dashed border-violet/25 shrink-0 flex items-center justify-center text-ink-soft/60 text-xs`}>
             aucune
           </div>
         )}

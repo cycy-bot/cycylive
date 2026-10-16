@@ -57,9 +57,12 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="fond-spatial min-h-screen flex flex-col">
+        <a href="#contenu" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-violet focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white">
+          Aller au contenu
+        </a>
         <CielAnime />
         <Header />
-        <main className="flex-1 pb-16 md:pb-0">{children}</main>
+        <main id="contenu" tabIndex={-1} className="flex-1 pb-16 md:pb-0 outline-none">{children}</main>
         <Footer />
         <BarreMobile />
       </body>

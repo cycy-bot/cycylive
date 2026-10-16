@@ -269,7 +269,7 @@ export default function TicketAGratter() {
                         Ouvrir Discord
                       </a>
                     </div>
-                    <p className="text-xs text-ink-soft/50 mt-3">Code valable 48 h · un gain récupéré par jour</p>
+                    <p className="text-xs text-ink-soft/60 mt-3">Code valable 48 h · un gain récupéré par jour</p>
                   </>
                 )}
               </div>
@@ -304,7 +304,7 @@ export default function TicketAGratter() {
             </li>
           ))}
         </ul>
-        <p className="text-xs text-ink-soft/50 mt-4">Plus le gain est gros, plus il est rare. Il faut être membre du Discord Cycylive pour récupérer son gain.</p>
+        <p className="text-xs text-ink-soft/60 mt-4">Plus le gain est gros, plus il est rare. Il faut être membre du Discord Cycylive pour récupérer son gain.</p>
       </aside>
     </div>
   );

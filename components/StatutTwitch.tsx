@@ -130,7 +130,7 @@ export default function StatutTwitch() {
                 )}
               </>
             ) : chargementProchainLive ? (
-              <p className="text-ink-soft/40 mb-6">Chargement...</p>
+              <p className="text-ink-soft/60 mb-6">Chargement...</p>
             ) : (
               <p className="text-ink-soft mb-6">
                 Planning à venir, reste connecté·e !

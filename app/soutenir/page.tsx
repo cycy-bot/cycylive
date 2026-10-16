@@ -12,7 +12,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import TitreSection from "@/components/icones/TitreSection";
 
 export const metadata: Metadata = {
-  title: "Soutenir Cycylive : don, abonnement Twitch et Prime Gaming | Cycylive",
+  title: "Soutenir Cycylive : don, abonnement Twitch et Prime Gaming",
   description:
     "Toutes les façons de soutenir la chaîne Twitch de Cycylive : regarder les lives, follow, s'abonner (même gratuitement avec Prime Gaming), envoyer des bits, faire un don ou profiter des bons plans partenaires.",
   alternates: { canonical: "/soutenir" },

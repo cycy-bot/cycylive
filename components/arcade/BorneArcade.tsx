@@ -682,7 +682,7 @@ export default function BorneArcade() {
                   required
                   autoComplete="nickname"
                   placeholder="Ton pseudo (ex. ton pseudo Twitch)"
-                  className="flex-1 min-w-[200px] rounded-full bg-card border border-violet/25 px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/50 outline-none focus:border-violet/60"
+                  className="flex-1 min-w-[200px] rounded-full bg-card border border-violet/25 px-4 py-2.5 text-sm text-ink placeholder:text-ink-soft/60 outline-none focus:border-violet/60"
                 />
                 <input type="text" name="site" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden />
                 <button
@@ -713,7 +713,7 @@ export default function BorneArcade() {
               </div>
             )}
             {envoi.etat === "erreur" && <p className="text-sm text-red-300 mt-2">{envoi.texte}</p>}
-            <p className="text-xs text-ink-soft/50 mt-3">
+            <p className="text-xs text-ink-soft/60 mt-3">
               Pas besoin de compte : ton pseudo garde ton meilleur score. Essais illimités !
             </p>
           </div>

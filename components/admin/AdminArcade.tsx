@@ -91,7 +91,7 @@ export default function AdminArcade({ motDePasse }: { motDePasse: string }) {
             <li key={s.cle} className="flex items-center gap-3 px-4 py-2 text-sm">
               <span className="w-8 text-ink-soft">{s.rang}</span>
               <span className="flex-1 min-w-0 truncate text-ink">{s.nom}</span>
-              <span className="text-xs text-ink-soft/50 hidden sm:inline">{s.date ? new Date(s.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : ""}</span>
+              <span className="text-xs text-ink-soft/60 hidden sm:inline">{s.date ? new Date(s.date).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : ""}</span>
               <span className="font-mono text-lilac">{s.score.toLocaleString("fr-FR")}</span>
               <button
                 onClick={() => {

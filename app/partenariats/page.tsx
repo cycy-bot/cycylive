@@ -184,14 +184,14 @@ export default async function PartenariatsPage() {
           <FollowersTwitch />
         </div>
 
-        <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Mon univers</p>
+        <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">Mon univers</p>
         <div className="flex flex-wrap gap-2 mb-6">
           {univers.map((u) => (
             <Tag key={u} label={u} />
           ))}
         </div>
 
-        <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">Mes plateformes</p>
+        <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">Mes plateformes</p>
         <div className="flex flex-wrap gap-2 mb-6">
           {presence.map(({ nom, href, icon: Icon }) => (
             <a
@@ -207,7 +207,7 @@ export default async function PartenariatsPage() {
           ))}
         </div>
 
-        <p className="text-xs uppercase tracking-wide text-ink-soft/50 mb-3">
+        <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3">
           {textes.partenariats.typesTitre}
         </p>
         <div className="flex flex-wrap gap-2 mb-8">
@@ -233,7 +233,7 @@ export default async function PartenariatsPage() {
           <button
             disabled
             title="Media kit à venir"
-            className="inline-flex rounded-full px-6 py-3 border border-violet/20 text-ink-soft/50 font-medium cursor-not-allowed"
+            className="inline-flex rounded-full px-6 py-3 border border-violet/20 text-ink-soft/60 font-medium cursor-not-allowed"
           >
             {textes.partenariats.mediaKit}
           </button>

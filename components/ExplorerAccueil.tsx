@@ -34,7 +34,7 @@ export default function ExplorerAccueil() {
 
         <Link href="/cycybot" className={carte}>
           <div className="relative aspect-[16/10] overflow-hidden bg-nebula">
-            <Image src="/images/cycybot/passeport.jpg" alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+            <Image src="/images/cycybot/passeport.webp" alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
           </div>
           <Pied icone="robot" titre="Cycy_Bot" texte="Passeport galactique, Cartes Astrales, Éclats et Marché noir sur le Discord." />
         </Link>

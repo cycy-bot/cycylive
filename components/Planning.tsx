@@ -63,7 +63,7 @@ export default async function Planning() {
               )}
               <span className="w-24 md:w-auto text-xs tracking-wide text-ink-soft uppercase">
                 {jour.jour}
-                {jour.date ? <span className="ml-1 text-ink-soft/50">{Number(jour.date.slice(8))}</span> : null}
+                {jour.date ? <span className="ml-1 text-ink-soft/60">{Number(jour.date.slice(8))}</span> : null}
               </span>
               {jour.off ? (
                 <>

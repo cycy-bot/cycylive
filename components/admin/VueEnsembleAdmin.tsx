@@ -43,7 +43,7 @@ export default function VueEnsembleAdmin<T extends string>({
 
       {groupes.map((g) => (
         <section key={g} className="mb-8">
-          <h2 className="text-xs uppercase tracking-[0.16em] text-ink-soft/50 mb-3">{g}</h2>
+          <h2 className="text-xs uppercase tracking-[0.16em] text-ink-soft/60 mb-3">{g}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
             {rubriques
               .filter((r) => r.groupe === g)
@@ -64,7 +64,7 @@ export default function VueEnsembleAdmin<T extends string>({
                       </span>
                       <span className="block text-xs text-ink-soft/70 truncate">{resumes[r.valeur] ?? r.description}</span>
                     </span>
-                    <Icone nom="fleche" className="w-4 h-4 text-ink-soft/40 group-hover:text-lilac transition-colors" />
+                    <Icone nom="fleche" className="w-4 h-4 text-ink-soft/60 group-hover:text-lilac transition-colors" />
                   </span>
                 </button>
               ))}

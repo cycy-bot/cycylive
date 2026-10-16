@@ -214,12 +214,12 @@ export default async function CycyBotPage() {
         <div className="grid md:grid-cols-2 gap-4 mb-4">
           <figure className="carte-holo rounded-2xl p-2 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/cycybot/passeport.jpg" alt="Exemple de passeport galactique avec un cadre holographique" width={1200} height={675} loading="lazy" className="w-full rounded-xl" />
+            <img src="/images/cycybot/passeport.webp" alt="Exemple de passeport galactique avec un cadre holographique" width={1200} height={675} loading="lazy" className="w-full rounded-xl" />
             <figcaption className="px-2 py-2 text-xs text-ink-soft">Le passeport : infos, rang, thème, cadre, titre et effet de nom.</figcaption>
           </figure>
           <figure className="carte-holo rounded-2xl p-2 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/cycybot/tampons.jpg" alt="Page Tampons du passeport avec les tampons de la Chronique" width={1200} height={675} loading="lazy" className="w-full rounded-xl" />
+            <img src="/images/cycybot/tampons.webp" alt="Page Tampons du passeport avec les tampons de la Chronique" width={1200} height={675} loading="lazy" className="w-full rounded-xl" />
             <figcaption className="px-2 py-2 text-xs text-ink-soft">La page Tampons : les grands moments où tu étais là.</figcaption>
           </figure>
         </div>

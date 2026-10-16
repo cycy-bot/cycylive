@@ -83,7 +83,7 @@ export default function NavigationAdmin<T extends string>({
           if (!items.length) return null;
           return (
             <div key={g} className="mb-4">
-              <p className="px-3 mb-1 text-[11px] uppercase tracking-[0.16em] text-ink-soft/50">{g}</p>
+              <p className="px-3 mb-1 text-[11px] uppercase tracking-[0.16em] text-ink-soft/60">{g}</p>
               <ul className="space-y-0.5">
                 {items.map((r) => {
                   const estActive = r.valeur === active;

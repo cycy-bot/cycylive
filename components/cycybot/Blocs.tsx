@@ -53,7 +53,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
     );
     return (
       <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">En vente en ce moment</p>
+        <p className="uppercase tracking-wide text-ink-soft/60 mb-2">En vente en ce moment</p>
         <ul className="space-y-1">
           {d.market.daily.map(ligne)}
           {d.market.weekly.map(ligne)}
@@ -70,7 +70,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
   if (id === "expeditions" && d.destinations.length) {
     return (
       <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">Destinations du jour</p>
+        <p className="uppercase tracking-wide text-ink-soft/60 mb-2">Destinations du jour</p>
         <ul className="space-y-1">
           {d.destinations.map((x) => (
             <li key={x.name} className="flex justify-between gap-3">
@@ -91,7 +91,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
       <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
         {d.question ? (
           <>
-            <p className="uppercase tracking-wide text-ink-soft/50 mb-1.5">Aujourd&apos;hui</p>
+            <p className="uppercase tracking-wide text-ink-soft/60 mb-1.5">Aujourd&apos;hui</p>
             <p className="text-ink font-medium mb-1.5">{d.question.q}</p>
             <p>
               {d.question.options.join(" · ")} · {d.question.votes} vote{d.question.votes > 1 ? "s" : ""}
@@ -100,7 +100,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
         ) : null}
         {d.lastQuestion ? (
           <div className={d.question ? "mt-3 pt-3 border-t border-violet/10" : ""}>
-            <p className="uppercase tracking-wide text-ink-soft/50 mb-1.5">Résultats de la dernière</p>
+            <p className="uppercase tracking-wide text-ink-soft/60 mb-1.5">Résultats de la dernière</p>
             <p className="text-ink font-medium mb-2">{d.lastQuestion.q}</p>
             {d.lastQuestion.options.map((o) => (
               <div key={o.label} className="mb-1.5">
@@ -128,7 +128,7 @@ export function EnDirect({ d, id }: { d: DiscordCycyBot; id: string }) {
   if (id === "chronique" && d.chapters.length) {
     return (
       <div className="mt-4 rounded-xl bg-void/60 border border-violet/15 p-3 text-xs text-ink-soft">
-        <p className="uppercase tracking-wide text-ink-soft/50 mb-2">Derniers chapitres</p>
+        <p className="uppercase tracking-wide text-ink-soft/60 mb-2">Derniers chapitres</p>
         <ul className="space-y-1">
           {d.chapters.slice(0, 4).map((c) => (
             <li key={c.num} className="flex justify-between gap-3">

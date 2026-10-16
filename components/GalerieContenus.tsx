@@ -70,7 +70,7 @@ export default function GalerieContenus({ contenus }: { contenus: ContenuAvecMin
                 rel="noopener noreferrer"
                 className="group snap-start shrink-0 w-[min(18rem,80vw)] md:w-80 carte-holo rounded-2xl overflow-hidden flex flex-col hover:shadow-glow-sm hover:-translate-y-0.5 transition-all"
               >
-                <div className="relative aspect-video bg-nebula flex items-center justify-center text-ink-soft/30 text-xs overflow-hidden">
+                <div className="relative aspect-video bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
                   {contenu.miniature ? (
                     vertical ? (
                       <>

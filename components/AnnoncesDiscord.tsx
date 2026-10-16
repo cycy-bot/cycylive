@@ -30,7 +30,7 @@ export default async function AnnoncesDiscord({ limite = 3 }: { limite?: number 
               <span className="h-6 w-6 rounded-full bg-violet/20" />
             )}
             <span className="text-xs text-ink-soft/70">{a.auteur}</span>
-            <span className="text-xs text-ink-soft/40">· {formaterDate(a.dateISO)}</span>
+            <span className="text-xs text-ink-soft/60">· {formaterDate(a.dateISO)}</span>
           </div>
 
           {a.contenuHtml && (

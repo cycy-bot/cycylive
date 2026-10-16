@@ -85,7 +85,7 @@ export default function CommandesCycyBot({
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher une commande, par exemple booster ou discord"
           autoComplete="off"
-          className="w-full rounded-full bg-card border border-violet/20 px-5 py-3 text-sm text-ink placeholder:text-ink-soft/50 focus:outline-none focus:border-violet/60 transition-colors"
+          className="w-full rounded-full bg-card border border-violet/20 px-5 py-3 text-sm text-ink placeholder:text-ink-soft/60 focus:outline-none focus:border-violet/60 transition-colors"
         />
       </div>
 
@@ -136,7 +136,7 @@ export default function CommandesCycyBot({
                           )}
                           {c.usage && <span className="ml-2 text-xs text-ink-soft/70">{c.usage}</span>}
                           {c.aliases.length > 0 && (
-                            <span className="block text-xs text-ink-soft/50 mt-0.5">aussi {c.aliases.map((a) => `!${a}`).join(", ")}</span>
+                            <span className="block text-xs text-ink-soft/60 mt-0.5">aussi {c.aliases.map((a) => `!${a}`).join(", ")}</span>
                           )}
                         </div>
                         <p className="text-sm text-ink-soft break-words">{lisible(c.description)}</p>

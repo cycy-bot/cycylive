@@ -116,7 +116,7 @@ export default function AdminPage() {
             <Icone nom={courante.icone} className="w-6 h-6" />
           </span>
           <div>
-            <p className="text-[11px] uppercase tracking-[0.16em] text-ink-soft/50">{courante.groupe}</p>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-ink-soft/60">{courante.groupe}</p>
             <h2 className="text-xl font-semibold text-ink leading-tight">{courante.label}</h2>
           </div>
         </div>

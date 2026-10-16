@@ -259,7 +259,7 @@ export default async function GamingPage() {
                       <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink hover:border-rose-300/40 transition-all">
                         <IconValorant className="w-3.5 h-3.5 text-rose-300 shrink-0" />
                         <span className="min-w-0 flex-1">{n.titre}</span>
-                        <Icone nom="externe" className="w-4 h-4 text-ink-soft/50" />
+                        <Icone nom="externe" className="w-4 h-4 text-ink-soft/60" />
                       </a>
                     ))}
                   </div>
@@ -298,7 +298,7 @@ export default async function GamingPage() {
             <CarouselFleches>
               {clipsValorant.map((c) => (
                 <a key={c.id} href={c.url} target="_blank" rel="noopener noreferrer" className="snap-start shrink-0 w-40 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all">
-                  <div className="relative aspect-[9/16] bg-nebula flex items-center justify-center text-ink-soft/40 text-xs overflow-hidden">
+                  <div className="relative aspect-[9/16] bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
                     {c.miniature ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={c.miniature} alt={c.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
