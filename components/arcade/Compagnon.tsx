@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
+import { idAppareil } from "@/components/arcade/appareil";
 
 // ============================================================
 // COMPAGNON GALACTIQUE — façon Tamagotchi, sans compte
@@ -434,7 +435,7 @@ export default function Compagnon() {
   const recuperer = async () => {
     setEnvoi({ etat: "envoi", texte: "" });
     try {
-      const r = await fetch(`${BOT}/api/pet`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quests: OBJECTIFS.length }) });
+      const r = await fetch(`${BOT}/api/pet`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quests: OBJECTIFS.length, appareil: idAppareil() }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) throw new Error(d.error || "Récompense indisponible pour le moment.");
       setEtat((x) => ({ ...x, quetes: { ...x.quetes, recompense: { code: d.code, prize: d.prize } } }));

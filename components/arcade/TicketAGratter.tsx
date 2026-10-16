@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { idAppareil } from "@/components/arcade/appareil";
 
 // ============================================================
 // TICKET À GRATTER — un ticket gratuit par jour
@@ -151,7 +152,7 @@ export default function TicketAGratter() {
     setEtat("chargement");
     setErreur("");
     try {
-      const r = await fetch(`${BOT}/api/scratch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      const r = await fetch(`${BOT}/api/scratch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appareil: idAppareil() }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok || !d.ok) throw new Error(d.error || "Ticket indisponible pour le moment.");
       setTicket(d);
