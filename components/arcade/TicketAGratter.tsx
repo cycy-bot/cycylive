@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Icone, { Pastille } from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import { idAppareil } from "@/components/arcade/appareil";
+import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 // ============================================================
 // TICKET À GRATTER — un ticket gratuit par jour
@@ -17,7 +18,7 @@ const DISCORD = "https://discord.gg/sER6tztDSz";
 const CLE_GRATTE = "cycylive-ticket-gratte"; // code du dernier ticket déjà gratté
 
 type Gain = { key: string; emoji: string; label: string; rarity: string; rarityLabel: string };
-type Ticket = { code: string; prize: Gain; again: boolean; redeemed: boolean };
+type Ticket = { code: string; prize: Gain; again: boolean; redeemed: boolean; credited?: boolean; given?: string[]; note?: string };
 
 const COULEURS: Record<string, { fond: string; texte: string; halo: string }> = {
   commune: { fond: "#2a2440", texte: "#d6d0ea", halo: "rgba(214,208,234,0.25)" },
@@ -143,7 +144,11 @@ function CoucheAGratter({ onFini }: { onFini: () => void }) {
   );
 }
 
+/** « **+15** points stellaires » → texte simple. */
+const sansMarkdown = (t: string) => t.replace(/\*\*/g, "");
+
 export default function TicketAGratter() {
+  const compte = useCompteDiscord();
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [etat, setEtat] = useState<"attente" | "chargement" | "erreur">("attente");
   const [erreur, setErreur] = useState("");
@@ -154,8 +159,9 @@ export default function TicketAGratter() {
     setEtat("chargement");
     setErreur("");
     try {
-      const r = await fetch(`${BOT}/api/scratch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appareil: idAppareil() }) });
+      const r = await fetch(`${BOT}/api/scratch`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appareil: idAppareil(), session: sessionDiscord() }) });
       const d = await r.json().catch(() => ({}));
+      if (d.connexion) compte.oublier();
       if (!r.ok || !d.ok) throw new Error(d.error || "Ticket indisponible pour le moment.");
       setTicket(d);
       setRevele(Boolean(d.again && lire(CLE_GRATTE) === d.code));
@@ -164,7 +170,7 @@ export default function TicketAGratter() {
       setErreur(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Impossible de joindre CycyBot pour le moment. Réessaie dans un instant.");
       setEtat("erreur");
     }
-  }, []);
+  }, [compte.oublier]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const finir = useCallback(() => {
     setRevele(true);
@@ -185,14 +191,25 @@ export default function TicketAGratter() {
               Un ticket gratuit chaque jour. Gratte-le pour découvrir ton gain : points stellaires, Éclats, booster de Cartes Astrales,
               fragment d&apos;étoile… et peut-être le jackpot !
             </p>
-            <button
-              type="button"
-              onClick={obtenir}
-              disabled={etat === "chargement"}
-              className="rounded-full px-7 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
-            >
-              {etat === "chargement" ? "Impression du ticket…" : "Obtenir mon ticket"}
-            </button>
+            {compte.joueur ? (
+              <>
+                <button
+                  type="button"
+                  onClick={obtenir}
+                  disabled={etat === "chargement"}
+                  className="rounded-full px-7 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
+                >
+                  {etat === "chargement" ? "Impression du ticket…" : "Obtenir mon ticket"}
+                </button>
+                <div className="mt-4">
+                  <BandeauDiscord compte={compte} />
+                </div>
+              </>
+            ) : compte.pret ? (
+              <BoutonDiscord erreur={compte.erreur} texte="Un ticket par jour et par compte Discord : ton gain arrive directement sur ton profil, sans code à copier." />
+            ) : (
+              <div className="h-12" aria-hidden />
+            )}
             {etat === "erreur" && <p className="text-sm text-red-300 mt-4">{erreur}</p>}
           </div>
         ) : (
@@ -229,9 +246,20 @@ export default function TicketAGratter() {
 
             {revele ? (
               <div className="mt-6 text-center" aria-live="polite">
-                {ticket.redeemed ? (
+                {ticket.credited ? (
+                  <div>
+                    <p className="text-ink font-semibold text-lg mb-1">
+                      <Icone nom="valide" className="w-5 h-5 mr-1.5 text-emerald-300" />
+                      {ticket.given ? "Ajouté à ton compte Discord !" : "Ton gain du jour est déjà sur ton compte Discord."}
+                    </p>
+                    {ticket.given && <p className="text-ink-soft">{ticket.given.map(sansMarkdown).join(" · ")}</p>}
+                    <p className="text-xs text-ink-soft/60 mt-3">Un nouveau ticket t&apos;attend demain, dès minuit.</p>
+                  </div>
+                ) : ticket.redeemed ? (
                   <p className="text-ink-soft">Ce ticket a déjà été récupéré sur Discord. Reviens demain pour un nouveau ticket !</p>
                 ) : (
+                  <>
+                    {ticket.note && <p className="text-sm text-amber-200 mb-3 max-w-md mx-auto">{ticket.note}</p>}
                   <>
                     <p className="text-ink font-semibold text-lg mb-1">
                       {["legendaire", "mythique"].includes(ticket.prize.rarity) ? "Incroyable !" : "Bravo !"} Récupère ton gain sur Discord :
@@ -271,6 +299,7 @@ export default function TicketAGratter() {
                     </div>
                     <p className="text-xs text-ink-soft/60 mt-3">Code valable 48 h · un gain récupéré par jour</p>
                   </>
+                  </>
                 )}
               </div>
             ) : (
@@ -283,16 +312,16 @@ export default function TicketAGratter() {
       <aside className="carte-holo rounded-2xl border border-violet/12 p-5">
         <h2 className="text-lg font-semibold text-ink mb-3">Comment ça marche ?</h2>
         <ol className="space-y-2 text-sm text-ink-soft mb-5 list-decimal list-inside">
-          <li>Prends ton ticket gratuit (1 par jour).</li>
-          <li>Gratte la zone argentée pour voir ton gain.</li>
-          <li>Copie ton code avec le bouton « Copier le code ».</li>
           <li>
-            Dans le salon CycyBot du{" "}
+            Connecte-toi avec ton compte du{" "}
             <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="text-lilac underline">
-              Discord
+              Discord Cycylive
             </a>
-            , tape <code className="text-lilac">/gratter</code> puis colle seulement le code dans la case « code » : le gain arrive sur ton profil.
+            .
           </li>
+          <li>Prends ton ticket gratuit (1 par jour et par compte).</li>
+          <li>Gratte la zone argentée pour voir ton gain.</li>
+          <li>C&apos;est tout : le gain arrive directement sur ton profil Discord.</li>
         </ol>
         <h3 className="text-sm font-semibold text-ink mb-2">Gains possibles</h3>
         <ul className="space-y-1.5 text-sm">

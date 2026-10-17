@@ -6,6 +6,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 import { idAppareil } from "@/components/arcade/appareil";
+import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 // ============================================================
 // COMPAGNON GALACTIQUE — façon Tamagotchi, sans compte
@@ -26,7 +27,7 @@ const HEURE = 60 * MIN;
 type Stats = { faim: number; proprete: number; bonheur: number; energie: number };
 type Caca = { id: string; x: number; y: number };
 type Gain = { key: string; emoji: string; label: string; rarity: string; rarityLabel: string };
-type Quetes = { jour: string; repas: number; bains: number; cacas: number; calins: number; jeux: number; recompense: { code: string; prize: Gain } | null };
+type Quetes = { jour: string; repas: number; bains: number; cacas: number; calins: number; jeux: number; recompense: { code: string; prize: Gain; credited?: boolean; given?: string[]; note?: string } | null };
 type Etat = {
   espece: Espece | null;
   nom: string;
@@ -188,6 +189,7 @@ export default function Compagnon() {
   const [jeu, setJeu] = useState<{ fin: number; attrapees: number; etoiles: { id: string; x: number; y: number; nee: number }[] } | null>(null);
   const [envoi, setEnvoi] = useState<{ etat: "libre" | "envoi" | "erreur"; texte: string }>({ etat: "libre", texte: "" });
   const [copie, setCopie] = useState(false);
+  const compte = useCompteDiscord();
   const dernierCalin = useRef(0);
   const minuteurMessage = useRef(0);
   const partieGagnee = useRef(false);
@@ -437,10 +439,11 @@ export default function Compagnon() {
   const recuperer = async () => {
     setEnvoi({ etat: "envoi", texte: "" });
     try {
-      const r = await fetch(`${BOT}/api/pet`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quests: OBJECTIFS.length, appareil: idAppareil() }) });
+      const r = await fetch(`${BOT}/api/pet`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ quests: OBJECTIFS.length, appareil: idAppareil(), session: sessionDiscord() }) });
       const d = await r.json().catch(() => ({}));
+      if (d.connexion) compte.oublier();
       if (!r.ok || !d.ok) throw new Error(d.error || "Récompense indisponible pour le moment.");
-      setEtat((x) => ({ ...x, quetes: { ...x.quetes, recompense: { code: d.code, prize: d.prize } } }));
+      setEtat((x) => ({ ...x, quetes: { ...x.quetes, recompense: { code: d.code, prize: d.prize, credited: d.credited, given: d.given, note: d.note } } }));
       setEnvoi({ etat: "libre", texte: "" });
     } catch (e) {
       setEnvoi({ etat: "erreur", texte: e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Impossible de joindre CycyBot pour le moment. Réessaie dans un instant." });
@@ -875,8 +878,19 @@ export default function Compagnon() {
           <p className="text-sm text-ink-soft rounded-xl bg-white/[0.04] px-4 py-3">
             <Icone nom="cadeau" className="w-4 h-4 mr-1.5 text-lilac" />Termine les {OBJECTIFS.length} quêtes pour débloquer ta récompense du jour sur le Discord (points, Éclats, booster…).
           </p>
+        ) : recompense?.credited ? (
+          <div className="rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-4">
+            <p className="text-ink font-semibold mb-1">
+              {recompense.prize.emoji} {recompense.prize.label}
+            </p>
+            <p className="text-xs text-ink-soft">
+              <Icone nom="valide" className="w-4 h-4 mr-1 text-emerald-300" />
+              {recompense.given ? "Ajoutée directement à ton compte Discord !" : "Ta récompense du jour est déjà sur ton compte Discord."} Reviens demain pour de nouvelles quêtes.
+            </p>
+          </div>
         ) : recompense ? (
           <div className="rounded-2xl border border-violet/30 bg-violet/10 p-4">
+            {recompense.note && <p className="text-xs text-amber-200 mb-2">{recompense.note}</p>}
             <p className="text-ink font-semibold mb-1">
               {recompense.prize.emoji} {recompense.prize.label}
             </p>
@@ -913,6 +927,10 @@ export default function Compagnon() {
           </div>
         ) : (
           <div>
+            {!compte.joueur ? (
+              compte.pret ? <BoutonDiscord erreur={compte.erreur} texte="Une récompense par jour et par compte Discord : elle arrive directement sur ton profil." /> : null
+            ) : (
+            <>
             <button
               type="button"
               onClick={recuperer}
@@ -921,6 +939,9 @@ export default function Compagnon() {
             >
               {envoi.etat === "envoi" ? "Ouverture du coffre…" : <><Icone nom="cadeau" className="w-5 h-5 mr-1.5" />Récupérer ma récompense</>}
             </button>
+            <div className="mt-3"><BandeauDiscord compte={compte} /></div>
+            </>
+            )}
             {envoi.etat === "erreur" && <p className="text-sm text-red-300 mt-2">{envoi.texte}</p>}
           </div>
         )}

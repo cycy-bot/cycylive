@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Icone, { Pastille } from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import { idAppareil } from "@/components/arcade/appareil";
+import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 import CoffreSvg, { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
 
 // ============================================================
@@ -30,6 +31,9 @@ type Partie = {
   gain?: Gain;
   code?: string;
   recupere?: boolean;
+  credited?: boolean;
+  given?: string[];
+  note?: string;
 };
 
 const COULEUR_TIER: Record<string, string> = { petit: "#d6d0ea", moyen: "#7ee2a8", gros: "#facc15" };
@@ -41,14 +45,18 @@ const LOTS: [NomIcone, string, string][] = [
   ["couronne", "Trésor de Cycy : 3 boosters + 2 fragments + 150 Éclats", "Très rare"],
 ];
 
+class ConnexionRequise extends Error {}
+
 async function appel(corps: Record<string, unknown>): Promise<Partie> {
-  const r = await fetch(`${BOT}/api/coffres`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appareil: idAppareil(), ...corps }) });
+  const r = await fetch(`${BOT}/api/coffres`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ appareil: idAppareil(), session: sessionDiscord(), ...corps }) });
   const d = await r.json().catch(() => ({}));
+  if (d.connexion) throw new ConnexionRequise(d.error);
   if (!r.ok || !d.ok) throw new Error(d.error || "Les coffres sont indisponibles pour le moment.");
   return d as Partie;
 }
 
 export default function CoffresScelles() {
+  const compte = useCompteDiscord();
   const [partie, setPartie] = useState<Partie | null>(null);
   const [charge, setCharge] = useState(false);
   const [erreur, setErreur] = useState("");
@@ -64,6 +72,10 @@ export default function CoffresScelles() {
       const [p] = await Promise.all([appel(corps), new Promise((r) => setTimeout(r, attente))]);
       setPartie(p);
     } catch (e) {
+      if (e instanceof ConnexionRequise) {
+        compte.oublier();
+        setPartie(null);
+      }
       setErreur(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Impossible de joindre CycyBot pour le moment. Réessaie dans un instant.");
     } finally {
       setCharge(false);
@@ -97,14 +109,25 @@ export default function CoffresScelles() {
               Trois coffres t&apos;attendent : un petit lot, un lot moyen et un <strong className="text-ink">gros lot</strong>. Choisis le tien… puis
               CycyBot te mettra face à un choix.
             </p>
-            <button
-              type="button"
-              onClick={() => agir({ action: "etat" })}
-              disabled={charge}
-              className="rounded-full px-7 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
-            >
-              {charge ? "CycyBot remplit les coffres…" : "Entrer dans la salle"}
-            </button>
+            {compte.joueur ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => agir({ action: "etat" })}
+                  disabled={charge}
+                  className="rounded-full px-7 py-3 bg-violet text-ink font-semibold hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50"
+                >
+                  {charge ? "CycyBot remplit les coffres…" : "Entrer dans la salle"}
+                </button>
+                <div className="mt-4">
+                  <BandeauDiscord compte={compte} />
+                </div>
+              </>
+            ) : compte.pret ? (
+              <BoutonDiscord erreur={compte.erreur} texte="Une partie par jour et par compte Discord : ton trésor arrive directement sur ton profil, sans code à copier." />
+            ) : (
+              <div className="h-12" aria-hidden />
+            )}
             {erreur && <p className="text-sm text-red-300 mt-4">{erreur}</p>}
           </div>
         ) : (
@@ -198,11 +221,11 @@ export default function CoffresScelles() {
           <li>CycyBot ouvre un des deux autres : il ne cache <strong className="text-ink">jamais</strong> le gros lot.</li>
           <li>Garde ton coffre ou change pour le dernier coffre fermé.</li>
           <li>
-            Copie ton code, puis dans le salon CycyBot du{" "}
+            Ton trésor arrive directement sur ton compte du{" "}
             <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="text-lilac underline">
-              Discord
+              Discord Cycylive
             </a>{" "}
-            tape <code className="text-lilac">/tresor</code> et colle le code.
+            (connexion avec Discord, 1 partie par compte et par jour).
           </li>
         </ol>
         <h3 className="text-sm font-semibold text-ink mb-2">Dans les coffres</h3>
@@ -263,10 +286,20 @@ function Resultat({ partie, copie, setCopie }: { partie: Partie; copie: boolean;
           <span className="block text-lg font-semibold text-ink">{gain.label}</span>
         </span>
       </div>
-      {partie.recupere ? (
+      {partie.credited ? (
+        <div>
+          <p className="text-ink font-semibold text-lg mb-1">
+            <Icone nom="valide" className="w-5 h-5 mr-1.5 text-emerald-300" />
+            {partie.given ? "Trésor ajouté à ton compte Discord !" : "Ton trésor du jour est déjà sur ton compte Discord."}
+          </p>
+          {partie.given && <p className="text-ink-soft">{partie.given.map((g) => g.replace(/\*\*/g, "")).join(" · ")}</p>}
+          <p className="text-xs text-ink-soft/60 mt-3">Trois nouveaux coffres t&apos;attendent demain, dès minuit.</p>
+        </div>
+      ) : partie.recupere ? (
         <p className="text-ink-soft">Ce trésor a déjà été récupéré sur Discord. Trois nouveaux coffres t&apos;attendent demain !</p>
       ) : (
         <>
+          {partie.note && <p className="text-sm text-amber-200 mb-3 max-w-md mx-auto">{partie.note}</p>}
           <p className="text-ink font-semibold mb-1">Récupère ton trésor sur Discord :</p>
           <ol className="text-ink-soft text-sm mb-4 mx-auto max-w-md text-left space-y-1 list-decimal list-inside">
             <li>
