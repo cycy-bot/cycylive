@@ -12,6 +12,7 @@ import { useEtatAdmin } from "@/components/admin/useEtatAdmin";
 import { ContexteAdmin } from "@/components/admin/contexteAdmin";
 
 const OngletLive = dynamic(() => import("@/components/admin/onglets/OngletLive"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
+const OngletGenerateur = dynamic(() => import("@/components/admin/onglets/OngletGenerateur"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletPlanning = dynamic(() => import("@/components/admin/onglets/OngletPlanning"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletCalendrier = dynamic(() => import("@/components/admin/onglets/OngletCalendrier"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletContenus = dynamic(() => import("@/components/admin/onglets/OngletContenus"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
@@ -69,6 +70,7 @@ export default function AdminPage() {
   const courante = ONGLETS.find((o) => o.valeur === onglet) ?? ONGLETS[0];
   const resumes: Partial<Record<Onglet, string>> = {
     live: "Stories Instagram et TikTok en un clic",
+    generateur: "Clip → vidéo verticale, miniature et textes",
     planning: `${planning.filter((j) => !j.off).length} jour(s) de live par semaine`,
     calendrier: `${Object.keys(calendrier.exceptions).length} exception(s) · ${calendrier.evenements.length} événement(s)`,
     contenus: `${contenus.length} contenu(s)`,
@@ -134,6 +136,7 @@ export default function AdminPage() {
       )}
 
       {onglet === "live" && <OngletLive />}
+      {onglet === "generateur" && <OngletGenerateur />}
       {onglet === "planning" && <OngletPlanning />}
 
       {onglet === "calendrier" && <OngletCalendrier />}
