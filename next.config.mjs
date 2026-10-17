@@ -35,6 +35,7 @@ const nextConfig = {
       { source: "/valorant", destination: "/gaming", permanent: true },
       { source: "/communaute", destination: "/#communaute", permanent: true },
       { source: "/arcade", destination: "/jeux", permanent: true },
+      { source: "/live", destination: "/jeux", permanent: false },
     ];
   },
 };
