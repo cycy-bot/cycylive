@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import AccentCosmique from "@/components/AccentCosmique";
 import InterfaceLive from "@/components/live/InterfaceLive";
+import ExplicationLive from "@/components/live/ExplicationLive";
 
 export const metadata: Metadata = {
   title: "Jouer pendant le live | Cycylive",
@@ -25,6 +26,7 @@ export default function LivePage() {
         intro="Pronostique, vote la strat, choisis ton camp et réagis en direct : tout se met à jour en même temps que le live, sans noyer le chat."
       />
       <InterfaceLive />
+      <ExplicationLive />
     </div>
   );
 }

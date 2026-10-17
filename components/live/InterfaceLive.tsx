@@ -214,7 +214,7 @@ export default function InterfaceLive() {
           <p className="mt-1 text-sm text-ink-soft">
             {etat.live.enLigne
               ? "Les pronostics, votes et camps apparaissent ici dès que Cycy ou un modo en lance un. Garde la page ouverte : elle se met à jour toute seule."
-              : "Reviens pendant le prochain live : tout se passera ici. Le planning est sur la page d’accueil."}
+              : "Reviens pendant le prochain live : tout se passera ici. En attendant, découvre ci-dessous tout ce que tu pourras faire."}
           </p>
         </section>
       )}
@@ -369,7 +369,7 @@ export default function InterfaceLive() {
         )}
 
         {/* Classement */}
-        <section className="carte-holo rounded-3xl p-5 md:p-6" aria-labelledby="classement-titre">
+        <section className={`carte-holo rounded-3xl p-5 md:p-6 ${!v && !c && !(etat.reactions.actives && etat.live.enLigne) ? "lg:col-span-2" : ""}`} aria-labelledby="classement-titre">
           <div className="flex items-center gap-2">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-300/12 text-amber-300 ring-1 ring-amber-300/25"><Icone nom="trophee" className="w-5 h-5" /></span>
             <h2 id="classement-titre" className="font-semibold text-ink">Meilleurs pronostiqueurs</h2>
