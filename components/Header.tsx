@@ -46,6 +46,7 @@ const navItems: (LienNav | GroupeNav)[] = [
     type: "groupe",
     label: "Jeux",
     items: [
+      { label: "Jouer pendant le live", href: "/live" },
       { label: "Tous les jeux", href: "/jeux" },
       { label: "Salle d'arcade", href: "/jeux#arcade" },
       { label: "Ticket à gratter", href: "/jeux/gratter" },
