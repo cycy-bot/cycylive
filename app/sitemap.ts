@@ -26,6 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/jeux/arcade/quiz",
     "/jeux/gratter",
     "/jeux/compagnon",
+    "/jeux/coffres",
     "/soutenir",
     "/mentions-legales",
     "/confidentialite",

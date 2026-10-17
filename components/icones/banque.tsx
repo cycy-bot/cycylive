@@ -415,6 +415,12 @@ export const BANQUE = {
     <path {...T} d="M8.5 7V5a1.5 1.5 0 0 1 1.5-1.5h4A1.5 1.5 0 0 1 15.5 5v2M2.5 12.5h19" />
     <circle {...P} cx="12" cy="12.5" r="1.4" />
   </>),
+  coffre: I("Coffre au trésor", "Récompenses", <>
+    <path {...F} d="M3 11h18v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+    <path {...F} d="M3 11V9.5C3 6.2 5.7 3.5 9 3.5h6c3.3 0 6 2.7 6 6V11Z" />
+    <path {...T} d="M8 4v17M16 4v17" opacity=".6" />
+    <rect {...P} x="10.4" y="9.6" width="3.2" height="4.4" rx="1" />
+  </>),
   colis: I("Objet mystère", "Récompenses", <>
     <path {...F} d="m12 2.5 9 4.5v10l-9 4.5-9-4.5V7Z" />
     <path {...T} d="m3 7 9 4.5L21 7M12 11.5v10M7.5 4.8l9 4.5" />

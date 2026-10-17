@@ -51,6 +51,7 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "Salle d'arcade", href: "/jeux#arcade" },
       { label: "Ticket à gratter", href: "/jeux/gratter" },
       { label: "Compagnon", href: "/jeux/compagnon" },
+      { label: "Coffres scellés", href: "/jeux/coffres" },
     ],
   },
   {

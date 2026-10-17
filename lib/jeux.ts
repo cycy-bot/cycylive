@@ -9,7 +9,7 @@ import type { NomIcone } from "@/components/icones/banque";
 export type FamilleJeu = "arcade" | "quotidien";
 
 export type FicheJeu = {
-  id: JeuArcade | "gratter" | "compagnon";
+  id: JeuArcade | "gratter" | "compagnon" | "coffres";
   famille: FamilleJeu;
   href: string;
   nom: string;
@@ -135,6 +135,20 @@ export const JEUX: FicheJeu[] = [
     controles: "Souris · tactile",
     teinte: { de: "#1d7a4a", a: "#0b1a12", accent: "#9dffb0" },
     badge: "Récompense Discord",
+  },
+  {
+    id: "coffres",
+    icone: "coffre",
+    famille: "quotidien",
+    href: "/jeux/coffres",
+    nom: "Les 3 coffres scellés",
+    emoji: "🗝️",
+    accroche: "Trois coffres, un gros lot. CycyBot en ouvre un : tu gardes ou tu changes ?",
+    description: "Choisis un coffre parmi trois. CycyBot ouvre alors un des deux autres, qui ne cache jamais le gros lot. À toi de décider : garder ton coffre ou tenter l'autre. Ton trésor se récupère sur le Discord avec /tresor.",
+    duree: "1 partie / jour",
+    controles: "Souris · tactile · clavier",
+    teinte: { de: "#7a3a1d", a: "#1a0e0b", accent: "#ffb86b" },
+    badge: "Nouveau",
   },
 ];
 

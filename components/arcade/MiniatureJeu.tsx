@@ -1,6 +1,7 @@
 // Miniatures illustrées des jeux (SVG, aucune image à charger).
 // Une petite scène par jeu, dans les couleurs de sa fiche (lib/jeux.ts).
 import { jeuParId } from "@/lib/jeux";
+import CoffreSvg, { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
 
 type Props = { id: string; className?: string; anime?: boolean };
 
@@ -270,6 +271,22 @@ function Compagnon({ accent }: { accent: string }) {
   );
 }
 
+function Coffres({ k, accent }: { k: string; accent: string }) {
+  // Trois coffres : celui du milieu est ouvert et laisse échapper sa lumière
+  const places: [number, number, number, number][] = [[0, 92, 96, 0.56], [2, 176, 96, 0.56], [1, 122, 66, 0.76]];
+  return (
+    <>
+      <ellipse cx="160" cy="178" rx="140" ry="16" fill={accent} opacity="0.12" />
+      {places.map(([i, x, y, s]) => (
+        <CoffreSvg key={i} id={`${k}-c${i}`} teinte={TEINTES_COFFRES[i]} ouvert={i === 1} cadre={{ x, y, width: 100 * s, height: 113 * s }} />
+      ))}
+      {[[160, 44, 1.3], [134, 34, 0.8], [188, 36, 0.9]].map(([x, y, r], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${r})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+      ))}
+    </>
+  );
+}
+
 export default function MiniatureJeu({ id, className = "", anime = false }: Props) {
   const fiche = jeuParId(id);
   if (!fiche) return null;
@@ -287,6 +304,7 @@ export default function MiniatureJeu({ id, className = "", anime = false }: Prop
         {id === "quiz" && <Quiz accent={accent} />}
         {id === "gratter" && <Gratter k={k} accent={accent} />}
         {id === "compagnon" && <Compagnon accent={accent} />}
+        {id === "coffres" && <Coffres k={k} accent={accent} />}
       </g>
     </svg>
   );

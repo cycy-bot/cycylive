@@ -43,9 +43,9 @@ export default function VitrineJeux({ records = {} }: { records?: Record<string,
         <div className="mb-5">
           <h2 id="titre-quotidien" className="text-2xl md:text-3xl font-semibold text-ink">Les récompenses du jour</h2>
           <p className="mt-1 text-ink-soft max-w-3xl">
-            Pas de classement ici : chaque jour, un ticket et des quêtes qui te rapportent des points, des Éclats ou des boosters
-            sur le Discord Cycylive. Le gain se récupère avec un code (<code className="text-lilac">/gratter</code> ou{" "}
-            <code className="text-lilac">/compagnon</code>).
+            Pas de classement ici : chaque jour, un ticket, des quêtes et trois coffres qui te rapportent des Éclats, des boosters ou des
+            points sur le Discord Cycylive. Le gain se récupère avec un code (<code className="text-lilac">/gratter</code>,{" "}
+            <code className="text-lilac">/compagnon</code> ou <code className="text-lilac">/tresor</code>).
           </p>
         </div>
         <div className="grid gap-5 lg:grid-cols-2">
