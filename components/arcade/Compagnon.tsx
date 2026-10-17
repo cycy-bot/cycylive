@@ -6,6 +6,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 import { idAppareil } from "@/components/arcade/appareil";
+import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 // ============================================================
@@ -173,7 +174,14 @@ function Jauge({ icone, label, valeur, couleur }: { icone: NomIcone; label: stri
   );
 }
 
-type Effet = { id: string; x: number; y: number; texte: string; type: "coeur" | "bulle" | "miam" };
+type Effet = { id: string; x: number; y: number; nom: NomSticker; type: "coeur" | "bulle" | "miam" };
+
+// Les emojis des phrases du compagnon sont remplacés par nos illustrations
+const EMOJI_STICKER: Record<string, NomSticker> = { "🍖": "viande", "💩": "caca", "🛁": "bulle", "🌙": "lune", "⭐": "etoile", "💜": "coeur", "✨": "etincelle", "🎉": "fete", "☀️": "soleil", "🍬": "bonbon" };
+const RE_EMOJI = new RegExp("(" + Object.keys(EMOJI_STICKER).map((e) => e.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")", "g");
+function avecStickers(texte: string) {
+  return texte.split(RE_EMOJI).map((part, i) => (EMOJI_STICKER[part] ? <Sticker key={i} nom={EMOJI_STICKER[part]} taille={22} className="mx-0.5 -mt-1" /> : part));
+}
 
 // ── Le jeu ──────────────────────────────────────────────────
 
@@ -224,9 +232,9 @@ export default function Compagnon() {
     return () => clearInterval(t);
   }, [etat?.espece, etat?.neLe, eclot]);
 
-  const effet = useCallback((texte: string, type: Effet["type"], x = hasard(35, 65), y = hasard(30, 50)) => {
+  const effet = useCallback((nom: NomSticker, type: Effet["type"], x = hasard(35, 65), y = hasard(30, 50)) => {
     const id = idCourt();
-    setEffets((l) => [...l.slice(-14), { id, x, y, texte, type }]);
+    setEffets((l) => [...l.slice(-14), { id, x, y, nom, type }]);
     setTimeout(() => setEffets((l) => l.filter((f) => f.id !== id)), 1700);
   }, []);
 
@@ -282,7 +290,7 @@ export default function Compagnon() {
       quetes: compter(x.quetes, "repas"),
       bonbons: (x.bonbons || 0) + BONBONS.repas,
     }));
-    effet(["🍖", "🍩", "🌮", "🍓", "🍬"][Math.floor(Math.random() * 5)], "miam");
+    effet((["viande", "donut", "taco", "fraise", "bonbon"] as NomSticker[])[Math.floor(Math.random() * 5)], "miam");
     sauter();
     dire("Miam, délicieux !");
   };
@@ -292,13 +300,13 @@ export default function Compagnon() {
     if (etat.dort) return dire("Chut… il dort 🌙");
     if (etat.stats.proprete >= 97) return dire("Il est déjà tout propre ✨");
     setEtat((x) => avecBonbons({ ...x, stats: { ...x.stats, proprete: 100, bonheur: borne(x.stats.bonheur + 4) }, quetes: compter(x.quetes, "bains") }, BONBONS.bain));
-    for (let i = 0; i < 9; i++) setTimeout(() => effet("🫧", "bulle", hasard(28, 72), hasard(30, 65)), i * 120);
+    for (let i = 0; i < 9; i++) setTimeout(() => effet("bulle", "bulle", hasard(28, 72), hasard(30, 65)), i * 120);
     dire("Splash ! Tout propre 🛁");
   };
 
   const nettoyer = (id: string) => {
     setEtat((x) => (x.cacas.some((c) => c.id === id) ? avecBonbons({ ...x, cacas: x.cacas.filter((c) => c.id !== id), stats: { ...x.stats, proprete: borne(x.stats.proprete + 5) }, quetes: compter(x.quetes, "cacas") }, BONBONS.caca) : x));
-    effet("✨", "bulle");
+    effet("etincelle", "bulle");
   };
 
   const caresser = (ev: React.PointerEvent) => {
@@ -308,7 +316,7 @@ export default function Compagnon() {
     dernierCalin.current = now;
     const r = sceneRef.current.getBoundingClientRect();
     if (etat.dort) {
-      effet("💤", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
+      effet("zzz", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
       return;
     }
     setEtat((x) => {
@@ -316,7 +324,7 @@ export default function Compagnon() {
       const bonus = n % BONBONS.calinsParBonbon === 0 && n / BONBONS.calinsParBonbon <= BONBONS.calinsMaxJour ? 1 : 0;
       return avecBonbons({ ...x, gains: { ...x.gains, calins: n }, stats: { ...x.stats, bonheur: borne(x.stats.bonheur + 2) }, quetes: compter(x.quetes, "calins") }, bonus);
     });
-    effet("💜", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
+    effet("coeur", "coeur", ((ev.clientX - r.left) / r.width) * 100, ((ev.clientY - r.top) / r.height) * 100);
   };
 
   const jouer = () => {
@@ -400,7 +408,7 @@ export default function Compagnon() {
     if (etat.possedes.includes(k)) return;
     if ((etat.bonbons || 0) < a.prix) return dire(`Il te manque ${a.prix - (etat.bonbons || 0)} 🍬 pour ${a.nom.toLowerCase()}…`);
     setEtat((x) => (x.possedes.includes(k) || (x.bonbons || 0) < a.prix ? x : { ...x, bonbons: x.bonbons - a.prix, possedes: [...x.possedes, k], tenue: { ...x.tenue, [a.emplacement]: k } }));
-    effet("✨", "coeur");
+    effet("etincelle", "coeur");
     sauter();
     dire(`Trop stylé ! Merci pour ${a.nom.toLowerCase()} 💜`);
   };
@@ -411,7 +419,7 @@ export default function Compagnon() {
     if (!d || !etat || etat.decos.includes(k)) return;
     if ((etat.bonbons || 0) < d.prix) return dire(`Il te manque ${d.prix - (etat.bonbons || 0)} 🍬 pour ${d.nom.toLowerCase()}…`);
     setEtat((x) => (x.decos.includes(k) || (x.bonbons || 0) < d.prix ? x : { ...x, bonbons: x.bonbons - d.prix, decos: [...x.decos, k], habitat: { ...x.habitat, [d.emplacement]: k } }));
-    effet("🏠", "coeur");
+    effet("maison", "coeur");
     sauter();
     dire(`Ouaaah, ${d.nom.toLowerCase()} ! Ma chambre est trop belle 💜`);
   };
@@ -545,7 +553,7 @@ export default function Compagnon() {
                   className="absolute left-1/2 top-1/2 text-2xl cp-eclat"
                   style={{ ["--dx" as string]: `${Math.cos(i * 0.63) * 140}px`, ["--dy" as string]: `${Math.sin(i * 0.63) * 110 - 40}px`, ["--rot" as string]: `${i * 50}deg` } as React.CSSProperties}
                 >
-                  {i % 2 ? "✨" : "🥚"}
+                  <Sticker nom={i % 2 ? "etincelle" : "oeuf"} taille={28} />
                 </span>
               ))}
               <div className="cp-saut">
@@ -632,7 +640,7 @@ export default function Compagnon() {
 
           {/* bulle de dialogue */}
           <div className="absolute left-1/2 top-4 -translate-x-1/2 max-w-[85%] rounded-2xl bg-white/90 px-4 py-2 text-sm text-[#2a1552] font-medium text-center shadow-lg">
-            {message || phraseDe(etat)}
+            {avecStickers(message || phraseDe(etat))}
           </div>
 
           {/* la créature : caresse-la ! */}
@@ -655,11 +663,11 @@ export default function Compagnon() {
               key={c.id}
               type="button"
               onClick={() => nettoyer(c.id)}
-              className="absolute text-3xl hover:scale-125 transition-transform"
+              className="absolute hover:scale-125 transition-transform"
               style={{ left: `${c.x}%`, top: `${c.y}%` }}
               aria-label="Nettoyer ce caca"
             >
-              💩
+              <Sticker nom="caca" taille={42} />
             </button>
           ))}
 
@@ -670,16 +678,16 @@ export default function Compagnon() {
                 key={s.id}
                 type="button"
                 onClick={() => attraper(s.id)}
-                className="absolute text-4xl cp-etoile"
+                className="absolute cp-etoile"
                 style={{ left: `${s.x}%`, top: `${s.y}%`, filter: "drop-shadow(0 0 10px #ffd66b)" }}
                 aria-label="Attraper l'étoile"
               >
-                ⭐
+                <Sticker nom="etoile" taille={50} />
               </button>
             ))}
           {jeu && (
             <div className="absolute right-3 bottom-3 rounded-full bg-black/40 px-3 py-1 text-xs text-ink">
-              ⭐ {jeu.attrapees}/5 · {Math.max(0, Math.ceil((jeu.fin - Date.now()) / 1000))} s
+              <Sticker nom="etoile" taille={16} className="mr-1 -mt-0.5" />{jeu.attrapees}/5 · {Math.max(0, Math.ceil((jeu.fin - Date.now()) / 1000))} s
             </div>
           )}
 
@@ -688,10 +696,10 @@ export default function Compagnon() {
             <span
               key={f.id}
               aria-hidden
-              className={`absolute pointer-events-none text-2xl ${f.type === "bulle" ? "cp-bulle" : "cp-monte"}`}
+              className={`absolute pointer-events-none ${f.type === "bulle" ? "cp-bulle" : "cp-monte"}`}
               style={{ left: `${f.x}%`, top: `${f.y}%` }}
             >
-              {f.texte}
+              <Sticker nom={f.nom} taille={f.type === "bulle" ? 30 : 34} />
             </span>
           ))}
           {etat.dort && <div aria-hidden className="absolute inset-0 bg-[#05020d]/40 pointer-events-none" />}
@@ -881,7 +889,7 @@ export default function Compagnon() {
         ) : recompense?.credited ? (
           <div className="rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-4">
             <p className="text-ink font-semibold mb-1">
-              {recompense.prize.emoji} {recompense.prize.label}
+              <Sticker nom={stickerDuGain(recompense.prize.key, recompense.prize.label)} taille={30} className="mr-1.5 -mt-1" />{recompense.prize.label}
             </p>
             <p className="text-xs text-ink-soft">
               <Icone nom="valide" className="w-4 h-4 mr-1 text-emerald-300" />
@@ -892,7 +900,7 @@ export default function Compagnon() {
           <div className="rounded-2xl border border-violet/30 bg-violet/10 p-4">
             {recompense.note && <p className="text-xs text-amber-200 mb-2">{recompense.note}</p>}
             <p className="text-ink font-semibold mb-1">
-              {recompense.prize.emoji} {recompense.prize.label}
+              <Sticker nom={stickerDuGain(recompense.prize.key, recompense.prize.label)} taille={30} className="mr-1.5 -mt-1" />{recompense.prize.label}
             </p>
             <p className="text-xs text-ink-soft mb-3">{recompense.prize.rarityLabel} · à récupérer sur le Discord</p>
             <ol className="text-xs text-ink-soft space-y-1 list-decimal list-inside mb-3">

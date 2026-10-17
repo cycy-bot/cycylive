@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Icone, { Pastille } from "@/components/icones/Icone";
-import type { NomIcone } from "@/components/icones/banque";
 import { idAppareil } from "@/components/arcade/appareil";
+import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 import CoffreSvg, { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
 
@@ -38,11 +38,11 @@ type Partie = {
 
 const COULEUR_TIER: Record<string, string> = { petit: "#d6d0ea", moyen: "#7ee2a8", gros: "#facc15" };
 
-const LOTS: [NomIcone, string, string][] = [
+const LOTS: [NomSticker, string, string][] = [
   ["eclats", "Éclats ou quelques points stellaires", "Petit lot"],
-  ["etoile", "Éclats + points, ou 1 fragment d'étoile", "Lot moyen"],
-  ["cartes", "Booster de Cartes Astrales, 70 Éclats, fragments…", "Gros lot"],
-  ["couronne", "Trésor de Cycy : 3 boosters + 2 fragments + 150 Éclats", "Très rare"],
+  ["fragment", "Éclats + points, ou 1 fragment d'étoile", "Lot moyen"],
+  ["booster", "Booster de Cartes Astrales, 70 Éclats, fragments…", "Gros lot"],
+  ["tresor", "Trésor de Cycy : 3 boosters + 2 fragments + 150 Éclats", "Très rare"],
 ];
 
 class ConnexionRequise extends Error {}
@@ -167,10 +167,10 @@ export default function CoffresScelles() {
                         <CoffreSvg id={`coffre-${i}`} teinte={t} ouvert={ouvert} terne={fin && !choisi} className={`w-full h-auto ${cliquable ? "group-hover:drop-shadow-[0_0_18px_rgba(255,210,122,0.35)]" : ""}`} />
                         {contenu && (
                           <span
-                            className={`absolute left-1/2 top-[28%] -translate-x-1/2 text-3xl sm:text-5xl drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-all duration-500 ${fin && !choisi ? "opacity-60 scale-90" : "coffre-flotte"}`}
+                            className={`absolute left-1/2 top-[16%] -translate-x-1/2 w-[42%] drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-all duration-500 ${fin && !choisi ? "opacity-60 scale-90" : "coffre-flotte"}`}
                             aria-hidden
                           >
-                            {contenu.emoji}
+                            <Sticker nom={stickerDuGain(contenu.key, contenu.label)} taille={64} className="w-full h-auto" />
                           </span>
                         )}
                       </div>
@@ -232,7 +232,7 @@ export default function CoffresScelles() {
         <ul className="space-y-1.5 text-sm">
           {LOTS.map(([e, nom, niveau]) => (
             <li key={nom} className="flex items-start gap-2">
-              <Icone nom={e} className="w-5 h-5 text-lilac shrink-0 mt-0.5" />
+              <Sticker nom={e} taille={24} className="shrink-0" />
               <span className="flex-1 text-ink-soft">{nom}</span>
               <span className="text-xs text-ink-soft/60 whitespace-nowrap mt-0.5">{niveau}</span>
             </li>
@@ -276,8 +276,8 @@ function Resultat({ partie, copie, setCopie }: { partie: Partie; copie: boolean;
   return (
     <div className="mt-8 text-center" aria-live="polite">
       <div className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-void/50 px-5 py-3 mb-5">
-        <span className="text-4xl" aria-hidden>
-          {gain.emoji}
+        <span aria-hidden>
+          <Sticker nom={stickerDuGain(gain.key, gain.label)} taille={56} />
         </span>
         <span className="text-left">
           <span className="block text-xs uppercase tracking-widest" style={{ color: COULEUR_TIER[gain.tier] }}>

@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Icone, { Pastille } from "@/components/icones/Icone";
-import type { NomIcone } from "@/components/icones/banque";
 import { idAppareil } from "@/components/arcade/appareil";
+import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 // ============================================================
@@ -29,14 +29,14 @@ const COULEURS: Record<string, { fond: string; texte: string; halo: string }> = 
   mythique: { fond: "#3b1033", texte: "#f9a8d4", halo: "rgba(244,114,182,0.6)" },
 };
 
-const GAINS_POSSIBLES: [NomIcone, string, string][] = [
-  ["etoile", "Points stellaires", "Commun à peu commun"],
+const GAINS_POSSIBLES: [NomSticker, string, string][] = [
+  ["points", "Points stellaires", "Commun à peu commun"],
   ["eclats", "Éclats", "Commun à peu commun"],
-  ["cartes", "Booster de Cartes Astrales", "Rare"],
-  ["puzzle", "Fragment d'étoile", "Rare"],
-  ["comete", "Points + Éclats", "Épique"],
-  ["fusee", "2 boosters + 1 fragment", "Légendaire"],
-  ["couronne", "Jackpot : 3 boosters + 3 fragments + 250 Éclats", "Mythique"],
+  ["booster", "Booster de Cartes Astrales", "Rare"],
+  ["fragment", "Fragment d'étoile", "Rare"],
+  ["combo", "Points + Éclats", "Épique"],
+  ["pack", "2 boosters + 1 fragment", "Légendaire"],
+  ["tresor", "Jackpot : 3 boosters + 3 fragments + 250 Éclats", "Mythique"],
 ];
 
 function lire(cle: string): string {
@@ -228,9 +228,9 @@ export default function TicketAGratter() {
                   className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 transition-all"
                   style={{ background: `radial-gradient(circle at 50% 40%, ${couleur.halo}, ${couleur.fond} 70%)` }}
                 >
-                  <p className="text-6xl md:text-7xl mb-2" aria-hidden>
-                    {ticket.prize.emoji}
-                  </p>
+                  <div className="mb-2 drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]" aria-hidden>
+                    <Sticker nom={stickerDuGain(ticket.prize.key, ticket.prize.label)} taille={96} />
+                  </div>
                   <p className="text-lg md:text-xl font-semibold text-ink">{ticket.prize.label}</p>
                   <p className="mt-1 text-xs uppercase tracking-widest" style={{ color: couleur.texte }}>
                     {ticket.prize.rarityLabel}
@@ -327,7 +327,7 @@ export default function TicketAGratter() {
         <ul className="space-y-1.5 text-sm">
           {GAINS_POSSIBLES.map(([e, nom, rarete]) => (
             <li key={nom} className="flex items-center gap-2">
-              <Icone nom={e} className="w-5 h-5 text-lilac" />
+              <Sticker nom={e} taille={24} />
               <span className="flex-1 text-ink-soft">{nom}</span>
               <span className="text-xs text-ink-soft/60 whitespace-nowrap">{rarete}</span>
             </li>

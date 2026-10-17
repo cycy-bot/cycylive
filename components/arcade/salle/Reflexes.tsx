@@ -5,6 +5,7 @@
 // Un tir dans le vide coûte 25 points.
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
+import Sticker from "@/components/arcade/Stickers";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
 const DUREE = 30;
@@ -137,17 +138,11 @@ export default function Reflexes({ onDebut, onFin }: PropsJeu) {
             return (
               <div
                 key={c.id}
-                className="pointer-events-none absolute rounded-full"
-                style={{
-                  left: `${c.x}%`,
-                  top: `${c.y}%`,
-                  width: taille,
-                  height: taille,
-                  transform: "translate(-50%, -50%)",
-                  background: "radial-gradient(circle, #fff 0 14%, #ff4655 15% 38%, #ffd1d6 39% 46%, #ff4655 47% 70%, transparent 71%)",
-                  boxShadow: "0 0 18px #ff465599",
-                }}
-              />
+                className="pointer-events-none absolute"
+                style={{ left: `${c.x}%`, top: `${c.y}%`, width: taille, height: taille, transform: "translate(-50%, -50%)", filter: "drop-shadow(0 0 12px #ff465599)" }}
+              >
+                <Sticker nom="cible" taille={64} className="w-full h-full" />
+              </div>
             );
           })}
           {e.flash.map((f) => (

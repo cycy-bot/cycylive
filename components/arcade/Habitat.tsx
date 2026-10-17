@@ -125,7 +125,7 @@ function Mur({ k }: { k: string }) {
       <svg viewBox="0 0 120 70" style={pos({ left: "5%", top: "26%", width: "22%", maxWidth: 150 })} aria-hidden>
         <rect x="0" y="52" width="120" height="8" rx="3" fill="#8b5cf6" />
         <path d="M14 52v-18h14v18zM10 34h22l-3-10H13z" fill="#fbbf24" />
-        <circle cx="62" cy="38" r="12" fill="#ff7ad9" /><text x="62" y="43" textAnchor="middle" fontSize="13">⭐</text>
+        <circle cx="62" cy="38" r="12" fill="#ff7ad9" /><path d="M62 30 L64.2 35 L69.6 35.5 L65.5 39.1 L66.7 44.4 L62 41.6 L57.3 44.4 L58.5 39.1 L54.4 35.5 L59.8 35 Z" fill="#ffd66b" stroke="#d99b1e" strokeWidth="1" />
         <rect x="88" y="22" width="20" height="30" rx="3" fill="#22d3ee" /><rect x="92" y="28" width="12" height="4" fill="#fff" opacity=".6" />
       </svg>
     );
@@ -191,7 +191,7 @@ function Cote({ k, droite }: { k: string; droite: boolean }) {
       <svg viewBox="0 0 80 130" style={s} aria-hidden>
         <path d="M10 20q0-18 30-18t30 18v108H10z" fill="#7c3aed" />
         <rect x="16" y="24" width="48" height="38" rx="4" fill="#0b0817" />
-        <rect x="20" y="28" width="40" height="30" rx="2" fill="#1e1b4b" /><text x="40" y="47" textAnchor="middle" fontSize="12">🚀</text>
+        <rect x="20" y="28" width="40" height="30" rx="2" fill="#1e1b4b" /><g transform="translate(40 43) rotate(40)"><path d="M0 -10 C4 -6 4 2 3 6 H-3 C-4 2 -4 -6 0 -10 Z" fill="#e2d2ff" stroke="#9d5cff" strokeWidth="1" /><circle cy="-2" r="1.8" fill="#7cc4ff" /><path d="M-3 6 L-1.5 10 L0 7 L1.5 10 L3 6 Z" fill="#ffb54d" /></g>
         <rect x="10" y="66" width="60" height="16" fill="#5b21b6" />
         <circle cx="28" cy="74" r="4" fill="#f472b6" /><circle cx="44" cy="74" r="3" fill="#ffe27a" /><circle cx="54" cy="74" r="3" fill="#22d3ee" />
         <text x="40" y="17" textAnchor="middle" fontSize="8" fontWeight="800" fill="#ffe27a" fontFamily="sans-serif">ARCADE</text>

@@ -5,11 +5,11 @@
 // − 25 points par erreur (minimum 100).
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
-import type { NomIcone } from "@/components/icones/banque";
+import Sticker, { type NomSticker } from "@/components/arcade/Stickers";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 
-const SYMBOLES: NomIcone[] = ["planete", "fusee", "lune", "comete", "soucoupe", "robot", "etoile", "boule"];
-type Carte = { id: number; s: NomIcone; trouvee: boolean };
+const SYMBOLES: NomSticker[] = ["planete", "fusee", "lune", "comete", "soucoupe", "robot", "etoile", "boule"];
+type Carte = { id: number; s: NomSticker; trouvee: boolean };
 
 function melanger(): Carte[] {
   const cartes = [...SYMBOLES, ...SYMBOLES].map((s, i) => ({ id: i, s, trouvee: false }));
@@ -106,7 +106,7 @@ export default function Memory({ onDebut, onFin }: PropsJeu) {
                     <span
                       className={`absolute inset-0 flex items-center justify-center rounded-xl border text-3xl md:text-4xl [backface-visibility:hidden] [transform:rotateY(180deg)] ${c.trouvee ? "border-emerald-300/60 bg-emerald-300/10" : "border-lilac/60 bg-violet/25"}`}
                     >
-                      <Icone nom={c.s} className={`w-9 h-9 md:w-11 md:h-11 ${c.trouvee ? "text-emerald-300" : "text-lilac"}`} />
+                      <Sticker nom={c.s} taille={52} className={`w-11 h-11 md:w-14 md:h-14 ${c.trouvee ? "opacity-80" : ""}`} />
                     </span>
                   </span>
                 </button>
