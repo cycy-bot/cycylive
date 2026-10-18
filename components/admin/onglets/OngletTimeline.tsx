@@ -2,6 +2,28 @@
 
 // Administration — rubrique « timeline » (état partagé : components/admin/contexteAdmin.tsx)
 import { useAdmin } from "@/components/admin/contexteAdmin";
+import { analyserLien } from "@/lib/videoMoment";
+
+function AideLien({ lien }: { lien?: string }) {
+  if (!lien?.trim()) return null;
+  const v = analyserLien(lien);
+  const court = (() => {
+    try {
+      const u = new URL(lien.trim());
+      return /^(vm|vt)\.tiktok\.com$/i.test(u.hostname) || (/^(www\.)?tiktok\.com$/i.test(u.hostname) && u.pathname.startsWith("/t/"));
+    } catch {
+      return false;
+    }
+  })();
+  const texte = !v
+    ? "⚠️ Ce lien n'est pas valide (il doit commencer par https://)."
+    : court
+      ? "✓ Lien TikTok court : il sera converti à l'enregistrement pour être lu sur le site."
+      : v.type === "lien"
+        ? "↗ Ce lien s'ouvrira dans un nouvel onglet (lecture intégrée : clips Twitch, TikTok et YouTube)."
+        : "✓ " + (v.type === "twitch" ? "Clip Twitch" : v.type === "tiktok" ? "TikTok" : v.format === "vertical" ? "YouTube Short" : "Vidéo YouTube") + " : bouton « Voir » et lecture directement sur le site.";
+  return <p className={"text-xs " + (v ? "text-ink-soft/70" : "text-red-300")}>{texte}</p>;
+}
 
 export default function OngletTimeline() {
   const { timeline, enregistrement, modifierEtape, ajouterEtape, supprimerEtape, deplacerEtape, enregistrer } = useAdmin();
@@ -10,7 +32,9 @@ export default function OngletTimeline() {
           <p className="text-ink-soft mb-6 text-sm">
             Ajoute les étapes marquantes de ton parcours (dans l'ordre
             chronologique). Elles s'affichent sur la page À propos, et les
-            3 dernières en aperçu sur l'accueil.
+            3 dernières en aperçu sur l'accueil. Colle le lien d'un clip
+            Twitch, d'un TikTok ou d'une vidéo YouTube : un bouton « Voir »
+            permettra de le regarder sans quitter le site.
           </p>
 
           <div className="space-y-3 mb-4">
@@ -69,6 +93,15 @@ export default function OngletTimeline() {
                   onChange={(e) => modifierEtape(index, { description: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
                 />
+                <input
+                  type="url"
+                  inputMode="url"
+                  placeholder="Lien du clip / TikTok / YouTube (optionnel)"
+                  value={etape.lien ?? ""}
+                  onChange={(e) => modifierEtape(index, { lien: e.target.value })}
+                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <AideLien lien={etape.lien} />
               </div>
             ))}
           </div>

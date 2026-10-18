@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { lireTextes } from "@/lib/textesStore";
 import { lireTimeline } from "@/lib/timelineStore";
+import LecteurMoment from "@/components/LecteurMoment";
 import { lireSectionsAPropos } from "@/lib/aproposSectionsStore";
 import AccentCosmique from "@/components/AccentCosmique";
 import TexteRiche from "@/components/TexteRiche";
@@ -54,6 +55,7 @@ export default async function AProposPage() {
                     {etape.description}
                   </p>
                 )}
+                <LecteurMoment lien={etape.lien} titre={etape.titre} />
               </div>
             </div>
           ))}

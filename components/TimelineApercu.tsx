@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { lireTimeline } from "@/lib/timelineStore";
 import { IconStar4 } from "@/components/Icons";
+import LecteurMoment from "@/components/LecteurMoment";
 
 export default async function TimelineApercu() {
   const timeline = await lireTimeline();
@@ -36,6 +37,7 @@ export default async function TimelineApercu() {
                 {etape.description}
               </p>
             )}
+            <LecteurMoment lien={etape.lien} titre={etape.titre} compact />
           </div>
         ))}
       </div>

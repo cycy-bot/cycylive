@@ -12,6 +12,7 @@ export type EtapeTimeline = {
   date: string; // libre : "2023", "Juin 2024", etc.
   titre: string;
   description?: string;
+  lien?: string; // clip Twitch, TikTok ou YouTube à regarder (optionnel)
 };
 
 export const timelineParDefaut: EtapeTimeline[] = [
