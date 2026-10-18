@@ -5,6 +5,7 @@ import { lireGaming } from "@/lib/gamingStore";
 import { lireTimeline } from "@/lib/timelineStore";
 import LecteurMoment from "@/components/LecteurMoment";
 import { liensEtape } from "@/lib/videoMoment";
+import { categorieDe } from "@/lib/timelineDesign";
 import { lireNewsValorant, lireClipsValorant, lireProfilValorant } from "@/lib/valorantStore";
 import { ajouterMiniatures } from "@/lib/miniatures";
 import { rangActuel, lireRang, positionRang, PALIERS } from "@/lib/rangValorant";
@@ -89,7 +90,7 @@ export default async function GamingPage() {
   const agents = liste(profil.agents);
   const maps = liste(profil.maps);
   const skins = liste(profil.skinsArmes);
-  const moments = timeline.filter((e) => `${e.titre} ${e.description ?? ""}`.toLowerCase().includes("valorant"));
+  const moments = timeline.filter((e) => !e.masque && (categorieDe(e) === "valorant" || `${e.titre} ${e.description ?? ""}`.toLowerCase().includes("valorant")));
 
   const rang = await rangActuel(profil.riotName, profil.riotTag, profil.riotRegion, profil.rankActuel);
   const objectif = lireRang(profil.objectifRank);

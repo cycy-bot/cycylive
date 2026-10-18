@@ -5,7 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
-import type { EtapeTimeline } from "@/data/timeline";
+import { reglagesTimelineParDefaut, type EtapeTimeline, type ReglagesTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
 import type { AutreJeu, JeuDuMoment } from "@/data/gaming";
@@ -25,6 +25,7 @@ export function useEtatAdmin() {
   const [contenus, setContenus] = useState<Contenu[]>([]);
   const [textes, setTextes] = useState<Textes>(textesParDefaut);
   const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
+  const [reglagesTimeline, setReglagesTimeline] = useState<ReglagesTimeline>(reglagesTimelineParDefaut);
   const [sectionsApropos, setSectionsApropos] = useState<SectionAPropos[]>([]);
   const [newsValorant, setNewsValorant] = useState<NewsValorant[]>([]);
   const [clipsValorant, setClipsValorant] = useState<ClipValorant[]>([]);
@@ -67,6 +68,7 @@ export function useEtatAdmin() {
     contenus,
     textes,
     timeline,
+    reglagesTimeline,
     apropos: sectionsApropos,
     gaming,
     news: newsValorant,
@@ -104,6 +106,7 @@ export function useEtatAdmin() {
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
         setTimeline(dataTimeline.timeline);
+        setReglagesTimeline({ ...reglagesTimelineParDefaut, ...(dataTimeline.reglages ?? {}) });
         setSectionsApropos(dataSections.sections);
         setNewsValorant(dataNews.news);
         setClipsValorant(dataClips.clips);
@@ -284,11 +287,22 @@ export function useEtatAdmin() {
     );
   }
 
-  function ajouterEtape() {
-    setTimeline((prev) => [
-      ...prev,
-      { id: genererId(), date: "", titre: "", description: "" },
-    ]);
+  function ajouterEtape(apres?: number) {
+    setTimeline((prev) => {
+      const nouvelle: EtapeTimeline = { id: genererId(), date: "", titre: "", description: "" };
+      if (apres === undefined) return [...prev, nouvelle];
+      const copie = [...prev];
+      copie.splice(apres + 1, 0, nouvelle);
+      return copie;
+    });
+  }
+
+  function dupliquerEtape(index: number) {
+    setTimeline((prev) => {
+      const copie = [...prev];
+      copie.splice(index + 1, 0, { ...prev[index], id: genererId(), titre: prev[index].titre + " (copie)" });
+      return copie;
+    });
   }
 
   function supprimerEtape(index: number) {
@@ -535,7 +549,7 @@ export function useEtatAdmin() {
     }
   }
 
-  return { onglet, setOnglet, motDePasse, setMotDePasse, planning, setPlanning, calendrier, setCalendrier, contenus, setContenus, textes, setTextes, timeline, setTimeline, sectionsApropos, setSectionsApropos, newsValorant, setNewsValorant, clipsValorant, setClipsValorant, gaming, setGaming, partenaires, setPartenaires, bonsPlans, setBonsPlans, profilValorant, setProfilValorant, chargement, setChargement, enregistrement, setEnregistrement, message, setMessage, connecte, setConnecte, verificationSession, setVerificationSession, saisieMdp, setSaisieMdp, connexionEnCours, setConnexionEnCours, erreurConnexion, setErreurConnexion, references, setReferences, twitchConnecte, setTwitchConnecte, twitchFollowers, setTwitchFollowers, minuterieMessage, donnees, empreintes, modifiees, ongletsModifies, aDesModifs, changerOnglet, seConnecter, seDeconnecter, annulerModifs, modifierJour, modifierContenu, ajouterContenu, supprimerContenu, deplacerContenu, modifierEtape, ajouterEtape, supprimerEtape, deplacerEtape, modifierTexte, modifierSection, ajouterSection, supprimerSection, deplacerSection, modifierNews, ajouterNews, supprimerNews, deplacerNews, modifierClip, ajouterClip, supprimerClip, deplacerClip, modifierAutreJeu, ajouterAutreJeu, supprimerAutreJeu, deplacerAutreJeu, modifierJeuDuMoment, ajouterJeuDuMoment, supprimerJeuDuMoment, modifierPartenaire, ajouterPartenaire, supprimerPartenaire, deplacerPartenaire, modifierBonPlan, ajouterBonPlan, supprimerBonPlan, deplacerBonPlan, enregistrer };
+  return { onglet, setOnglet, motDePasse, setMotDePasse, planning, setPlanning, calendrier, setCalendrier, contenus, setContenus, textes, setTextes, timeline, setTimeline, reglagesTimeline, setReglagesTimeline, sectionsApropos, setSectionsApropos, newsValorant, setNewsValorant, clipsValorant, setClipsValorant, gaming, setGaming, partenaires, setPartenaires, bonsPlans, setBonsPlans, profilValorant, setProfilValorant, chargement, setChargement, enregistrement, setEnregistrement, message, setMessage, connecte, setConnecte, verificationSession, setVerificationSession, saisieMdp, setSaisieMdp, connexionEnCours, setConnexionEnCours, erreurConnexion, setErreurConnexion, references, setReferences, twitchConnecte, setTwitchConnecte, twitchFollowers, setTwitchFollowers, minuterieMessage, donnees, empreintes, modifiees, ongletsModifies, aDesModifs, changerOnglet, seConnecter, seDeconnecter, annulerModifs, modifierJour, modifierContenu, ajouterContenu, supprimerContenu, deplacerContenu, modifierEtape, ajouterEtape, dupliquerEtape, supprimerEtape, deplacerEtape, modifierTexte, modifierSection, ajouterSection, supprimerSection, deplacerSection, modifierNews, ajouterNews, supprimerNews, deplacerNews, modifierClip, ajouterClip, supprimerClip, deplacerClip, modifierAutreJeu, ajouterAutreJeu, supprimerAutreJeu, deplacerAutreJeu, modifierJeuDuMoment, ajouterJeuDuMoment, supprimerJeuDuMoment, modifierPartenaire, ajouterPartenaire, supprimerPartenaire, deplacerPartenaire, modifierBonPlan, ajouterBonPlan, supprimerBonPlan, deplacerBonPlan, enregistrer };
 }
 
 export type EtatAdmin = ReturnType<typeof useEtatAdmin>;

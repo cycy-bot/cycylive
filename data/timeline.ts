@@ -7,6 +7,8 @@
 //
 // Le tableau ci-dessous ne sert que de valeur PAR DÉFAUT.
 
+export type CategorieTimeline = "live" | "valorant" | "communaute" | "palier" | "collab" | "perso" | "autre";
+
 export type EtapeTimeline = {
   id: string;
   date: string; // libre : "2023", "Juin 2024", etc.
@@ -14,6 +16,30 @@ export type EtapeTimeline = {
   description?: string;
   liens?: string[]; // clips Twitch, TikTok ou vidéos YouTube à regarder (optionnel)
   lien?: string; // ancien format (un seul lien), lu encore pour compatibilité
+  categorie?: CategorieTimeline; // couleur + icône par défaut
+  icone?: string; // icône choisie (sinon celle de la catégorie)
+  chiffre?: string; // petit badge, ex. « 100 followers », « 1er ace »
+  image?: string; // lien d'une image (capture, photo…) affichée dans la carte
+  marquant?: boolean; // « Moment fort » : carte mise en avant
+  masque?: boolean; // caché sur le site (gardé dans l'admin)
+};
+
+export type ReglagesTimeline = {
+  titre: string;
+  intro: string;
+  ordre: "chronologique" | "recent"; // ordre d'affichage sur le site
+  filtres: boolean; // boutons de filtre par catégorie
+  apercuAccueil: number; // nombre d'étapes dans l'aperçu de l'accueil (0 = masqué)
+  fin: string; // texte au bout de la frise
+};
+
+export const reglagesTimelineParDefaut: ReglagesTimeline = {
+  titre: "Les moments qui ont marqué l'aventure",
+  intro: "",
+  ordre: "chronologique",
+  filtres: true,
+  apercuAccueil: 3,
+  fin: "Et la suite s'écrit en live ✦",
 };
 
 export const timelineParDefaut: EtapeTimeline[] = [
