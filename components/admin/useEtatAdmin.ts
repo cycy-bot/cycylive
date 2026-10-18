@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { JourPlanning } from "@/data/planning";
 import type { Contenu } from "@/data/contenus";
+import { setupParDefaut, type DonneesSetup } from "@/data/setup";
 import { reglagesTimelineParDefaut, type EtapeTimeline, type ReglagesTimeline } from "@/data/timeline";
 import type { SectionAPropos } from "@/data/aproposSections";
 import type { NewsValorant, ClipValorant, ProfilValorant } from "@/data/valorant";
@@ -26,6 +27,7 @@ export function useEtatAdmin() {
   const [textes, setTextes] = useState<Textes>(textesParDefaut);
   const [timeline, setTimeline] = useState<EtapeTimeline[]>([]);
   const [reglagesTimeline, setReglagesTimeline] = useState<ReglagesTimeline>(reglagesTimelineParDefaut);
+  const [setup, setSetup] = useState<DonneesSetup>(setupParDefaut);
   const [sectionsApropos, setSectionsApropos] = useState<SectionAPropos[]>([]);
   const [newsValorant, setNewsValorant] = useState<NewsValorant[]>([]);
   const [clipsValorant, setClipsValorant] = useState<ClipValorant[]>([]);
@@ -69,6 +71,7 @@ export function useEtatAdmin() {
     textes,
     timeline,
     reglagesTimeline,
+    setup,
     apropos: sectionsApropos,
     gaming,
     news: newsValorant,
@@ -99,14 +102,16 @@ export function useEtatAdmin() {
       fetch("/api/partenaires").then((r) => r.json()),
       fetch("/api/bons-plans").then((r) => r.json()),
       fetch("/api/calendrier").then((r) => r.json()).catch(() => calendrierVide),
+      fetch("/api/setup").then((r) => r.json()).catch(() => ({ setup: setupParDefaut })),
     ])
-      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming, dataPartenaires, dataBonsPlans, dataCalendrier]) => {
+      .then(([dataPlanning, dataContenus, dataTextes, dataTimeline, dataSections, dataNews, dataClips, dataProfil, dataGaming, dataPartenaires, dataBonsPlans, dataCalendrier, dataSetup]) => {
         setPlanning(dataPlanning.planning);
         setCalendrier({ exceptions: dataCalendrier?.exceptions ?? {}, evenements: Array.isArray(dataCalendrier?.evenements) ? dataCalendrier.evenements : [] });
         setContenus(dataContenus.contenus);
         setTextes(dataTextes.textes);
         setTimeline(dataTimeline.timeline);
         setReglagesTimeline({ ...reglagesTimelineParDefaut, ...(dataTimeline.reglages ?? {}) });
+        setSetup(dataSetup?.setup ?? setupParDefaut);
         setSectionsApropos(dataSections.sections);
         setNewsValorant(dataNews.news);
         setClipsValorant(dataClips.clips);
@@ -549,7 +554,7 @@ export function useEtatAdmin() {
     }
   }
 
-  return { onglet, setOnglet, motDePasse, setMotDePasse, planning, setPlanning, calendrier, setCalendrier, contenus, setContenus, textes, setTextes, timeline, setTimeline, reglagesTimeline, setReglagesTimeline, sectionsApropos, setSectionsApropos, newsValorant, setNewsValorant, clipsValorant, setClipsValorant, gaming, setGaming, partenaires, setPartenaires, bonsPlans, setBonsPlans, profilValorant, setProfilValorant, chargement, setChargement, enregistrement, setEnregistrement, message, setMessage, connecte, setConnecte, verificationSession, setVerificationSession, saisieMdp, setSaisieMdp, connexionEnCours, setConnexionEnCours, erreurConnexion, setErreurConnexion, references, setReferences, twitchConnecte, setTwitchConnecte, twitchFollowers, setTwitchFollowers, minuterieMessage, donnees, empreintes, modifiees, ongletsModifies, aDesModifs, changerOnglet, seConnecter, seDeconnecter, annulerModifs, modifierJour, modifierContenu, ajouterContenu, supprimerContenu, deplacerContenu, modifierEtape, ajouterEtape, dupliquerEtape, supprimerEtape, deplacerEtape, modifierTexte, modifierSection, ajouterSection, supprimerSection, deplacerSection, modifierNews, ajouterNews, supprimerNews, deplacerNews, modifierClip, ajouterClip, supprimerClip, deplacerClip, modifierAutreJeu, ajouterAutreJeu, supprimerAutreJeu, deplacerAutreJeu, modifierJeuDuMoment, ajouterJeuDuMoment, supprimerJeuDuMoment, modifierPartenaire, ajouterPartenaire, supprimerPartenaire, deplacerPartenaire, modifierBonPlan, ajouterBonPlan, supprimerBonPlan, deplacerBonPlan, enregistrer };
+  return { onglet, setOnglet, motDePasse, setMotDePasse, planning, setPlanning, calendrier, setCalendrier, contenus, setContenus, textes, setTextes, timeline, setTimeline, reglagesTimeline, setReglagesTimeline, setup, setSetup, sectionsApropos, setSectionsApropos, newsValorant, setNewsValorant, clipsValorant, setClipsValorant, gaming, setGaming, partenaires, setPartenaires, bonsPlans, setBonsPlans, profilValorant, setProfilValorant, chargement, setChargement, enregistrement, setEnregistrement, message, setMessage, connecte, setConnecte, verificationSession, setVerificationSession, saisieMdp, setSaisieMdp, connexionEnCours, setConnexionEnCours, erreurConnexion, setErreurConnexion, references, setReferences, twitchConnecte, setTwitchConnecte, twitchFollowers, setTwitchFollowers, minuterieMessage, donnees, empreintes, modifiees, ongletsModifies, aDesModifs, changerOnglet, seConnecter, seDeconnecter, annulerModifs, modifierJour, modifierContenu, ajouterContenu, supprimerContenu, deplacerContenu, modifierEtape, ajouterEtape, dupliquerEtape, supprimerEtape, deplacerEtape, modifierTexte, modifierSection, ajouterSection, supprimerSection, deplacerSection, modifierNews, ajouterNews, supprimerNews, deplacerNews, modifierClip, ajouterClip, supprimerClip, deplacerClip, modifierAutreJeu, ajouterAutreJeu, supprimerAutreJeu, deplacerAutreJeu, modifierJeuDuMoment, ajouterJeuDuMoment, supprimerJeuDuMoment, modifierPartenaire, ajouterPartenaire, supprimerPartenaire, deplacerPartenaire, modifierBonPlan, ajouterBonPlan, supprimerBonPlan, deplacerBonPlan, enregistrer };
 }
 
 export type EtatAdmin = ReturnType<typeof useEtatAdmin>;

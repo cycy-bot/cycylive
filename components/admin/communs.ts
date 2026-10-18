@@ -3,7 +3,7 @@ import type { Contenu } from "@/data/contenus";
 import { type RubriqueAdmin } from "@/components/admin/NavigationAdmin";
 import { type Textes } from "@/data/textes";
 
-export type Onglet = "accueil" | "live" | "generateur" | "miniatures" | "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "gaming" | "valorant" | "partenaires" | "arcade";
+export type Onglet = "accueil" | "live" | "generateur" | "miniatures" | "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "setup" | "gaming" | "valorant" | "partenaires" | "arcade";
 
 // Rubriques de l'admin, rangées par thème (voir components/admin/NavigationAdmin.tsx)
 export const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
@@ -16,6 +16,7 @@ export const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
   { valeur: "miniatures", label: "Studio miniatures", icone: "camera", groupe: "Contenus", description: "Miniatures YouTube 1280 × 720 dans la charte Cycylive", motsCles: "miniature youtube thumbnail vignette video titre", cles: [] },
   { valeur: "textes", label: "Textes du site", icone: "document", groupe: "Contenus", description: "Titres et textes de chaque page", motsCles: "hero accueil titre contact soutenir", cles: ["textes"] },
   { valeur: "apropos", label: "À propos", icone: "coeur", groupe: "Contenus", description: "Les sections de la page À propos", cles: ["apropos"] },
+  { valeur: "setup", label: "Setup", icone: "ordinateur", groupe: "Contenus", description: "Ton PC et ton matériel (page À propos), avec liens vers les articles", motsCles: "pc config matériel micro caméra clavier souris casque liens", cles: ["setup"] },
   { valeur: "timeline", label: "Timeline", icone: "journal", groupe: "Contenus", description: "Les grandes étapes de la chaîne", motsCles: "histoire étapes dates", cles: ["timeline", "reglagesTimeline"] },
   { valeur: "gaming", label: "Gaming", icone: "manette", groupe: "Gaming & jeux", description: "Intro, autres jeux et jeux du moment", motsCles: "illustration horreur palworld", cles: ["gaming"] },
   { valeur: "valorant", label: "Valorant", icone: "tactique", groupe: "Gaming & jeux", description: "News, clips marquants et profil (rank, agents)", motsCles: "rank riot agents maps clips news", cles: ["news", "clips", "profil"] },
@@ -31,6 +32,7 @@ export const CLES_PAR_URL: Record<string, string[]> = {
   "/api/textes": ["textes"],
   "/api/timeline": ["timeline", "reglagesTimeline"],
   "/api/apropos-sections": ["apropos"],
+  "/api/setup": ["setup"],
   "/api/gaming": ["gaming"],
   "/api/valorant-news": ["news"],
   "/api/valorant-clips": ["clips"],

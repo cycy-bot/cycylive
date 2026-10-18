@@ -80,7 +80,7 @@ export default function OngletApropos() {
                 )}
                 {section.type === "setup" && (
                   <p className="text-ink-soft/60 text-xs px-1">
-                    Le contenu du setup se modifie dans data/setup.ts (fichier de configuration).
+                    Le contenu du setup (PC, matériel, liens) se modifie dans l'onglet "Setup".
                   </p>
                 )}
                 {section.type === "timeline" && (
