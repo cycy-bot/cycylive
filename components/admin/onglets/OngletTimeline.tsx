@@ -2,7 +2,7 @@
 
 // Administration — rubrique « timeline » (état partagé : components/admin/contexteAdmin.tsx)
 import { useAdmin } from "@/components/admin/contexteAdmin";
-import { analyserLien } from "@/lib/videoMoment";
+import { analyserLien, MAX_LIENS } from "@/lib/videoMoment";
 
 function AideLien({ lien }: { lien?: string }) {
   if (!lien?.trim()) return null;
@@ -25,6 +25,43 @@ function AideLien({ lien }: { lien?: string }) {
   return <p className={"text-xs " + (v ? "text-ink-soft/70" : "text-red-300")}>{texte}</p>;
 }
 
+const champLien = "min-w-0 flex-1 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60";
+
+function ChampsLiens({ liens, onChange }: { liens: string[]; onChange: (liens: string[]) => void }) {
+  // Toujours au moins une case (vide) pour coller un lien
+  const cases = liens.length ? liens : [""];
+  const maj = (i: number, v: string) => onChange(cases.map((l, j) => (j === i ? v : l)));
+  return (
+    <div className="space-y-1.5">
+      {cases.map((l, i) => (
+        <div key={i}>
+          <div className="flex gap-2">
+            <input
+              type="url"
+              inputMode="url"
+              placeholder={i === 0 ? "Lien du clip / TikTok / YouTube (optionnel)" : "Autre lien"}
+              value={l}
+              onChange={(e) => maj(i, e.target.value)}
+              className={champLien}
+            />
+            {(cases.length > 1 || l) && (
+              <button type="button" onClick={() => onChange(cases.filter((_, j) => j !== i))} aria-label="Retirer ce lien" title="Retirer ce lien" className="text-ink-soft/60 hover:text-red-300 text-sm px-2">
+                ✕
+              </button>
+            )}
+          </div>
+          <AideLien lien={l} />
+        </div>
+      ))}
+      {cases.length < MAX_LIENS && cases[cases.length - 1].trim() && (
+        <button type="button" onClick={() => onChange([...cases, ""])} className="text-xs font-medium text-violet-light hover:text-lilac">
+          + Ajouter un autre lien
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function OngletTimeline() {
   const { timeline, enregistrement, modifierEtape, ajouterEtape, supprimerEtape, deplacerEtape, enregistrer } = useAdmin();
   return (
@@ -33,8 +70,8 @@ export default function OngletTimeline() {
             Ajoute les étapes marquantes de ton parcours (dans l'ordre
             chronologique). Elles s'affichent sur la page À propos, et les
             3 dernières en aperçu sur l'accueil. Colle le lien d'un clip
-            Twitch, d'un TikTok ou d'une vidéo YouTube : un bouton « Voir »
-            permettra de le regarder sans quitter le site.
+            Twitch, d'un TikTok ou d'une vidéo YouTube (jusqu'à 6 par étape) :
+            un bouton « Voir » permettra de les regarder sans quitter le site.
           </p>
 
           <div className="space-y-3 mb-4">
@@ -93,15 +130,7 @@ export default function OngletTimeline() {
                   onChange={(e) => modifierEtape(index, { description: e.target.value })}
                   className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60 resize-none"
                 />
-                <input
-                  type="url"
-                  inputMode="url"
-                  placeholder="Lien du clip / TikTok / YouTube (optionnel)"
-                  value={etape.lien ?? ""}
-                  onChange={(e) => modifierEtape(index, { lien: e.target.value })}
-                  className="w-full rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
-                />
-                <AideLien lien={etape.lien} />
+<ChampsLiens liens={etape.liens ?? (etape.lien ? [etape.lien] : [])} onChange={(liens) => modifierEtape(index, { liens, lien: undefined })} />
               </div>
             ))}
           </div>

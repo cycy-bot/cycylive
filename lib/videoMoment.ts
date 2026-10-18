@@ -69,3 +69,18 @@ export const NOM_PLATEFORME: Record<VideoMoment["type"], string> = {
   youtube: "la vidéo",
   lien: "la vidéo",
 };
+
+export const NOM_SITE: Record<VideoMoment["type"], string> = {
+  twitch: "Twitch",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  lien: "le site d'origine",
+};
+
+export const MAX_LIENS = 6;
+
+/** Tous les liens d'une étape (ancien champ « lien » unique compris). */
+export function liensEtape(e: { lien?: string; liens?: string[] }): string[] {
+  const tous = [...(Array.isArray(e.liens) ? e.liens : []), ...(e.lien ? [e.lien] : [])].map((l) => String(l ?? "").trim());
+  return tous.filter((l, i) => l && tous.indexOf(l) === i).slice(0, MAX_LIENS);
+}

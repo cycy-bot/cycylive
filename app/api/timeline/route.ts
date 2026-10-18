@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lireTimeline, ecrireTimeline } from "@/lib/timelineStore";
 import { EtapeTimeline } from "@/data/timeline";
+import { liensEtape } from "@/lib/videoMoment";
 
 export const dynamic = "force-dynamic";
 
@@ -59,15 +60,18 @@ export async function POST(request: NextRequest) {
   }
 
   for (const e of timeline) {
-    const lien = typeof e.lien === "string" ? e.lien.trim() : "";
-    if (!lien) {
-      delete e.lien;
+    const liens = liensEtape(e);
+    delete e.lien;
+    if (!liens.length) {
+      delete e.liens;
       continue;
     }
-    if (!/^https?:\/\//i.test(lien) || lien.length > 500) {
-      return NextResponse.json({ ok: false, erreur: `Le lien de « ${e.titre} » n'est pas valide (il doit commencer par https://).` }, { status: 400 });
+    for (const lien of liens) {
+      if (!/^https?:\/\//i.test(lien) || lien.length > 500) {
+        return NextResponse.json({ ok: false, erreur: `Un lien de « ${e.titre} » n'est pas valide (il doit commencer par https://).` }, { status: 400 });
+      }
     }
-    e.lien = await lienComplet(lien);
+    e.liens = await Promise.all(liens.map(lienComplet));
   }
 
   const resultat = await ecrireTimeline(timeline);

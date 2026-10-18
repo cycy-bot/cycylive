@@ -4,6 +4,7 @@ import { liens } from "@/data/liens";
 import { lireGaming } from "@/lib/gamingStore";
 import { lireTimeline } from "@/lib/timelineStore";
 import LecteurMoment from "@/components/LecteurMoment";
+import { liensEtape } from "@/lib/videoMoment";
 import { lireNewsValorant, lireClipsValorant, lireProfilValorant } from "@/lib/valorantStore";
 import { ajouterMiniatures } from "@/lib/miniatures";
 import { rangActuel, lireRang, positionRang, PALIERS } from "@/lib/rangValorant";
@@ -247,7 +248,7 @@ export default async function GamingPage() {
                         <span className="absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full bg-rose-400" aria-hidden />
                         <p className="text-xs text-rose-200/80">{e.date}</p>
                         <p className="text-sm font-medium text-ink">{e.titre}</p>
-                        <LecteurMoment lien={e.lien} titre={e.titre} compact />
+                        <LecteurMoment liens={liensEtape(e)} titre={e.titre} compact />
                       </li>
                     ))}
                   </ol>
