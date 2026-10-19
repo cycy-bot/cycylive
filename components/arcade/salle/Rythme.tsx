@@ -4,6 +4,8 @@
 // (touches D F J K, ou directement sur l'écran). La musique est jouée par le
 // navigateur (Web Audio), aucune piste à télécharger. 60 secondes.
 // Parfait = 100, bien = 50, multiplié par le combo (×2 dès 10, ×3 dès 20, ×4 dès 30).
+// Taper dans le vide (aucune note sur la ligne) = fausse note : −50 pts et le combo repart à 0,
+// pour que marteler les touches au hasard ne fasse plus gagner.
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
@@ -13,6 +15,7 @@ const TEMPS = 60 / BPM; // une noire = 0,5 s
 const DUREE = 60;
 const APPROCHE = 1.5; // secondes entre l'apparition d'une note et la ligne
 const PARFAIT = 0.06, BIEN = 0.14;
+const FAUSSE_NOTE = 50; // points perdus quand on tape alors qu'aucune note ne passe
 const TOUCHES = ["d", "f", "j", "k"];
 const COULEURS = ["#ff4655", "#c084fc", "#60a5fa", "#34d399"];
 // Gamme pentatonique (la mineur) pour la mélodie des notes
@@ -105,7 +108,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
   const [son, setSon] = useState(true);
   const toile = useRef<HTMLCanvasElement | null>(null);
   const audio = useRef<{ ctx: AudioContext | null; t0: number; volume: GainNode | null; debutPerf: number }>({ ctx: null, t0: 0, volume: null, debutPerf: 0 });
-  const jeu = useRef({ notes: [] as Note[], score: 0, combo: 0, comboMax: 0, parfaits: 0, biens: 0, rates: 0, fini: false, retour: [] as { couloir: number; texte: string; t: number }[], appuis: [0, 0, 0, 0] });
+  const jeu = useRef({ notes: [] as Note[], score: 0, combo: 0, comboMax: 0, parfaits: 0, biens: 0, rates: 0, fausses: 0, fini: false, retour: [] as { couloir: number; texte: string; t: number }[], appuis: [0, 0, 0, 0] });
 
   const maintenant = () => {
     const a = audio.current;
@@ -114,7 +117,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
 
   function lancer() {
     const notes = partition();
-    jeu.current = { notes, score: 0, combo: 0, comboMax: 0, parfaits: 0, biens: 0, rates: 0, fini: false, retour: [], appuis: [0, 0, 0, 0] };
+    jeu.current = { notes, score: 0, combo: 0, comboMax: 0, parfaits: 0, biens: 0, rates: 0, fausses: 0, fini: false, retour: [], appuis: [0, 0, 0, 0] };
     const lead = 2;
     try {
       const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -150,7 +153,15 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
       if (Math.abs(n.t - t) <= BIEN && (!meilleure || Math.abs(n.t - t) < Math.abs(meilleure.t - t))) meilleure = n;
       if (n.t - t > BIEN) break;
     }
-    if (!meilleure) return;
+    if (!meilleure) {
+      // Fausse note : rien à taper sur ce couloir (pendant le décompte, on ne pénalise pas)
+      if (t < 0) return;
+      j.fausses += 1;
+      j.combo = 0;
+      j.score = Math.max(0, j.score - FAUSSE_NOTE);
+      j.retour.push({ couloir, texte: "FAUSSE NOTE", t: performance.now() });
+      return;
+    }
     const ecart = Math.abs(meilleure.t - t);
     const mult = 1 + Math.min(3, Math.floor(j.combo / 10));
     if (ecart <= PARFAIT) {
@@ -242,7 +253,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
       for (const f of j.retour) {
         const age = (performance.now() - f.t) / 450;
         g.globalAlpha = 1 - age;
-        g.fillStyle = f.texte === "PARFAIT" ? "#fde68a" : f.texte === "BIEN" ? "#a7f3d0" : "#fca5a5";
+        g.fillStyle = f.texte === "PARFAIT" ? "#fde68a" : f.texte === "BIEN" ? "#a7f3d0" : f.texte === "FAUSSE NOTE" ? "#f87171" : "#fca5a5";
         g.font = "700 14px system-ui, sans-serif";
         g.fillText(f.texte, f.couloir * lc + lc / 2, ligne - 40 - age * 24);
         g.globalAlpha = 1;
@@ -253,7 +264,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
         j.fini = true;
         audio.current.ctx?.close().catch(() => {});
         audio.current.ctx = null;
-        onFin(j.score, `${j.parfaits} parfaits · ${j.biens} biens · ${j.rates} ratés · combo max ${j.comboMax}`);
+        onFin(j.score, `${j.parfaits} parfaits · ${j.biens} biens · ${j.rates} ratés · ${j.fausses} fausse${j.fausses > 1 ? "s" : ""} note${j.fausses > 1 ? "s" : ""} · combo max ${j.comboMax}`);
         return;
       }
       raf = requestAnimationFrame(dessiner);
@@ -281,7 +292,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
         <EcranDepart
           icone="note"
           titre="Rythme cosmique"
-          regles={<>Tape les notes quand elles passent sur les cercles : touches <strong className="text-ink">D F J K</strong> au clavier, ou directement sur l’écran. Enchaîne sans rater pour multiplier tes points (jusqu’à ×4). Monte le son !</>}
+          regles={<>Tape les notes quand elles passent sur les cercles : touches <strong className="text-ink">D F J K</strong> au clavier, ou directement sur l’écran. Enchaîne sans rater pour multiplier tes points (jusqu’à ×4). Attention : taper alors qu’aucune note ne passe, c’est une <strong className="text-ink">fausse note</strong> (−50 pts et combo perdu). Monte le son !</>}
           onJouer={lancer}
         />
       ) : (
