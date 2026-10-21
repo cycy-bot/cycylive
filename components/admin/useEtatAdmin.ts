@@ -17,6 +17,17 @@ import type { BonPlan } from "@/data/deals";
 import { textesParDefaut, type Textes } from "@/data/textes";
 import { type Onglet, ONGLETS, CLES_PAR_URL, CLE_SESSION, genererId } from "@/components/admin/communs";
 
+// Admin intégrée dans l'interface CycyBot (bot.cycylive.fr/admin)
+export const URL_INTERFACE = (process.env.NEXT_PUBLIC_INTERFACE_URL || "https://bot.cycylive.fr").replace(/\/+$/, "");
+export const ORIGINES_INTERFACE = [new URL(URL_INTERFACE).origin, "https://bot.cycylive.fr", "http://localhost:8812"];
+export function integre(): boolean {
+  if (typeof window === "undefined") return false;
+  try { return window.self !== window.top && new URLSearchParams(window.location.search).get("integre") === "1"; } catch { return true; }
+}
+function demanderJeton() {
+  try { window.parent.postMessage({ type: "cycy-sso-expire" }, "*"); } catch {}
+}
+
 export function useEtatAdmin() {
   const [onglet, setOnglet] = useState<Onglet>("accueil");
   const [motDePasse, setMotDePasse] = useState("");
@@ -156,7 +167,18 @@ export function useEtatAdmin() {
     try {
       memo = sessionStorage.getItem(CLE_SESSION) || "";
     } catch {}
-    const depuisUrl = window.location.hash.replace("#", "");
+    let depuisUrl = window.location.hash.replace("#", "");
+    // Intégrée dans l'interface CycyBot : « #sso=<jeton>&onglet=planning » (connexion unique)
+    if (depuisUrl.startsWith("sso=")) {
+      const p = new URLSearchParams(depuisUrl);
+      const jeton = p.get("sso") || "";
+      if (jeton) {
+        memo = jeton;
+        try { sessionStorage.setItem(CLE_SESSION, jeton); } catch {}
+      }
+      depuisUrl = p.get("onglet") || "accueil";
+      try { history.replaceState(null, "", window.location.pathname + window.location.search + "#" + depuisUrl); } catch {}
+    }
     if (ONGLETS.some((o) => o.valeur === depuisUrl)) setOnglet(depuisUrl as Onglet);
     else if (depuisUrl === "jeux") setOnglet("arcade");
     if (!memo) {
@@ -177,10 +199,32 @@ export function useEtatAdmin() {
           try {
             sessionStorage.removeItem(CLE_SESSION);
           } catch {}
+          if (integre()) demanderJeton();
         }
       })
       .catch(() => {})
       .finally(() => setVerificationSession(false));
+  }, []);
+
+  // Interface CycyBot : elle change de rubrique et renouvelle la connexion par messages
+  useEffect(() => {
+    if (!integre()) return;
+    const recevoir = (ev: MessageEvent) => {
+      if (!ORIGINES_INTERFACE.includes(ev.origin) || !ev.data || typeof ev.data !== "object") return;
+      const d = ev.data as { type?: string; onglet?: string; jeton?: string };
+      if (d.type === "cycy-onglet" && d.onglet && ONGLETS.some((o) => o.valeur === d.onglet)) {
+        setOnglet(d.onglet as Onglet);
+        try { history.replaceState(null, "", "#" + d.onglet); } catch {}
+        window.scrollTo({ top: 0 });
+      }
+      if (d.type === "cycy-sso" && d.jeton) {
+        setMotDePasse(d.jeton);
+        setConnecte(true);
+        try { sessionStorage.setItem(CLE_SESSION, d.jeton); } catch {}
+      }
+    };
+    window.addEventListener("message", recevoir);
+    return () => window.removeEventListener("message", recevoir);
   }, []);
 
   // Prévient avant de quitter la page avec des modifications non enregistrées
@@ -541,6 +585,8 @@ export function useEtatAdmin() {
         try {
           sessionStorage.removeItem(CLE_SESSION);
         } catch {}
+        // Connexion de l'interface CycyBot expirée : elle en renvoie une nouvelle
+        if (integre()) demanderJeton();
       }
       setMessage(
         data.ok

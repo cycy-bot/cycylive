@@ -139,3 +139,9 @@ h1, h2, h3 {
 @media (prefers-reduced-motion: reduce) {
   .cp-etoile, .cp-monte, .cp-bulle, .cp-zzz, .cp-eclat { animation: none !important; }
 }
+
+/* Admin intégrée dans l'interface CycyBot : sans l'en-tête, le pied de page ni la barre mobile du site */
+html.admin-integre body > header,
+html.admin-integre body > footer,
+html.admin-integre body > div.md\:hidden.fixed { display: none !important; }
+html.admin-integre body { background: transparent; }

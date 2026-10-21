@@ -31,6 +31,17 @@ function egal(a: string, b: string): boolean {
 
 export type ResultatVerif = { ok: true } | { ok: false; erreur: string; status: number };
 
+// Connexion unique depuis l'interface CycyBot (bot.cycylive.fr/admin) : « sso1.<expiration>.<signature> »,
+// signé par le bot avec ce même mot de passe (SITE_ADMIN_PASSWORD sur Railway). Le mot de passe ne voyage jamais.
+function jetonValide(donne: string, attendu: string): boolean {
+  const m = /^sso1\.(\d{13})\.([A-Za-z0-9_-]{20,})$/.exec(donne);
+  if (!m) return false;
+  const exp = Number(m[1]);
+  if (!(exp > Date.now()) || exp > Date.now() + 13 * 3600e3) return false;
+  const sig = crypto.createHmac("sha256", attendu).update("cycylive-admin-sso|" + exp).digest("base64url");
+  return egal(sig, m[2]);
+}
+
 export async function verifierMotDePasse(request: Request, donne: unknown, attendu: string | undefined): Promise<ResultatVerif> {
   if (!attendu) return { ok: false, erreur: "ADMIN_PASSWORD n'est pas configuré sur le serveur.", status: 500 };
   const redis = client();
@@ -47,7 +58,7 @@ export async function verifierMotDePasse(request: Request, donne: unknown, atten
   } catch {
     /* stockage indisponible : on vérifie quand même le mot de passe */
   }
-  if (typeof donne === "string" && egal(donne, attendu)) return { ok: true };
+  if (typeof donne === "string" && (egal(donne, attendu) || jetonValide(donne, attendu))) return { ok: true };
   try {
     if (redis) {
       const n = await redis.incr(cleIp);

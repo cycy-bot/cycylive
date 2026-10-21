@@ -8,7 +8,8 @@ import Icone from "@/components/icones/Icone";
 import NavigationAdmin from "@/components/admin/NavigationAdmin";
 import VueEnsembleAdmin from "@/components/admin/VueEnsembleAdmin";
 import { type Onglet, ONGLETS } from "@/components/admin/communs";
-import { useEtatAdmin } from "@/components/admin/useEtatAdmin";
+import { useEtatAdmin, integre, URL_INTERFACE } from "@/components/admin/useEtatAdmin";
+import { useEffect, useState } from "react";
 import { ContexteAdmin } from "@/components/admin/contexteAdmin";
 
 const OngletLive = dynamic(() => import("@/components/admin/onglets/OngletLive"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
@@ -27,6 +28,13 @@ const OngletPartenaires = dynamic(() => import("@/components/admin/onglets/Ongle
 
 export default function AdminPage() {
   const etat = useEtatAdmin();
+  // Intégrée dans l'interface CycyBot : sans l'en-tête du site ni le menu de l'admin (l'interface a le sien)
+  const [dansInterface, setDansInterface] = useState(false);
+  useEffect(() => {
+    const oui = integre();
+    setDansInterface(oui);
+    if (oui) document.documentElement.classList.add("admin-integre");
+  }, []);
   const { onglet, motDePasse, planning, calendrier, contenus, textes, timeline, sectionsApropos, newsValorant, clipsValorant, gaming, partenaires, bonsPlans, profilValorant, chargement, message, setMessage, connecte, verificationSession, saisieMdp, setSaisieMdp, connexionEnCours, erreurConnexion, twitchConnecte, twitchFollowers, modifiees, ongletsModifies, changerOnglet, seConnecter, seDeconnecter, annulerModifs } = etat;
 
   if (chargement || verificationSession) {
@@ -56,6 +64,7 @@ export default function AdminPage() {
             onChange={(e) => setSaisieMdp(e.target.value)}
             className="w-full rounded-xl bg-card border border-violet/20 px-4 py-2.5 text-ink outline-none focus:border-violet/60 mb-4"
           />
+          {dansInterface && !erreurConnexion && <p className="text-sm text-lilac mb-4">Connexion automatique depuis l’interface CycyBot… Si rien ne se passe, entre ton mot de passe.</p>}
           {erreurConnexion && <p className="text-sm text-red-300 mb-4" role="alert">{erreurConnexion}</p>}
           <button
             type="submit"
@@ -64,6 +73,11 @@ export default function AdminPage() {
           >
             {connexionEnCours ? "Vérification…" : "Se connecter"}
           </button>
+          {!dansInterface && (
+            <a href={URL_INTERFACE + "/admin#f:site:accueil"} className="mt-3 flex w-full items-center justify-center gap-2 rounded-full px-6 py-3 border border-violet/30 text-ink-soft hover:bg-violet/10 transition-all text-sm">
+              Tout gérer depuis l’interface CycyBot ↗
+            </a>
+          )}
         </form>
       </div>
     );
@@ -86,28 +100,30 @@ export default function AdminPage() {
 
   return (
     <ContexteAdmin.Provider value={etat}>
-    <div className="mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-28">
+    <div className={dansInterface ? "px-4 md:px-6 pt-4 pb-24" : "mx-auto max-w-6xl px-5 md:px-8 pt-10 pb-28"}>
+      {!dansInterface && (
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-3xl font-semibold text-ink glow-text">Administration</h1>
         <div className="flex flex-wrap gap-2 text-sm">
           <a href="/" target="_blank" rel="noopener" className="rounded-full px-3.5 py-1.5 border border-violet/25 text-ink-soft hover:bg-violet/10 transition-all">
             Voir le site ↗
           </a>
-          <a href="https://bot.cycylive.fr/admin" target="_blank" rel="noopener" className="rounded-full px-3.5 py-1.5 border border-violet/25 text-ink-soft hover:bg-violet/10 transition-all">
-            Admin CycyBot ↗
+          <a href={URL_INTERFACE + "/admin#f:site:" + onglet} className="rounded-full px-3.5 py-1.5 border border-violet/30 bg-violet/10 text-ink hover:bg-violet/20 transition-all">
+            Ouvrir dans l’interface CycyBot ↗
           </a>
           <button onClick={seDeconnecter} className="rounded-full px-3.5 py-1.5 border border-violet/25 text-ink-soft hover:bg-red-500/10 hover:border-red-400/40 transition-all">
             Se déconnecter
           </button>
         </div>
       </div>
+      )}
 
-      <div className="lg:grid lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10">
-      <NavigationAdmin rubriques={ONGLETS} active={onglet} modifiees={ongletsModifies.map((o) => o.valeur)} onChoisir={changerOnglet} />
+      <div className={dansInterface ? "" : "lg:grid lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10"}>
+      {!dansInterface && <NavigationAdmin rubriques={ONGLETS} active={onglet} modifiees={ongletsModifies.map((o) => o.valeur)} onChoisir={changerOnglet} />}
 
-      <div className="min-w-0 max-w-3xl">
+      <div className={dansInterface ? "min-w-0 max-w-5xl" : "min-w-0 max-w-3xl"}>
       {ongletsModifies.length > 0 && (
-        <div className="sticky top-[9.5rem] lg:top-24 z-30 mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/30 bg-[#2a2010]/95 backdrop-blur px-3 py-2 text-xs text-amber-100">
+        <div className={(dansInterface ? "sticky top-2" : "sticky top-[9.5rem] lg:top-24") + " z-30 mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/30 bg-[#2a2010]/95 backdrop-blur px-3 py-2 text-xs text-amber-100"}>
           <span>✎ Pas encore enregistré : {ongletsModifies.map((o) => o.label).join(", ")}. Pense au bouton « Enregistrer » de la section.</span>
           <button onClick={annulerModifs} className="ml-auto underline underline-offset-2 hover:text-ink">
             Tout annuler
@@ -115,7 +131,7 @@ export default function AdminPage() {
         </div>
       )}
 
-      {onglet !== "accueil" && (
+      {onglet !== "accueil" && !dansInterface && (
         <div className="mb-6 flex items-center gap-3">
           <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-violet/15 ring-1 ring-violet/25 text-lilac">
             <Icone nom={courante.icone} className="w-6 h-6" />

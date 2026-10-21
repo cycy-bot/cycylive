@@ -20,7 +20,10 @@ const nextConfig = {
       { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" },
     ];
     return [
-      { source: "/:path*", headers: securite },
+      // Partout sauf l'admin : la page ne peut pas être affichée dans un cadre
+      { source: "/((?!admin).*)", headers: securite },
+      // L'admin s'affiche dans l'interface CycyBot (bot.cycylive.fr/admin), nulle part ailleurs
+      { source: "/admin", headers: [...securite.filter((h) => h.key !== "X-Frame-Options"), { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://bot.cycylive.fr" }] },
       // Images du site : gardées en cache une semaine par le navigateur (revalidées en arrière-plan)
       ...["/images/:path*", "/logo/:path*", "/icones/:path*"].map((source) => ({
         source,
