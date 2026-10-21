@@ -17,6 +17,7 @@ const OngletMiniatures = dynamic(() => import("@/components/admin/StudioMiniatur
 const OngletGenerateur = dynamic(() => import("@/components/admin/onglets/OngletGenerateur"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletPlanning = dynamic(() => import("@/components/admin/onglets/OngletPlanning"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletCalendrier = dynamic(() => import("@/components/admin/onglets/OngletCalendrier"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
+const OngletClips = dynamic(() => import("@/components/admin/onglets/OngletClips"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletContenus = dynamic(() => import("@/components/admin/onglets/OngletContenus"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletTextes = dynamic(() => import("@/components/admin/onglets/OngletTextes"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
 const OngletTimeline = dynamic(() => import("@/components/admin/onglets/OngletTimeline"), { loading: () => <p className="text-ink-soft text-sm">Chargement…</p> });
@@ -162,6 +163,8 @@ export default function AdminPage() {
       {onglet === "calendrier" && <OngletCalendrier />}
 
       {onglet === "contenus" && <OngletContenus />}
+
+      {onglet === "clips" && <OngletClips />}
 
       {onglet === "textes" && <OngletTextes />}
 

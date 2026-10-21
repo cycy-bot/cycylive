@@ -3,7 +3,7 @@ import type { Contenu } from "@/data/contenus";
 import { type RubriqueAdmin } from "@/components/admin/NavigationAdmin";
 import { type Textes } from "@/data/textes";
 
-export type Onglet = "accueil" | "live" | "generateur" | "miniatures" | "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "setup" | "gaming" | "valorant" | "partenaires" | "arcade";
+export type Onglet = "accueil" | "clips" | "live" | "generateur" | "miniatures" | "planning" | "calendrier" | "contenus" | "textes" | "timeline" | "apropos" | "setup" | "gaming" | "valorant" | "partenaires" | "arcade";
 
 // Rubriques de l'admin, rangées par thème (voir components/admin/NavigationAdmin.tsx)
 export const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
@@ -12,6 +12,7 @@ export const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
   { valeur: "planning", label: "Planning", icone: "horloge", groupe: "Lives", description: "La semaine type : jours, jeux et horaires", motsCles: "horaires semaine jours off", cles: ["planning"] },
   { valeur: "calendrier", label: "Calendrier", icone: "calendrier", groupe: "Lives", description: "Exceptions, événements et lives spéciaux", motsCles: "exception événement vacances", cles: ["calendrier"] },
   { valeur: "contenus", label: "Derniers contenus", icone: "clap", groupe: "Contenus", description: "Vidéos TikTok, YouTube et Instagram de l'accueil", motsCles: "vidéos tiktok youtube instagram", cles: ["contenus"] },
+  { valeur: "clips", label: "Clips Twitch", icone: "clap", groupe: "Contenus", description: "Les nouveaux clips arrivent ici : publie-les sur le site en un clic", motsCles: "clips twitch publier masquer gaming", cles: [] },
   { valeur: "generateur", label: "Générateur de contenus", icone: "clap", groupe: "Contenus", description: "Un clip → vidéo verticale, sous-titres, miniature, story et textes", motsCles: "clip tiktok reels shorts vertical sous-titres miniature montage", cles: [] },
   { valeur: "miniatures", label: "Studio miniatures", icone: "camera", groupe: "Contenus", description: "Miniatures YouTube 1280 × 720 dans la charte Cycylive", motsCles: "miniature youtube thumbnail vignette video titre", cles: [] },
   { valeur: "textes", label: "Textes du site", icone: "document", groupe: "Contenus", description: "Titres et textes de chaque page", motsCles: "hero accueil titre contact soutenir", cles: ["textes"] },

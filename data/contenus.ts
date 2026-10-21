@@ -41,3 +41,21 @@ export const contenusParDefaut: Contenu[] = [
     format: "horizontal",
   },
 ];
+
+
+/** Devine la plateforme et le format d'après le lien collé. */
+export function plateformeDe(url: string): { plateforme: Contenu["plateforme"]; format: Contenu["format"] } | null {
+  const u = String(url || "").toLowerCase();
+  if (/tiktok\.com/.test(u)) return { plateforme: "TikTok", format: "vertical" };
+  if (/instagram\.com/.test(u)) return { plateforme: "Instagram", format: "vertical" };
+  if (/youtube\.com\/shorts\//.test(u)) return { plateforme: "YouTube", format: "vertical" };
+  if (/youtu\.be\/|youtube\.com/.test(u)) return { plateforme: "YouTube", format: "horizontal" };
+  if (/clips\.twitch\.tv|twitch\.tv\/\w+\/clip\/|twitch\.tv\/videos\//.test(u)) return { plateforme: "Twitch", format: "horizontal" };
+  return null;
+}
+
+/** Miniature YouTube (aucune clé nécessaire) : pour l'aperçu dans l'admin. */
+export function miniatureYoutubeDe(url: string): string {
+  const m = String(url || "").match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([\w-]{11})/);
+  return m ? `https://img.youtube.com/vi/${m[1]}/mqdefault.jpg` : "";
+}

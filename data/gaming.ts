@@ -4,11 +4,18 @@
 // ⚠️ Tu n'as normalement plus besoin de modifier ce fichier.
 // Gère tout ça depuis /admin, onglet "Gaming".
 
+import { plateformeDe } from "@/data/contenus";
+
+/** Un clip ou une vidéo d'un jeu (TikTok, Instagram, YouTube, clip Twitch). */
+export type ContenuJeu = { id: string; url: string; titre?: string; plateforme: "TikTok" | "Instagram" | "YouTube" | "Twitch" };
+export const MAX_CONTENUS_JEU = 12;
+
 export type AutreJeu = {
   id: string;
   nom: string;
   description: string;
-  lienClip?: string; // optionnel : lien vers un clip/contenu de ce jeu
+  contenus?: ContenuJeu[]; // plusieurs clips / vidéos du jeu, dans l'ordre
+  lienClip?: string; // ancien format (un seul lien) : repris comme premier contenu
   illustration?: string; // optionnel : clé de lib/illustrationJeu.ts (sinon devinée depuis le nom)
 };
 
@@ -37,3 +44,11 @@ export const autresJeuxParDefaut: AutreJeu[] = [
 // Optionnel : laisse ce tableau vide pour masquer automatiquement la
 // section "Jeux du moment" sur le site.
 export const jeuxDuMomentParDefaut: JeuDuMoment[] = [];
+
+
+/** Les contenus d'un jeu (nouveau format, ou l'ancien lien unique). */
+export function contenusDuJeu(jeu: AutreJeu): ContenuJeu[] {
+  if (Array.isArray(jeu.contenus) && jeu.contenus.length) return jeu.contenus.filter((c) => c && c.url).slice(0, MAX_CONTENUS_JEU);
+  if (jeu.lienClip) return [{ id: "lien", url: jeu.lienClip, plateforme: plateformeDe(jeu.lienClip)?.plateforme ?? "Twitch" }];
+  return [];
+}

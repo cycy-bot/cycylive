@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
 import { lireGaming } from "@/lib/gamingStore";
+import { contenusDuJeu } from "@/data/gaming";
+import { lireChoixClips, clipsAffiches } from "@/lib/clipsChoixStore";
 import { lireTimeline } from "@/lib/timelineStore";
 import LecteurMoment from "@/components/LecteurMoment";
 import { liensEtape } from "@/lib/videoMoment";
@@ -75,14 +77,23 @@ function CarteClip({ c }: { c: ClipTwitch }) {
 }
 
 export default async function GamingPage() {
-  const [gaming, news, clipsManuels, profil, timeline, clipsTwitch] = await Promise.all([
+  const [gaming, news, clipsManuels, profil, timeline, clipsRecents, choixClips] = await Promise.all([
     lireGaming(),
     lireNewsValorant(),
     lireClipsValorant(),
     lireProfilValorant(),
     lireTimeline(),
-    derniersClipsTwitch(12).catch(() => []),
+    derniersClipsTwitch(24).catch(() => []),
+    lireChoixClips(),
   ]);
+  // Clips : ceux choisis dans l'admin (mode « mon choix »), sinon les plus récents sauf ceux masqués
+  const clipsTwitch: ClipTwitch[] = clipsAffiches(choixClips, clipsRecents);
+  // Plusieurs clips / vidéos par jeu (TikTok, Instagram, YouTube, Twitch), avec leur miniature quand c'est possible
+  const contenusJeux = await Promise.all(
+    gaming.autresJeux.map((jeu) =>
+      ajouterMiniatures(contenusDuJeu(jeu).map((c) => ({ id: c.id, plateforme: c.plateforme, titre: c.titre || "", url: c.url, format: c.plateforme === "YouTube" || c.plateforme === "Twitch" ? ("horizontal" as const) : ("vertical" as const) })))
+    )
+  );
   const clipsValorant = await ajouterMiniatures(
     clipsManuels.map((c) => ({ id: c.id, plateforme: "Twitch" as const, titre: c.titre, url: c.url, format: "vertical" as const }))
   );
@@ -323,8 +334,9 @@ export default async function GamingPage() {
         <section id="autres-jeux" className="scroll-mt-24 mb-12" aria-labelledby="autres-titre">
           <TitreSection id="autres-titre" icone="joystick" className="mb-5">Autres jeux</TitreSection>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {gaming.autresJeux.map((jeu) => {
+            {gaming.autresJeux.map((jeu, ij) => {
               const illu = illustrationPour(jeu.nom, jeu.illustration);
+              const contenus = contenusJeux[ij] || [];
               return (
                 <div key={jeu.id} className="group carte-holo rounded-2xl overflow-hidden flex flex-col">
                   {/* illustration : icône du genre sur un halo coloré + petites étoiles */}
@@ -342,10 +354,24 @@ export default async function GamingPage() {
                   <div className="p-5 flex flex-col flex-1">
                     <h3 className="text-ink font-semibold mb-1.5">{jeu.nom}</h3>
                     <p className="text-ink-soft text-sm mb-3">{jeu.description}</p>
-                    {jeu.lienClip && (
-                      <a href={jeu.lienClip} target="_blank" rel="noopener noreferrer" className="mt-auto text-violet-light hover:text-lilac text-sm font-medium transition-colors">
-                        Voir un contenu <Icone nom="fleche" className="w-4 h-4" />
-                      </a>
+                    {contenus.length > 0 && (
+                      <div className="mt-auto">
+                        <div className={`grid gap-2 ${contenus.length === 1 ? "grid-cols-1" : "grid-cols-3"}`}>
+                          {contenus.slice(0, 6).map((c) => (
+                            <a key={c.id} href={c.url} target="_blank" rel="noopener noreferrer" title={c.titre || `Voir sur ${c.plateforme}`} className={`group/c relative block overflow-hidden rounded-lg border border-white/10 bg-nebula ${contenus.length === 1 ? "aspect-video" : "aspect-[4/5]"}`}>
+                              {c.miniature ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={c.miniature} alt={c.titre || ""} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/c:scale-105" />
+                              ) : (
+                                <span className="absolute inset-0 flex items-center justify-center" style={{ background: `linear-gradient(160deg, rgba(${illu.couleur},.35), rgba(13,10,23,.95))` }}><Icone nom="clap" className="w-6 h-6 text-white/70" /></span>
+                              )}
+                              <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">{c.plateforme}</span>
+                              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-[10.5px] leading-tight text-white line-clamp-2">{c.titre || "▶ Voir"}</span>
+                            </a>
+                          ))}
+                        </div>
+                        {contenus.length > 6 ? <p className="mt-2 text-xs text-ink-soft">+ {contenus.length - 6} autres contenus</p> : null}
+                      </div>
                     )}
                   </div>
                 </div>
