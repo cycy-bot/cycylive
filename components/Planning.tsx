@@ -1,24 +1,33 @@
 import Link from "next/link";
 import Icone from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
-import { getSemaineActuelle, datesSemaineActuelle, JOURS_ORDRE, LABEL_GENERIQUE } from "@/data/planning";
+import { datesSemaineActuelle, JOURS_ORDRE, jeuxDe } from "@/data/planning";
+import GrillePlanning, { type SemaineGrille } from "@/components/GrillePlanning";
 import { lireCalendrier } from "@/lib/calendrierStore";
 import { jourAvecException, dateParis } from "@/data/calendrier";
 import { lirePlanning } from "@/lib/planningStore";
-import { IconCrystal, IconValorant, IconCalendar, IconArrowRight } from "@/components/Icons";
+import { IconCalendar, IconArrowRight } from "@/components/Icons";
 
 const ICONE_EVENEMENT: Record<string, NomIcone> = { quiz: "quiz", discord: "fete", projet: "outils", live: "live", autre: "etoile" };
 
 export default async function Planning() {
   const [habituel, calendrier] = await Promise.all([lirePlanning(), lireCalendrier()]);
-  const { du, au } = getSemaineActuelle();
-  // Les changements prévus cette semaine (onglet Calendrier de /admin) remplacent le planning habituel
-  const dates = datesSemaineActuelle();
+  // La semaine en cours et les 3 suivantes : les changements prévus (planning de /admin) remplacent la semaine type
+  const lundi = datesSemaineActuelle();
   const aujourdhui = dateParis(new Date());
-  const planning = habituel.map((jour) => {
-    const i = (JOURS_ORDRE.indexOf(jour.jour) + 6) % 7;
-    return { ...jourAvecException(jour, dates[i] ? calendrier.exceptions[dates[i]] : undefined), date: dates[i] || "" };
+  const court = (ymd: string) => `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
+  const semaines: SemaineGrille[] = [0, 1, 2, 3].map((s) => {
+    const dates = lundi.map((d) => new Date(new Date(`${d}T12:00:00Z`).getTime() + s * 7 * 86400000).toISOString().slice(0, 10));
+    // Du lundi au dimanche (JOURS_ORDRE commence le dimanche)
+    const jours = [1, 2, 3, 4, 5, 6, 0].flatMap((k, i) => {
+      const jour = habituel.find((x) => x.jour === JOURS_ORDRE[k]);
+      if (!jour) return [];
+      const j = jourAvecException(jour, calendrier.exceptions[dates[i]]);
+      return [{ jour: j.jour, date: dates[i], off: j.off, heure: j.heure, fin: j.fin, jeux: jeuxDe(j), note: j.note, modifie: j.modifie }];
+    });
+    return { du: court(dates[0]), au: court(dates[6]), jours };
   });
+  const du = semaines[0].du, au = semaines[0].au;
   // Les 3 prochains événements de la communauté (15 jours)
   const maintenant = Date.now();
   const evenements = calendrier.evenements
@@ -45,47 +54,7 @@ export default async function Planning() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-3">
-        {planning.map((jour) => {
-          const estAujourdhui = jour.date === aujourdhui;
-          const valo = !jour.off && /valorant/i.test(jour.jeu || "");
-          return (
-            <div
-              key={jour.jour}
-              className={`relative carte-holo rounded-2xl px-4 py-3 md:p-4 flex flex-wrap md:flex-col items-center md:text-center gap-x-3 gap-y-1 md:gap-2 border ${
-                estAujourdhui ? "border-violet-light shadow-glow" : jour.off ? "border-violet/10 opacity-80" : "border-violet/35 shadow-glow-sm"
-              }`}
-            >
-              {estAujourdhui && (
-                <span className="absolute -top-2.5 right-4 md:right-auto md:left-1/2 md:-translate-x-1/2 rounded-full bg-violet px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                  Aujourd&apos;hui
-                </span>
-              )}
-              <span className="w-24 md:w-auto text-xs tracking-wide text-ink-soft uppercase">
-                {jour.jour}
-                {jour.date ? <span className="ml-1 text-ink-soft/60">{Number(jour.date.slice(8))}</span> : null}
-              </span>
-              {jour.off ? (
-                <>
-                  <Icone nom="dodo" className="w-6 h-6 text-ink-soft/70" />
-                  <span className="ml-auto md:ml-0 text-ink-soft text-sm font-medium">OFF</span>
-                </>
-              ) : (
-                <>
-                  {valo ? <IconValorant className="w-6 h-6 text-rose-300" /> : <IconCrystal className="w-6 h-6 text-lilac" />}
-                  <span className="text-lilac text-sm font-medium leading-tight">{jour.jeu ?? LABEL_GENERIQUE}</span>
-                  <span className="ml-auto md:ml-0 text-ink text-sm font-semibold">
-                    {jour.heure}
-                    {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
-                  </span>
-                </>
-              )}
-              {jour.modifie && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200" title="Horaire ou jeu différent du planning habituel">Modifié</span>}
-              {jour.note ? <span className="w-full md:w-auto text-[11px] leading-tight text-ink-soft">{jour.note}</span> : null}
-            </div>
-          );
-        })}
-      </div>
+      <GrillePlanning semaines={semaines} aujourdhui={aujourdhui} />
 
       {evenements.length > 0 && (
         <div className="mt-5 flex flex-wrap items-center gap-2">

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifierMotDePasse } from "@/lib/adminAuth";
 import { lirePlanning, ecrirePlanning } from "@/lib/planningStore";
-import { JourPlanning } from "@/data/planning";
+import { JourPlanning, avecJeux } from "@/data/planning";
 import { lireCalendrier } from "@/lib/calendrierStore";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +53,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const resultat = await ecrirePlanning(planning);
+  // Jusqu'à 3 jeux par soirée ; « jeu » est recalculé pour CycyBot et le compte à rebours
+  const propre = planning.map((j) => avecJeux({ jour: String(j?.jour || ""), off: Boolean(j?.off), heure: j?.heure ? String(j.heure).slice(0, 10) : undefined, fin: j?.fin ? String(j.fin).slice(0, 10) : undefined, jeu: j?.jeu ? String(j.jeu).slice(0, 200) : undefined, jeux: Array.isArray(j?.jeux) ? j.jeux.map(String) : undefined }));
+  const resultat = await ecrirePlanning(propre);
   if (!resultat.ok) {
     return NextResponse.json(
       { ok: false, erreur: resultat.erreur },

@@ -15,10 +15,27 @@
 export type JourPlanning = {
   jour: string;
   off: boolean;
-  jeu?: string;
+  jeu?: string; // tous les jeux de la soirée, séparés par « + » (lu aussi par CycyBot et le compte à rebours)
+  jeux?: string[]; // jusqu'à 3 jeux / activités dans la même soirée, dans l'ordre
   heure?: string; // format "21h30"
   fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
 };
+
+export const MAX_JEUX = 3;
+
+/** Les jeux / activités d'une soirée (1 à 3), quel que soit l'ancien ou le nouveau format. */
+export function jeuxDe(j: { jeu?: string; jeux?: string[] } | null | undefined): string[] {
+  if (!j) return [];
+  const liste = Array.isArray(j.jeux) ? j.jeux.map((x) => String(x || "").trim()).filter(Boolean) : [];
+  if (liste.length) return liste.slice(0, MAX_JEUX);
+  return j.jeu ? [String(j.jeu).trim()].filter(Boolean) : [];
+}
+
+/** Range un jour avant l'enregistrement : jeux nettoyés (3 max) et « jeu » recalculé. */
+export function avecJeux<T extends { jeu?: string; jeux?: string[] }>(j: T): T {
+  const jeux = (Array.isArray(j.jeux) ? j.jeux : j.jeu ? [j.jeu] : []).map((x) => String(x || "").trim().slice(0, 60)).filter(Boolean).slice(0, MAX_JEUX);
+  return { ...j, jeux: jeux.length ? jeux : undefined, jeu: jeux.length ? jeux.join(" + ") : undefined };
+}
 
 export const LABEL_GENERIQUE = "Stream";
 

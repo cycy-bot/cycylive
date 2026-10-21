@@ -1,39 +1,20 @@
 "use client";
 
-// Onglet « Calendrier » de /admin : le planning des 4 prochaines semaines (avec les
-// changements date par date) et les événements de la communauté. CycyBot relit tout
+// Onglet « Calendrier » de /admin : les événements de la communauté (le planning date par date
+// est dans l'onglet Planning). CycyBot relit tout
 // ça toutes les 2 minutes : planning Discord, annonces « Je participe », rappels en MP.
 
 import { useState } from "react";
 import type { JourPlanning } from "@/data/planning";
-import {
-  TYPES_EVENEMENT,
-  dateParis,
-  type DonneesCalendrier,
-  type EvenementCalendrier,
-  type ExceptionPlanning,
-} from "@/data/calendrier";
+import { TYPES_EVENEMENT, type DonneesCalendrier, type EvenementCalendrier } from "@/data/calendrier";
 
 const CHAMP = "rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60";
-const NOMS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-const SEMAINES = 4;
-
 const versLocal = (t: number) => {
   const d = new Date(t);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
 };
-const court = (ymd: string) => `${ymd.slice(8, 10)}/${ymd.slice(5, 7)}`;
 const nouvelId = () => Math.random().toString(36).slice(2, 12);
-
-function lundisAVenir(): string[][] {
-  const ymd = dateParis(new Date());
-  const jour = new Date(`${ymd}T12:00:00Z`);
-  const lundi = new Date(jour.getTime() - ((jour.getUTCDay() + 6) % 7) * 86400000);
-  return Array.from({ length: SEMAINES }, (_, s) =>
-    Array.from({ length: 7 }, (_, i) => new Date(lundi.getTime() + (s * 7 + i) * 86400000).toISOString().slice(0, 10))
-  );
-}
 
 type Props = {
   planning: JourPlanning[];
@@ -43,17 +24,9 @@ type Props = {
   enregistrement: boolean;
 };
 
-export default function AdminCalendrier({ planning, calendrier, onChange, onEnregistrer, enregistrement }: Props) {
+export default function AdminCalendrier({ calendrier, onChange, onEnregistrer, enregistrement }: Props) {
   const [ouvert, setOuvert] = useState<string | null>(null);
-  const aujourdHui = dateParis(new Date());
-  const semaines = lundisAVenir();
 
-  const changerException = (date: string, e: ExceptionPlanning | null) => {
-    const exceptions = { ...calendrier.exceptions };
-    if (e) exceptions[date] = e;
-    else delete exceptions[date];
-    onChange({ ...calendrier, exceptions });
-  };
   const changerEvenement = (id: string, patch: Partial<EvenementCalendrier>) =>
     onChange({ ...calendrier, evenements: calendrier.evenements.map((e) => (e.id === id ? { ...e, ...patch } : e)) });
   const ajouterEvenement = () => {
@@ -79,68 +52,9 @@ export default function AdminCalendrier({ planning, calendrier, onChange, onEnre
         récupère dans les 2 minutes : planning Discord, annonces avec le bouton « Je participe » et rappels en message privé.
       </p>
 
-      {/* ── Planning des 4 prochaines semaines ── */}
-      <section>
-        <h2 className="text-ink font-medium mb-1">📅 Le planning des {SEMAINES} prochaines semaines</h2>
-        <p className="text-ink-soft text-sm mb-4">
-          Par défaut, chaque semaine reprend ton planning habituel (onglet 📅 Planning). Pour un jour précis, tu peux annuler le live, changer
-          l’heure ou le jeu, et ajouter une petite note (« live spécial 2 ans », « en déplacement »…).
-        </p>
-        <div className="grid gap-4 xl:grid-cols-2">
-          {semaines.map((dates) => (
-            <div key={dates[0]} className="carte-holo rounded-2xl border border-violet/15 p-4">
-              <h3 className="text-sm font-semibold text-ink mb-2">
-                Semaine du {court(dates[0])} au {court(dates[6])}
-                {dates.includes(aujourdHui) ? <span className="ml-2 text-xs font-normal text-lilac">(cette semaine)</span> : null}
-              </h3>
-              <div className="divide-y divide-violet/10">
-                {dates.map((date, i) => {
-                  const habituel = planning.find((p) => p.jour === NOMS[i]);
-                  const ex = calendrier.exceptions[date];
-                  const passe = date < aujourdHui;
-                  const mode = !ex ? "habituel" : ex.off ? "off" : "change";
-                  return (
-                    <div key={date} className={`py-2 flex flex-wrap items-center gap-2 ${passe ? "opacity-45" : ""} ${ex ? "bg-violet/[0.06] -mx-2 px-2 rounded-lg" : ""}`}>
-                      <span className={`w-24 shrink-0 text-sm ${date === aujourdHui ? "text-lilac font-semibold" : "text-ink"}`}>
-                        {NOMS[i].slice(0, 3)}. {court(date)}
-                      </span>
-                      <span className="w-36 shrink-0 text-xs text-ink-soft">
-                        {habituel && !habituel.off ? `Habituel : ${habituel.heure ?? ""}${habituel.fin ? `→${habituel.fin}` : ""}${habituel.jeu ? ` · ${habituel.jeu}` : ""}` : "Habituel : OFF"}
-                      </span>
-                      <select
-                        aria-label={`Live du ${court(date)}`}
-                        disabled={passe}
-                        value={mode}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          if (v === "habituel") changerException(date, null);
-                          else if (v === "off") changerException(date, { off: true, note: ex?.note });
-                          else changerException(date, { off: false, heure: ex?.heure || habituel?.heure || "21h30", fin: ex?.fin || habituel?.fin, jeu: ex?.jeu || habituel?.jeu, note: ex?.note });
-                        }}
-                        className={CHAMP}
-                      >
-                        <option value="habituel">Comme d’habitude</option>
-                        <option value="off">🌙 Pas de live</option>
-                        <option value="change">✏️ Changement</option>
-                      </select>
-                      {mode === "change" && ex ? (
-                        <>
-                          <input aria-label="Heure" value={ex.heure ?? ""} placeholder="21h30" onChange={(e) => changerException(date, { ...ex, heure: e.target.value })} className={`${CHAMP} w-20`} />
- <input aria-label="Heure de fin" value={ex.fin ?? ""} placeholder="Fin" onChange={(e) => changerException(date, { ...ex, fin: e.target.value })} className={`${CHAMP} w-20`} />
-                          <input aria-label="Jeu" value={ex.jeu ?? ""} placeholder="Jeu" onChange={(e) => changerException(date, { ...ex, jeu: e.target.value })} className={`${CHAMP} w-32`} />
-                        </>
-                      ) : null}
-                      {ex ? (
-                        <input aria-label="Note" value={ex.note ?? ""} placeholder="Note (facultatif)" maxLength={120} onChange={(e) => changerException(date, { ...ex, note: e.target.value })} className={`${CHAMP} flex-1 min-w-[140px]`} />
-                      ) : null}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      <p className="carte-holo rounded-2xl border border-violet/15 p-4 text-sm text-ink-soft">
+        🗓️ Les lives des semaines à venir (jour par jour, jusqu’à 3 jeux par soirée) se préparent maintenant dans <strong className="text-ink">Planning</strong>.
+      </p>
 
       {/* ── Événements ── */}
       <section>
