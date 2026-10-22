@@ -9,17 +9,75 @@ import EmblemeRang from "@/components/gaming/EmblemeRang";
 import { PALIERS, rangActuel, type Rang } from "@/lib/rangValorant";
 import { lireProfilValorant } from "@/lib/valorantStore";
 import { lireClassement, type LigneClassement } from "@/lib/cycybot";
+import { lireRecords } from "@/lib/recordsJeux";
+import { jeuParId, jeuxArcade, jeuxQuotidiens } from "@/lib/jeux";
 
 // Une source lente ne doit jamais retarder l'accueil : 3 s au plus, sinon on dessine sans elle
 const auPlus = <T,>(p: Promise<T>, ms = 3000): Promise<T | null> =>
   Promise.race([p.catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), ms))]);
 
-async function donneesVivantes(): Promise<{ rang: Rang | null; podium: LigneClassement[] }> {
-  const [rang, classement] = await Promise.all([
+type RecordVedette = { jeu: string; nom: string; score: number } | null;
+
+async function donneesVivantes(): Promise<{ rang: Rang | null; podium: LigneClassement[]; record: RecordVedette }> {
+  const [rang, classement, records] = await Promise.all([
     auPlus(lireProfilValorant().then((p) => rangActuel(p.riotName, p.riotTag, p.riotRegion, p.rankActuel))),
     auPlus(lireClassement("messages", "week")),
+    auPlus(lireRecords()),
   ]);
-  return { rang, podium: (classement?.entries ?? []).slice(0, 3) };
+  // Un record à mettre en avant : Cycy Runner en priorité, sinon le premier jeu qui en a un
+  const ids = ["runner", ...Object.keys(records ?? {}).filter((k) => k !== "runner")];
+  const id = ids.find((k) => records?.[k]);
+  const r = id ? records![id] : null;
+  return { rang, podium: (classement?.entries ?? []).slice(0, 3), record: r && id ? { jeu: jeuParId(id)?.nom ?? id, nom: r.nom, score: r.score } : null };
+}
+
+// ── Les jeux : une mosaïque de bornes (vraies miniatures des jeux) et le record du moment ──
+function VisuelJeux({ record }: { record: RecordVedette }) {
+  const tuiles: [string, string][] = [["capsules", "rotate-[-5deg] left-[3%] top-[10%]"], ["runner", "rotate-[3deg] left-[34%] top-[4%] z-10"], ["grappin", "rotate-[6deg] left-[65%] top-[12%]"], ["astrododge", "rotate-[4deg] left-[10%] top-[50%]"], ["starcatcher", "rotate-[-4deg] left-[52%] top-[52%]"]];
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden" style={{ background: "radial-gradient(ellipse 70% 70% at 50% 40%, rgba(181,124,255,.35), transparent 65%), linear-gradient(160deg, #241245, #0d0a17)" }} aria-hidden>
+      {tuiles.map(([id, pos]) => (
+        <div key={id} className={`absolute w-[34%] aspect-[16/10] overflow-hidden rounded-lg border border-white/20 shadow-[0_8px_20px_-6px_rgba(0,0,0,.8)] transition-transform duration-500 group-hover:scale-105 ${pos}`}>
+          <MiniatureJeu id={id} className="h-full w-full" />
+        </div>
+      ))}
+      <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-card/95 to-transparent" />
+      <div className="absolute bottom-2 left-2 right-2 flex flex-wrap items-center gap-1.5 text-[10px] font-semibold">
+        <span className="rounded-full bg-violet/85 px-2 py-0.5 text-white">{jeuxArcade().length} jeux à records</span>
+        <span className="hidden min-[420px]:inline rounded-full bg-black/50 px-2 py-0.5 text-lilac backdrop-blur-sm">{jeuxQuotidiens().length} récompenses du jour</span>
+      </div>
+      {record && (
+        <span className="absolute right-2 top-2 hidden sm:inline-flex max-w-[60%] items-center gap-1 truncate rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-amber-100 backdrop-blur-sm">
+          🏆 {record.score.toLocaleString("fr-FR")} · {record.nom}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Cycy_Bot : le robot entouré de ce qu'il fait vivre (passeport, Cartes Astrales, figurines) ──
+function VisuelCycyBot() {
+  return (
+    <div className="relative aspect-[16/10] overflow-hidden" style={{ background: "radial-gradient(ellipse 55% 75% at 50% 55%, rgba(123,56,255,.55), transparent 65%), radial-gradient(ellipse 50% 50% at 90% 10%, rgba(255,107,214,.25), transparent 60%), linear-gradient(160deg, #1c0f3a, #0d0a17)" }} aria-hidden>
+      <svg viewBox="0 0 320 200" className="absolute inset-0 h-full w-full" preserveAspectRatio="xMidYMid slice">
+        <ellipse cx="160" cy="104" rx="128" ry="40" fill="none" stroke="#e0b3ff" strokeOpacity=".35" strokeWidth="1.5" strokeDasharray="3 5" transform="rotate(-10 160 104)" />
+        {[[30, 30, 1], [292, 40, 0.8], [270, 170, 0.7], [44, 166, 0.9], [196, 18, 0.6]].map(([x, y, k], i) => (
+          <path key={i} transform={`translate(${x} ${y}) scale(${k})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+        ))}
+      </svg>
+      {/* passeport en fond, carte astrale et figurine en orbite */}
+      <Image src="/images/cycybot/passeport.webp" alt="" width={240} height={135} className="absolute left-[4%] top-[12%] h-auto w-[38%] rotate-[-8deg] rounded-md border border-white/20 opacity-80 shadow-lg" />
+      <Image src="/images/cycybot/carte-0.webp" alt="" width={120} height={168} className="absolute right-[6%] top-[8%] h-auto w-[19%] rotate-[9deg] drop-shadow-[0_6px_14px_rgba(0,0,0,.7)] transition-transform duration-500 group-hover:rotate-[14deg]" />
+      <Image src="/figurines/nibi03.webp" alt="" width={120} height={120} className="absolute bottom-[8%] right-[18%] h-auto w-[20%] drop-shadow-[0_6px_12px_rgba(0,0,0,.6)] transition-transform duration-500 group-hover:-translate-y-1" />
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <span className="absolute -inset-3 rounded-full bg-violet-light/30 blur-xl" />
+        <Image src="/images/cycybot/avatar.webp" alt="" width={112} height={112} className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-full object-cover ring-4 ring-violet-light/60 shadow-glow transition-transform duration-500 group-hover:scale-105" />
+      </div>
+      <div className="absolute bottom-2 left-2 hidden sm:flex gap-1 text-[10px] font-display font-semibold text-lilac">
+        {["/passeport", "/booster", "/figurines"].map((c) => <span key={c} className="rounded-md bg-black/50 px-1.5 py-0.5 backdrop-blur-sm">{c}</span>)}
+      </div>
+    </div>
+  );
 }
 
 // ── Valorant : l'emblème du rank actuel dans un HUD de visée, et deux clips ──
@@ -142,23 +200,19 @@ function Pied({ titre, texte, icone }: { titre: string; texte: string; icone: No
 }
 
 export default async function ExplorerAccueil() {
-  const { rang, podium } = await donneesVivantes();
+  const { rang, podium, record } = await donneesVivantes();
   return (
     <section aria-labelledby="explorer-titre" className="mx-auto max-w-6xl px-5 md:px-8 py-6 md:py-10">
       <h2 id="explorer-titre" className="text-2xl md:text-3xl font-semibold text-ink mb-6">À explorer</h2>
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href="/jeux" className={carte}>
-          <div className="relative aspect-[16/10] overflow-hidden">
-            <MiniatureJeu id="runner" className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105" />
-          </div>
-          <Pied icone="joystick" titre="Les jeux" texte="Neuf jeux à records, dont un mot mystère par jour, et des récompenses du jour pour le Discord." />
+          <VisuelJeux record={record} />
+          <Pied icone="joystick" titre="Les jeux" texte="Neuf jeux à records et cinq récompenses du jour pour le Discord : figurines, grappin, ticket à gratter…" />
         </Link>
 
         <Link href="/cycybot" className={carte}>
-          <div className="relative aspect-[16/10] overflow-hidden bg-nebula">
-            <Image src="/images/cycybot/passeport.webp" alt="" fill sizes="(min-width: 1024px) 25vw, 50vw" className="object-cover transition-transform duration-500 group-hover:scale-105" />
-          </div>
-          <Pied icone="robot" titre="Cycy_Bot" texte="Passeport galactique, Cartes Astrales, Éclats et Marché noir sur le Discord." />
+          <VisuelCycyBot />
+          <Pied icone="robot" titre="Cycy_Bot" texte="Passeport galactique, Cartes Astrales, figurines, Éclats et Marché noir sur le Discord." />
         </Link>
 
         <Link href="/gaming" className={carte}>
