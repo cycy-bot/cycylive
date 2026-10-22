@@ -30,6 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/jeux/compagnon",
     "/jeux/coffres",
     "/jeux/grappin",
+    "/jeux/capsules",
     "/soutenir",
     "/mentions-legales",
     "/confidentialite",

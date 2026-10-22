@@ -21,7 +21,7 @@ export const ONGLETS: (RubriqueAdmin<Onglet> & { cles: string[] })[] = [
   { valeur: "timeline", label: "Timeline", icone: "journal", groupe: "Contenus", description: "Les grandes étapes de la chaîne", motsCles: "histoire étapes dates", cles: ["timeline", "reglagesTimeline"] },
   { valeur: "gaming", label: "Gaming", icone: "manette", groupe: "Gaming & jeux", description: "Intro, autres jeux et jeux du moment", motsCles: "illustration horreur palworld", cles: ["gaming"] },
   { valeur: "valorant", label: "Valorant", icone: "tactique", groupe: "Gaming & jeux", description: "News, clips marquants et profil (rank, agents)", motsCles: "rank riot agents maps clips news", cles: ["news", "clips", "profil"] },
-  { valeur: "arcade", label: "Jeux du site", icone: "joystick", groupe: "Gaming & jeux", description: "Arcade, records et réglages des mini-jeux", motsCles: "arcade runner records gratter compagnon coffres grappin", cles: [] },
+  { valeur: "arcade", label: "Jeux du site", icone: "joystick", groupe: "Gaming & jeux", description: "Arcade, records et réglages des mini-jeux", motsCles: "arcade runner records gratter compagnon coffres grappin capsules gatchapon", cles: [] },
   { valeur: "partenaires", label: "Partenaires", icone: "poignee", groupe: "Partenariats", description: "Partenaires, bandeau de l'accueil et bons plans", motsCles: "codes promo réduction affiliation bons plans bandeau", cles: ["partenaires", "bonsPlans", "textes"] },
 ];
 

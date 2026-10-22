@@ -43,7 +43,7 @@ export default function VitrineJeux({ records = {} }: { records?: Record<string,
         <div className="mb-5">
           <h2 id="titre-quotidien" className="text-2xl md:text-3xl font-semibold text-ink">Les récompenses du jour</h2>
           <p className="mt-1 text-ink-soft max-w-3xl">
-            Pas de classement ici : chaque jour, un ticket, des quêtes, trois coffres et trois tirages de grappin qui te rapportent des Éclats, des boosters ou des
+            Pas de classement ici : chaque jour, un ticket, des quêtes, trois coffres, trois tirages de grappin et une capsule à figurine qui te rapportent des Éclats, des boosters ou des
             points sur le Discord Cycylive. Connecte-toi avec ton compte Discord : une partie par jour et par compte, et le gain arrive
             directement sur ton profil.
           </p>

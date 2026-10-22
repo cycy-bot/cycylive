@@ -9,7 +9,7 @@ import type { NomIcone } from "@/components/icones/banque";
 export type FamilleJeu = "arcade" | "quotidien";
 
 export type FicheJeu = {
-  id: JeuArcade | "gratter" | "compagnon" | "coffres" | "grappin";
+  id: JeuArcade | "gratter" | "compagnon" | "coffres" | "grappin" | "capsules";
   famille: FamilleJeu;
   href: string;
   nom: string;
@@ -177,6 +177,20 @@ export const JEUX: FicheJeu[] = [
     controles: "Souris · tactile",
     teinte: { de: "#1d7a4a", a: "#0b1a12", accent: "#9dffb0" },
     badge: "Récompense Discord",
+  },
+  {
+    id: "capsules",
+    icone: "cadeau",
+    famille: "quotidien",
+    href: "/jeux/capsules",
+    nom: "Cosmo-Capsules",
+    emoji: "🫧",
+    accroche: "Une capsule par jour : une figurine kawaii à collectionner et un cadeau sur Discord.",
+    description: "Tourne la manivelle de la machine gatchapon et ouvre ta capsule du jour : un Cosmo-Copain rejoint ton album (24 figurines, 6 raretés) et un cadeau arrive sur ton compte Discord. Boosters, Éclats, fragments… et des bonus quand tu complètes une collection.",
+    duree: "1 capsule / jour",
+    controles: "Souris · tactile",
+    teinte: { de: "#7a3a6a", a: "#1a0b24", accent: "#ffb3d6" },
+    badge: "Nouveau",
   },
   {
     id: "grappin",

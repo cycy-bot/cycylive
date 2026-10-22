@@ -52,6 +52,7 @@ const navItems: (LienNav | GroupeNav)[] = [
       { label: "Compagnon", href: "/jeux/compagnon" },
       { label: "Coffres scellés", href: "/jeux/coffres" },
       { label: "Grappin cosmique", href: "/jeux/grappin" },
+      { label: "Cosmo-Capsules", href: "/jeux/capsules" },
     ],
   },
   {

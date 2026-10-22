@@ -407,6 +407,43 @@ function Grappin({ accent }: { accent: string }) {
   );
 }
 
+function Capsules({ accent }: { accent: string }) {
+  // Machine gatchapon kawaii : globe de capsules, corps rose, et une figurine qui sort
+  const boules: [number, number, string][] = [[132, 74, "#ffb3d6"], [160, 64, "#c9a8ff"], [188, 76, "#7fd0ff"], [146, 98, "#ffd23f"], [176, 100, "#ffb3d6"], [160, 40, "#b26bff"]];
+  return (
+    <>
+      <circle cx="160" cy="80" r="56" fill="#fff" opacity="0.18" stroke="#fff" strokeOpacity="0.7" strokeWidth="3" />
+      {boules.map(([x, y, c], i) => (
+        <g key={i} transform={`translate(${x} ${y}) rotate(${i * 50})`}>
+          <path d="M-11 0 A11 11 0 0 1 11 0 Z" fill={c} />
+          <path d="M-11 0 A11 11 0 0 0 11 0 Z" fill="#fffaff" />
+        </g>
+      ))}
+      <path d="M126 50 Q138 34 156 30" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" opacity="0.8" />
+      <path d="M110 134 L210 134 L218 192 L102 192 Z" fill={accent} stroke="#fff" strokeWidth="2.5" />
+      <rect x="104" y="128" width="112" height="12" rx="6" fill="#c9a8ff" stroke="#fff" strokeWidth="2" />
+      <circle cx="140" cy="164" r="13" fill="#fff" />
+      <rect x="128" y="160" width="24" height="8" rx="4" fill="#b26bff" />
+      <rect x="168" y="174" width="34" height="12" rx="6" fill="#7a3a6a" opacity="0.5" />
+      {/* figurine qui sort */}
+      <g transform="translate(256 132)">
+        <path d="M0 -24 C17 -24 26 -10 26 4 C26 18 14 26 0 26 C-14 26 -26 18 -26 4 C-26 -10 -17 -24 0 -24 Z" fill="#ffd1e8" stroke="#ffb3d6" strokeWidth="2" />
+        <path d="M-8 -22 Q-11 -32 -15 -35 M8 -22 Q11 -32 15 -35" stroke="#ffb3d6" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+        <circle cx="-15" cy="-36" r="4" fill="#fff3b0" />
+        <circle cx="15" cy="-36" r="4" fill="#fff3b0" />
+        <ellipse cx="-8" cy="2" rx="3.4" ry="4.2" fill="#2b1640" />
+        <ellipse cx="8" cy="2" rx="3.4" ry="4.2" fill="#2b1640" />
+        <path d="M-3 9 Q0 12 3 9" stroke="#2b1640" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+        <ellipse cx="-15" cy="9" rx="4" ry="2.4" fill="#ff8fbf" opacity="0.6" />
+        <ellipse cx="15" cy="9" rx="4" ry="2.4" fill="#ff8fbf" opacity="0.6" />
+      </g>
+      {[[232, 92, 1], [284, 96, 0.7], [270, 170, 0.8]].map(([x, y, k], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${k})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+      ))}
+    </>
+  );
+}
+
 export default function MiniatureJeu({ id, className = "", anime = false }: Props) {
   const fiche = jeuParId(id);
   if (!fiche) return null;
@@ -429,6 +466,7 @@ export default function MiniatureJeu({ id, className = "", anime = false }: Prop
         {id === "compagnon" && <Compagnon accent={accent} />}
         {id === "coffres" && <Coffres k={k} accent={accent} />}
         {id === "grappin" && <Grappin accent={accent} />}
+        {id === "capsules" && <Capsules accent={accent} />}
       </g>
     </svg>
   );

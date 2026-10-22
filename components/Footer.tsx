@@ -19,7 +19,7 @@ const reseaux = [
 
 const plan = [
   { titre: "Découvrir", liens: [["À propos", "/a-propos"], ["Réseaux", "/reseaux"], ["Statistiques", "/statistiques"], ["Calendrier", "/calendrier"]] },
-  { titre: "Jouer", liens: [["Tous les jeux", "/jeux"], ["Salle d'arcade", "/jeux#arcade"], ["Ticket à gratter", "/jeux/gratter"], ["Compagnon", "/jeux/compagnon"], ["Coffres scellés", "/jeux/coffres"], ["Grappin cosmique", "/jeux/grappin"]] },
+  { titre: "Jouer", liens: [["Tous les jeux", "/jeux"], ["Salle d'arcade", "/jeux#arcade"], ["Ticket à gratter", "/jeux/gratter"], ["Compagnon", "/jeux/compagnon"], ["Coffres scellés", "/jeux/coffres"], ["Grappin cosmique", "/jeux/grappin"], ["Cosmo-Capsules", "/jeux/capsules"]] },
   { titre: "Cycy_Bot & gaming", liens: [["Cycy_Bot", "/cycybot"], ["Leaderboard", "/cycybot/leaderboard"], ["Commandes", "/cycybot/commandes"], ["Valorant & clips", "/gaming"]] },
   { titre: "Soutenir", liens: [["Soutenir la chaîne", "/soutenir"], ["Bons plans", "/partenariats#bons-plans"], ["Partenaires", "/partenariats"], ["Me contacter", "/contact"]] },
 ];
