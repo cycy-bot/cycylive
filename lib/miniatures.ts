@@ -2,7 +2,7 @@
 // MINIATURES — récupération automatique des aperçus vidéo
 // ============================================================
 // - YouTube : miniature publique, aucune clé nécessaire.
-// - TikTok : via l'oEmbed public de TikTok, aucune clé nécessaire.
+// - TikTok : via l'oEmbed public de TikTok (servie par /api/miniature/tiktok), aucune clé nécessaire.
 // - Twitch (clips) : via l'API Twitch déjà connectée (voir
 //   app/api/twitch-status/route.ts) — fonctionne seulement si les
 //   clés TWITCH_CLIENT_ID / TWITCH_CLIENT_SECRET sont configurées.
@@ -22,18 +22,10 @@ function miniatureYoutube(url: string): string | null {
     : null;
 }
 
-async function miniatureTiktok(url: string): Promise<string | null> {
-  try {
-    const reponse = await fetch(
-      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
-      { cache: "no-store" }
-    );
-    if (!reponse.ok) return null;
-    const data = await reponse.json();
-    return data.thumbnail_url ?? null;
-  } catch {
-    return null;
-  }
+// Les images de TikTok expirent et refusent d'être affichées depuis un autre site :
+// la miniature passe par notre propre adresse, qui la récupère à jour (app/api/miniature/tiktok).
+function miniatureTiktok(url: string): string | null {
+  return /tiktok\.com/i.test(url) ? `/api/miniature/tiktok?url=${encodeURIComponent(url)}` : null;
 }
 
 let tokenTwitchEnCache: { token: string; expireLe: number } | null = null;
@@ -111,7 +103,7 @@ export async function ajouterMiniatures(
     contenus.map(async (c) => {
       let miniature: string | null = null;
       if (c.plateforme === "YouTube") miniature = miniatureYoutube(c.url);
-      else if (c.plateforme === "TikTok") miniature = await miniatureTiktok(c.url);
+      else if (c.plateforme === "TikTok") miniature = miniatureTiktok(c.url);
       else if (c.plateforme === "Twitch") miniature = await miniatureTwitchClip(c.url);
 
       return { ...c, miniature: miniature ?? undefined };
