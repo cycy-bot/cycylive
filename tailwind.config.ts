@@ -8,6 +8,8 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // Opacité 12 % utilisée partout (bordures discrètes, pastilles d'icônes) : absente de l'échelle par défaut
+      opacity: { 12: "0.12" },
       colors: {
         void: "#0B0817",
         nebula: "#0D0A17",

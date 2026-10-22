@@ -105,7 +105,7 @@ function Grille({ g }: { g: GroupeSetup }) {
                   {contenu}
                 </a>
               ) : (
-                <div className="flex h-full flex-col rounded-2xl border border-violet/12 bg-card/50 p-4">{contenu}</div>
+                <div className="flex h-full flex-col rounded-2xl border border-violet/10 bg-card/40 p-4">{contenu}</div>
               )}
             </li>
           );

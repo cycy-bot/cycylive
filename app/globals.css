@@ -11,6 +11,9 @@
 }
 
 body {
+  /* Les décors (halos, anneaux du hero) ne doivent pas créer de défilement horizontal sur mobile.
+     « clip » et non « hidden » : l'en-tête reste collé en haut. */
+  overflow-x: clip;
   background-color: #0d0a17;
   color: #f5f1ff;
   font-family: var(--font-sans);
