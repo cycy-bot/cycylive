@@ -6,7 +6,7 @@ import { jeuParId } from "@/lib/jeux";
 
 export const metadata: Metadata = {
   title: "Le Grappin cosmique | Jeux Cycylive",
-  description: "Une machine à pinces néon remplie de Gloups et de lots : 3 tirages par jour pour gagner des boosters de Cartes Astrales, des Éclats, des fragments… et peut-être la soucoupe JACKPOT. Récompense ajoutée sur le Discord Cycylive.",
+  description: "Une machine à pinces néon remplie de peluches et d’objets mystère : 3 tirages par jour pour gagner des boosters de Cartes Astrales, des Éclats, des fragments… et peut-être le JACKPOT. Récompense ajoutée sur le Discord Cycylive.",
   alternates: { canonical: "/jeux/grappin" },
   openGraph: { title: "Le Grappin cosmique | Cycylive", description: "3 tirages par jour, un butin sur le Discord.", url: "/jeux/grappin" },
 };

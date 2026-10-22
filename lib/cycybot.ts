@@ -1,6 +1,8 @@
 // Données publiques de Cycy_Bot, servies par bot.cycylive.fr/api/public.
 // Récupérées côté serveur (bon pour le référencement) et gardées 60 s en cache.
 
+import secours from "@/data/cycybotSecours.json";
+
 export const CYCYBOT_URL = process.env.CYCYBOT_URL || "https://bot.cycylive.fr";
 
 export type CommandeCycyBot = {
@@ -52,7 +54,11 @@ export type DiscordCycyBot = {
     chapters: number;
     badges: number;
     themes: number;
+    figurines?: number;
+    capsules?: number;
+    figurinesJoueurs?: number;
   };
+  figurines?: CollectionFigurines[];
   question: { q: string; options: string[]; votes: number } | null;
   lastQuestion: { q: string; options: { label: string; pct: number }[]; total: number } | null;
   chapters: { num: number; title: string; emoji: string; date: string; stamp: string; count: number }[];
@@ -62,6 +68,8 @@ export type DiscordCycyBot = {
 };
 
 export type LigneConsole = { user: string; text: string; bot: boolean };
+
+export type CollectionFigurines = { id: string; nom: string; emoji: string; description: string; total: number; apercu: { nom: string; image: string; rarete: string }[] };
 
 // ── Leaderboard ─────────────────────────────────────────────
 
@@ -108,7 +116,7 @@ export async function lireCycyBot(): Promise<DonneesCycyBot | null> {
   try {
     const reponse = await fetch(`${CYCYBOT_URL}/api/public`, {
       next: { revalidate: 60 },
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(9000),
     });
     if (!reponse.ok) return null;
     return (await reponse.json()) as DonneesCycyBot;
@@ -117,3 +125,25 @@ export async function lireCycyBot(): Promise<DonneesCycyBot | null> {
     return null;
   }
 }
+
+// ── Secours ────────────────────────────────────────────────
+// Si le bot ne répond pas (redémarrage, panne de l'hébergeur), les pages gardent une liste de commandes
+// (copie de data/cycybotSecours.json, à régénérer depuis CycyBot quand des commandes changent).
+
+export const commandesSecours = secours as unknown as {
+  everyone: CommandeCycyBot[];
+  groups: GroupeCommandesTwitch[];
+  discord: GroupeCommandesDiscord[];
+};
+
+// Petite conversation d'exemple pour la console de la page (quand le bot n'en envoie pas)
+export const transmissionSecours: LigneConsole[] = [
+  { user: "Cycy_Bot", text: "Bienvenue à bord, Nova ! Merci pour le follow 💜", bot: true },
+  { user: "Luna", text: "!eclats", bot: false },
+  { user: "Cycy_Bot", text: "Luna, tu as 142 Éclats Stellaires ✦ Continue de regarder le live pour en gagner !", bot: true },
+  { user: "Orion", text: "!8ball Est-ce que Cycy va clutch ce round ?", bot: false },
+  { user: "Cycy_Bot", text: "Orion, les étoiles disent : c'est écrit dans la galaxie 🔮", bot: true },
+  { user: "Cycy_Bot", text: "Une carte sauvage apparaît ! Tape !attraper pour tenter ta chance 🃏", bot: true },
+  { user: "Vega", text: "!attraper", bot: false },
+  { user: "Cycy_Bot", text: "Vega attrape la carte et l'ajoute à sa collection Discord ✨", bot: true },
+];

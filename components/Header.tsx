@@ -6,9 +6,16 @@ import { useEffect, useRef, useState } from "react";
 import { liens } from "@/data/liens";
 import { useTwitchStatus } from "@/components/useTwitchStatus";
 import { IconTwitch } from "@/components/Icons";
+import Icone from "@/components/icones/Icone";
+import type { NomIcone } from "@/components/icones/banque";
+import { jeuxArcade, jeuxQuotidiens } from "@/lib/jeux";
 
+type SousLien = { label: string; href: string; icone?: NomIcone; note?: string };
 type LienNav = { type: "lien"; label: string; href: string };
-type GroupeNav = { type: "groupe"; label: string; items: { label: string; href: string }[] };
+// Un groupe peut être découpé en colonnes titrées (menu « Jeux », qui a beaucoup d'entrées)
+type GroupeNav = { type: "groupe"; label: string; items: SousLien[]; colonnes?: { titre: string; items: SousLien[]; pied?: SousLien }[] };
+
+const versLien = (j: ReturnType<typeof jeuxArcade>[number]): SousLien => ({ label: j.nom, href: j.href, icone: j.icone, note: j.duree });
 
 const navItems: (LienNav | GroupeNav)[] = [
   { type: "lien", label: "Accueil", href: "/" },
@@ -37,6 +44,7 @@ const navItems: (LienNav | GroupeNav)[] = [
     items: [
       { label: "Présentation", href: "/cycybot" },
       { label: "L'univers Discord", href: "/cycybot#discord" },
+      { label: "Figurines Cosmo-Capsules", href: "/cycybot#figurines" },
       { label: "Éclats & Marché noir", href: "/cycybot#galaxie" },
       { label: "Commandes", href: "/cycybot/commandes" },
       { label: "Leaderboard", href: "/cycybot/leaderboard" },
@@ -47,12 +55,12 @@ const navItems: (LienNav | GroupeNav)[] = [
     label: "Jeux",
     items: [
       { label: "Tous les jeux", href: "/jeux" },
+      { label: "Récompenses du jour", href: "/jeux#quotidien" },
       { label: "Salle d'arcade", href: "/jeux#arcade" },
-      { label: "Ticket à gratter", href: "/jeux/gratter" },
-      { label: "Compagnon", href: "/jeux/compagnon" },
-      { label: "Coffres scellés", href: "/jeux/coffres" },
-      { label: "Grappin cosmique", href: "/jeux/grappin" },
-      { label: "Cosmo-Capsules", href: "/jeux/capsules" },
+    ],
+    colonnes: [
+      { titre: "Récompenses du jour", items: jeuxQuotidiens().map(versLien), pied: { label: "Toutes les récompenses", href: "/jeux#quotidien" } },
+      { titre: "Salle d'arcade", items: jeuxArcade().map(versLien), pied: { label: "Tous les jeux", href: "/jeux" } },
     ],
   },
   {
@@ -167,7 +175,33 @@ export default function Header() {
                     }`}
                   />
                 </button>
-                {groupeOuvert === item.label && (
+                {groupeOuvert === item.label && item.colonnes && (
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[40rem] rounded-2xl border border-violet/15 bg-nebula/95 backdrop-blur-md shadow-glow-sm p-3 z-50 grid grid-cols-2 gap-2">
+                    {item.colonnes.map((col) => (
+                      <div key={col.titre} className="flex flex-col">
+                        <p className="px-3 pt-1 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-lilac/80">{col.titre}</p>
+                        {col.items.map((sous) => (
+                          <Link
+                            key={sous.href}
+                            href={sous.href}
+                            onClick={() => setGroupeOuvert(null)}
+                            className="flex items-center gap-2.5 rounded-xl px-3 py-1.5 text-sm text-ink-soft hover:text-ink hover:bg-violet/10 transition-colors"
+                          >
+                            {sous.icone && <Icone nom={sous.icone} className="w-4 h-4 shrink-0 text-lilac" />}
+                            <span className="flex-1 truncate">{sous.label}</span>
+                            {sous.note && <span className="text-[10px] text-ink-soft/50 shrink-0">{sous.note}</span>}
+                          </Link>
+                        ))}
+                        {col.pied && (
+                          <Link href={col.pied.href} onClick={() => setGroupeOuvert(null)} className="mt-auto px-3 pt-2 text-xs font-semibold text-lilac hover:text-ink transition-colors">
+                            {col.pied.label} ›
+                          </Link>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {groupeOuvert === item.label && !item.colonnes && (
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-56 rounded-2xl border border-violet/15 bg-nebula/95 backdrop-blur-md shadow-glow-sm py-2 z-50">
                     {item.items.map((sous) => (
                       <Link
@@ -226,7 +260,30 @@ export default function Header() {
                     }`}
                   />
                 </button>
-                {groupeMobileOuvert === item.label && (
+                {groupeMobileOuvert === item.label && item.colonnes && (
+                  <div className="pl-4 pb-2 grid grid-cols-2 gap-x-4">
+                    {item.colonnes.map((col) => (
+                      <div key={col.titre} className="flex flex-col">
+                        <p className="pt-1 pb-1 text-[11px] font-semibold uppercase tracking-wider text-lilac/80">{col.titre}</p>
+                        {[...col.items, ...(col.pied ? [col.pied] : [])].map((sous) => (
+                          <Link
+                            key={sous.href + sous.label}
+                            href={sous.href}
+                            onClick={() => {
+                              setOuvert(false);
+                              setGroupeMobileOuvert(null);
+                            }}
+                            className="py-1.5 text-sm text-ink-soft/80 hover:text-ink transition-colors"
+                          >
+                            {sous.icone && <Icone nom={sous.icone} className="w-3.5 h-3.5 mr-1.5 text-lilac" />}
+                            {sous.label}
+                          </Link>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {groupeMobileOuvert === item.label && !item.colonnes && (
                   <div className="pl-4 flex flex-col gap-1 pb-2">
                     {item.items.map((sous) => (
                       <Link

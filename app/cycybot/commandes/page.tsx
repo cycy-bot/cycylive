@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
-import { lireCycyBot } from "@/lib/cycybot";
+import { lireCycyBot, commandesSecours } from "@/lib/cycybot";
 import AccentCosmique from "@/components/AccentCosmique";
 import CommandesCycyBot from "@/components/CommandesCycyBot";
 
 export const metadata: Metadata = {
   title: "Commandes de Cycy_Bot | Cycylive",
-  description: "Toutes les commandes de Cycy_Bot : le chat Twitch de Cycylive et le Discord (passeport, jeux, Cartes Astrales, Éclats, expéditions, Marché noir, musique…).",
+  description: "Toutes les commandes de Cycy_Bot : le chat Twitch de Cycylive et le Discord (passeport, jeux, Cartes Astrales, figurines Cosmo-Capsules, Éclats, expéditions, Marché noir, musique…).",
   alternates: { canonical: "/cycybot/commandes" },
   openGraph: {
     title: "Commandes de Cycy_Bot | Cycylive",
@@ -31,14 +31,17 @@ export default async function CommandesPage() {
         intro="Dans le chat Twitch pendant les lives, et sur le Discord tout le temps. Cette liste se met à jour automatiquement avec Cycy_Bot."
       />
 
-      {donnees ? (
-        <CommandesCycyBot toutLeMonde={donnees.commands.everyone} groupesTwitch={donnees.commands.groups ?? []} discord={donnees.discord?.commands ?? []} />
-      ) : (
-        <p className="carte-holo rounded-2xl p-6 text-ink-soft">
-          Cycy_Bot fait une petite pause technique, la liste revient dans un instant. En attendant, tape{" "}
-          <code className="text-lilac">!commandes</code> dans le chat Twitch.
+      {!donnees && (
+        <p className="mb-6 rounded-2xl border border-violet/20 bg-violet/10 px-5 py-3 text-sm text-ink-soft" role="status">
+          Cycy_Bot ne répond pas en ce moment : voici la liste habituelle de ses commandes. Pendant un live, tape{" "}
+          <code className="text-lilac">!commandes</code> dans le chat pour la liste à jour.
         </p>
       )}
+      <CommandesCycyBot
+        toutLeMonde={donnees?.commands.everyone?.length ? donnees.commands.everyone : commandesSecours.everyone}
+        groupesTwitch={donnees?.commands.groups?.length ? donnees.commands.groups : commandesSecours.groups}
+        discord={donnees?.discord?.commands?.length ? donnees.discord.commands : commandesSecours.discord}
+      />
     </div>
   );
 }

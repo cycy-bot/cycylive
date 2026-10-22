@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { liens } from "@/data/liens";
-import { lireCycyBot } from "@/lib/cycybot";
+import { lireCycyBot, transmissionSecours } from "@/lib/cycybot";
 import { CarteBloc, Pastilles, nf, type Bloc } from "@/components/cycybot/Blocs";
 import SectionGalaxie from "@/components/cycybot/SectionGalaxie";
 import AccentCosmique from "@/components/AccentCosmique";
@@ -13,7 +13,7 @@ import type { NomIcone } from "@/components/icones/banque";
 export const metadata: Metadata = {
   title: "Cycy_Bot | Cycylive",
   description:
-    "Cycy_Bot, le bot officiel de Cycylive sur Twitch et Discord : passeport galactique, jeux, Cartes Astrales, Éclats Stellaires, expéditions, Marché noir, prédictions et leaderboard.",
+    "Cycy_Bot, le bot officiel de Cycylive sur Twitch et Discord : passeport galactique, jeux, Cartes Astrales, figurines Cosmo-Capsules, Éclats Stellaires, expéditions, Marché noir, prédictions et leaderboard.",
   alternates: { canonical: "/cycybot" },
   openGraph: {
     title: "Cycy_Bot | Cycylive",
@@ -37,14 +37,29 @@ const fonctionsTwitch = [
 
 const aEssayer = ["attraper", "eclats", "watchtime", "8ball"];
 
+// ── Figurines Cosmo-Capsules (si le bot ne répond pas, cette liste suffit) ──
+const figurinesSecours = [
+  { id: "stellaires", nom: "Compagnons stellaires", emoji: "🌙", total: 10, image: "/figurines/compagnon-luma.webp" },
+  { id: "objets", nom: "Objets Cosmiques Vivants", emoji: "🌙", total: 10, image: "/figurines/fig25.webp" },
+  { id: "robots", nom: "Robots & Science-Fiction", emoji: "🤖", total: 10, image: "/figurines/fig38.webp" },
+  { id: "mystic", nom: "Mystic Cosmic", emoji: "🔮", total: 10, image: "/figurines/fig50.webp" },
+  { id: "cosy", nom: "Cosy Galaxy", emoji: "☕", total: 15, image: "/figurines/fig65.webp" },
+  { id: "delices", nom: "Délices Interstellaires", emoji: "🍬", total: 15, image: "/figurines/fig79.webp" },
+  { id: "nibis", nom: "La Bande des Nibis", emoji: "👽", total: 12, image: "/figurines/nibi03.webp" },
+  { id: "cycybot", nom: "Collection CycyBot", emoji: "🤖", total: 10, image: "/figurines/bot03.webp" },
+  { id: "cycylive", nom: "Collection Cycylive", emoji: "💜", total: 11, image: "/figurines/cycy01.webp" },
+];
+
 // ── Discord ─────────────────────────────────────────────────
 const blocsDiscord: Bloc[] = [
   { id: "passeport", icone: "badge", titre: "Le passeport galactique", texte: "Ta carte d'identité de Cycylien : infos, rang, succès et tampons, avec plus de 30 thèmes à débloquer, des cadres, des titres et des effets de nom.", commandes: ["passeport", "rank", "leaderboard"] },
   { id: "jeux", icone: "manette", titre: "Des jeux chaque jour", texte: "Explorer la galaxie, chasser les étoiles, ouvrir un coffre, le quiz, le mot mystère, les duels et le défi galactique du jour : de quoi monter d'orbite.", commandes: ["jeux", "explorer", "quiz", "duel"] },
+  { id: "site", icone: "cadeau", titre: "Les récompenses du site", texte: "Ticket à gratter, compagnon, coffres scellés, Grappin cosmique et Cosmo-Capsules sur cycylive.fr : tout ce que tu gagnes arrive sur ton profil Discord.", commandes: ["gratter", "compagnon", "tresor"] },
   { id: "cartes", icone: "cartes", titre: "Les Cartes Astrales", texte: "Un vrai jeu de cartes à collectionner : un booster gratuit par jour, six raretés, des brillantes, des mythiques en dix exemplaires et des cartes à l'effigie de la commu.", commandes: ["booster", "collection", "fabriquer"] },
   { id: "succes", icone: "medaille", titre: "Des succès à trois niveaux", texte: "Chaque succès monte jusqu'au niveau III : boosters, rôles « aguerri·e », thèmes Prestige et Légende, cartes Trophées… et le titre ultime de Maître des succès.", commandes: ["passeport"] },
   { id: "musique", icone: "note", titre: "La musique en vocal", texte: "Colle un lien Spotify (titre, album ou playlist) et CycyBot le joue dans ton salon vocal, avec une file d'attente partagée.", commandes: ["jouer", "file", "volume"] },
   { id: "vocaux", icone: "son", titre: "Des vocaux rien qu'à toi", texte: "Rejoins le salon de création et ton propre vocal apparaît : nom, limite, verrou, invités… tu gères tout, il disparaît quand il se vide.", commandes: ["vocal"] },
+  { id: "roles", icone: "badge", titre: "Tes rôles en un clic", texte: "Notifications des lives, YouTube et TikTok, jeux, rang Valorant : choisis tes rôles où que tu sois, et l'agence t'aide à trouver des coéquipier·es.", commandes: ["mes-roles", "agence", "planning"] },
 ];
 
 
@@ -55,6 +70,10 @@ export default async function CycyBotPage() {
     .map((nom) => donnees?.commands.everyone.find((c) => c.name === nom))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
   const nbDiscord = discord ? discord.commands.reduce((n, g) => n + g.items.length, 0) : 0;
+  // Collections de figurines : la liste du bot (nombres à jour), sinon celle du site
+  const collections = discord?.figurines?.length
+    ? discord.figurines.map((c) => ({ id: c.id, nom: c.nom, emoji: c.emoji, total: c.total, image: c.apercu[0]?.image || figurinesSecours.find((s) => s.id === c.id)?.image || "/figurines/boule-rose.webp" }))
+    : figurinesSecours;
   const stats = discord
     ? [
         { v: discord.stats.cards, l: "Cartes Astrales à collectionner" },
@@ -63,6 +82,8 @@ export default async function CycyBotPage() {
         { v: discord.stats.eclatsCirculation, l: "Éclats en circulation" },
         { v: discord.stats.expeditions, l: "expéditions lancées" },
         { v: discord.stats.themes, l: "thèmes de passeport" },
+        { v: discord.stats.figurines ?? 0, l: "figurines Cosmo-Capsules" },
+        { v: discord.stats.capsules ?? 0, l: "capsules ouvertes" },
       ].filter((s) => s.v > 0)
     : [];
 
@@ -132,13 +153,7 @@ export default async function CycyBotPage() {
           </div>
         </div>
 
-        {donnees?.transmission?.length ? (
-          <ConsoleCycyBot lignes={donnees.transmission} />
-        ) : (
-          <div className="carte-holo rounded-2xl p-6 text-ink-soft text-sm">
-            Cycy_Bot fait une petite pause technique. Il revient très vite dans le chat.
-          </div>
-        )}
+        <ConsoleCycyBot lignes={donnees?.transmission?.length ? donnees.transmission : transmissionSecours} />
       </section>
 
       {/* Chiffres en direct */}
@@ -243,6 +258,38 @@ export default async function CycyBotPage() {
             {[0, 1, 2, 3].map((i) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img key={i} src={`/images/cycybot/carte-${i}.webp`} alt="" width={360} height={504} loading="lazy" className="w-full" />
+            ))}
+          </div>
+        </div>
+
+        {/* Figurines Cosmo-Capsules */}
+        <div id="figurines" className="mt-6 carte-holo rounded-2xl p-5 md:p-6 scroll-mt-24">
+          <div className="flex flex-wrap items-end justify-between gap-3 mb-5">
+            <div className="max-w-2xl">
+              <h3 className="text-ink font-semibold">Les figurines Cosmo-Capsules</h3>
+              <p className="text-sm text-ink-soft">
+                Une capsule par jour sur la machine gatchapon du site : {nf(collections.reduce((n, c) => n + c.total, 0))} figurines kawaii en {collections.length} collections,
+                six raretés et quelques exemplaires uniques. Ton album se montre sur le Discord, trié par numéro, rareté ou collection.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Pastilles noms={["figurines", "figurine"]} />
+              <Link href="/jeux/capsules" className="mt-3 rounded-full px-4 py-2 bg-violet text-white text-sm font-medium hover:bg-violet-light shadow-glow-sm transition-all">
+                <Icone nom="cadeau" className="w-4 h-4 mr-1.5" />Ouvrir ma capsule
+              </Link>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-3">
+            {collections.map((c) => (
+              <Link key={c.id} href="/jeux/capsules" className="group flex flex-col items-center rounded-2xl border border-violet/20 bg-void/50 p-2 text-center hover:border-lilac/60 transition-colors">
+                <div className="relative w-full aspect-square">
+                  <span aria-hidden className="absolute inset-[12%] rounded-full bg-violet/40 blur-xl" />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={c.image} alt="" loading="lazy" className="relative h-full w-full object-contain transition-transform duration-300 group-hover:scale-110" />
+                </div>
+                <p className="mt-1 text-[11px] font-semibold leading-tight text-ink">{c.emoji} {c.nom}</p>
+                <p className="text-[10px] text-ink-soft">{c.total} figurines</p>
+              </Link>
             ))}
           </div>
         </div>

@@ -1,0 +1,1069 @@
+{
+ "everyone": [
+  {
+   "name": "8ball",
+   "aliases": [
+    "boule",
+    "oracle"
+   ],
+   "usage": "<question>",
+   "description": "Pose une question à la boule cosmique",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "jeux"
+  },
+  {
+   "name": "agecompte",
+   "aliases": [
+    "age",
+    "accountage",
+    "creation"
+   ],
+   "usage": "[@pseudo]",
+   "description": "Âge d’un compte Twitch",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "attraper",
+   "aliases": [
+    "attrape",
+    "catch"
+   ],
+   "usage": "",
+   "description": "Tenter d’attraper la carte sauvage annoncée pendant le live (tirage au sort parmi les participants)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "jeux"
+  },
+  {
+   "name": "caresse",
+   "aliases": [
+    "calin",
+    "câlin",
+    "pat"
+   ],
+   "usage": "",
+   "description": "Fais un câlin à CycyBot sur le live (overlay)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "cycybot"
+  },
+  {
+   "name": "cartes",
+   "aliases": [
+    "collection"
+   ],
+   "usage": "",
+   "description": "Ta collection de Cartes Astrales",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "clip",
+   "aliases": [],
+   "usage": "[titre]",
+   "description": "Clippe la dernière minute du live (titre facultatif)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "clips"
+  },
+  {
+   "name": "commandes",
+   "aliases": [
+    "commands",
+    "cmd",
+    "aide"
+   ],
+   "usage": "",
+   "description": "Lien vers la liste complète des commandes",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "coucou",
+   "aliases": [
+    "cycybot",
+    "bip"
+   ],
+   "usage": "",
+   "description": "Fais coucou à CycyBot sur le live (overlay)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "cycybot"
+  },
+  {
+   "name": "eclats",
+   "aliases": [
+    "éclats",
+    "solde"
+   ],
+   "usage": "",
+   "description": "Ton solde d’Éclats Stellaires (compte Discord lié)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "faq",
+   "aliases": [
+    "question",
+    "questions"
+   ],
+   "usage": "[sujet]",
+   "description": "Réponses aux questions fréquentes (rank, PP, site, compagnon…)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "followage",
+   "aliases": [
+    "fc",
+    "suivi",
+    "depuis"
+   ],
+   "usage": "[@pseudo]",
+   "description": "Depuis quand quelqu’un suit la chaîne (date et durée)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "fusee",
+   "aliases": [
+    "fusée",
+    "expedition"
+   ],
+   "usage": "[+points] (modos)",
+   "description": "Où en est la fusée communautaire de la soirée",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "game",
+   "aliases": [
+    "jeu",
+    "categorie"
+   ],
+   "usage": "",
+   "description": "Catégorie actuelle du live",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "infogame",
+   "aliases": [
+    "infojeu"
+   ],
+   "usage": "[nom du jeu]",
+   "description": "Description, prix et lien du jeu en cours (ou d’un autre jeu)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "leaderboard",
+   "aliases": [
+    "top",
+    "classement"
+   ],
+   "usage": "",
+   "description": "Lien vers le classement des Cycyliens (messages, présence, séries…)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "lier",
+   "aliases": [
+    "link"
+   ],
+   "usage": "CODE",
+   "description": "Relier ton compte Twitch à Discord pour recevoir les Cartes Astrales gagnées en live (code donné par /lier-twitch)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "objectifs",
+   "aliases": [
+    "objectif",
+    "goals"
+   ],
+   "usage": "",
+   "description": "Les objectifs de la soirée",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "orbite",
+   "aliases": [
+    "niveau",
+    "rang"
+   ],
+   "usage": "",
+   "description": "Ton orbite et tes points sur le Discord (compte lié)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "parier",
+   "aliases": [
+    "pari",
+    "prediction",
+    "bet"
+   ],
+   "usage": "(modos : Question ? | Option 1 | Option 2 | durée)",
+   "description": "Voir la prédiction en cours. Les modos peuvent en lancer, fermer, résoudre ou annuler une.",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "jeux"
+  },
+  {
+   "name": "pp",
+   "aliases": [
+    "partieperso",
+    "custom"
+   ],
+   "usage": "",
+   "description": "La prochaine soirée PP Valorant et comment s’inscrire",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "sc",
+   "aliases": [
+    "subcheck",
+    "abo"
+   ],
+   "usage": "[@pseudo]",
+   "description": "Statut d’abonnement (palier, offert ou non, ancienneté connue)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  },
+  {
+   "name": "subcount",
+   "aliases": [
+    "subs"
+   ],
+   "usage": "",
+   "description": "Nombre d’abonnés de la chaîne",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "subgoal",
+   "aliases": [
+    "subgoals",
+    "followgoal"
+   ],
+   "usage": "[montrer | followers]",
+   "description": "Où en sont les subgoals et l’objectif de followers (modos : « montrer » l’affiche sur l’overlay)",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "uptime",
+   "aliases": [],
+   "usage": "",
+   "description": "Depuis combien de temps le live a commencé, et devant combien de viewers",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "viewers",
+   "aliases": [
+    "spectateurs"
+   ],
+   "usage": "",
+   "description": "Nombre de viewers en direct et de personnes dans le chat",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "live"
+  },
+  {
+   "name": "watchtime",
+   "aliases": [
+    "temps"
+   ],
+   "usage": "[@pseudo]",
+   "description": "Temps passé à regarder les lives",
+   "permission": "everyone",
+   "permissionLabel": "Tout le monde",
+   "group": "profil"
+  }
+ ],
+ "groups": [
+  {
+   "key": "live",
+   "label": "Infos du live",
+   "emoji": "📺"
+  },
+  {
+   "key": "profil",
+   "label": "Ton profil & la galaxie",
+   "emoji": "🪐"
+  },
+  {
+   "key": "jeux",
+   "label": "Jeux & fun",
+   "emoji": "🎮"
+  },
+  {
+   "key": "cycybot",
+   "label": "CycyBot sur l’overlay",
+   "emoji": "🤖"
+  },
+  {
+   "key": "clips",
+   "label": "Clips & moments forts",
+   "emoji": "🎬"
+  },
+  {
+   "key": "perso",
+   "label": "Commandes perso",
+   "emoji": "✨"
+  },
+  {
+   "key": "sanctions",
+   "label": "Sanctions & nettoyage",
+   "emoji": "⚖️"
+  },
+  {
+   "key": "chat",
+   "label": "Modes du chat & sécurité",
+   "emoji": "🛡️"
+  },
+  {
+   "key": "gestion",
+   "label": "Gestion du live",
+   "emoji": "🎛️"
+  }
+ ],
+ "discord": [
+  {
+   "key": "profil",
+   "label": "Profil & progression",
+   "emoji": "🪪",
+   "items": [
+    {
+     "name": "passeport",
+     "description": "Affiche ton passeport galactique (ou celui d’un membre)",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Le membre dont tu veux voir le passeport",
+       "required": false
+      },
+      {
+       "name": "page",
+       "description": "Page à ouvrir",
+       "required": false
+      },
+      {
+       "name": "prive",
+       "description": "Affiche-le seulement pour toi",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "rank",
+     "description": "Ton orbite, tes points stellaires et ta progression (page Rang du passeport)",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Voir le rang d’un autre membre",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "leaderboard",
+     "description": "Affiche le classement galactique du serveur",
+     "sub": [],
+     "options": [
+      {
+       "name": "page",
+       "description": "Page à ouvrir",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "jeux",
+     "description": "🎮 Les jeux de CycyBot : ce qu’il te reste à jouer aujourd’hui",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "mes-roles",
+     "description": "🎭 Choisis tes rôles (notifications, jeux, rang…) sans passer par le salon Rôles",
+     "sub": [],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "agenda",
+   "label": "Lives & événements",
+   "emoji": "📅",
+   "items": [
+    {
+     "name": "planning",
+     "description": "📅 Le planning des lives de Cycy cette semaine (avec un compte à rebours)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "calendrier",
+     "description": "📅 Les lives, soirées PP, quiz et événements à venir dans la communauté",
+     "sub": [],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "jeux",
+   "label": "Jeux du jour",
+   "emoji": "🎮",
+   "items": [
+    {
+     "name": "explorer",
+     "description": "🔭 Pars explorer un coin de la galaxie (1 fois par jour, bonus si tu reviens chaque jour)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "chasse-etoile",
+     "description": "🌠 Pars en chasse d’étoile : commune, rare, épique… ou légendaire ? (1 fois par jour)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "mon-avenir",
+     "description": "🔮 Découvre ce que l’univers te réserve aujourd’hui (1 fois par jour)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "quiz",
+     "description": "🧠 Quiz cosmique : choisis ta difficulté et ton thème (espace, ciné, sport, manga…)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "coffre",
+     "description": "🎁 Choisis un coffre stellaire parmi trois et découvre ton trésor (1 fois par jour)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "mot-mystere",
+     "description": "🔤 Retrouve le mot caché derrière les lettres mélangées (1 fois par jour)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "plus-ou-moins",
+     "description": "🎯 Devine le nombre mystère entre 1 et 100 en 7 essais (1 fois par jour)",
+     "sub": [],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "plusieurs",
+   "label": "À plusieurs & pour le fun",
+   "emoji": "⚔️",
+   "items": [
+    {
+     "name": "duel",
+     "description": "⚔️ Défie un membre en duel galactique (il doit accepter)",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Le membre à défier",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "compatibilite",
+     "description": "💞 Votre compatibilité astrale, selon vos signes du zodiaque",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Le membre avec qui tester la compatibilité",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "roll",
+     "description": "Lance un dé cosmique",
+     "sub": [],
+     "options": [
+      {
+       "name": "max",
+       "description": "Valeur maximale",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "pileouface",
+     "description": "Lance une pièce cosmique",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "salle-de-jeux",
+     "description": "🎮 Les jeux des salons vocaux : comment lancer la salle de jeux et les règles",
+     "sub": [],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "cartes",
+   "label": "Cartes Astrales",
+   "emoji": "🃏",
+   "items": [
+    {
+     "name": "booster",
+     "description": "🎴 Ouvre un booster de Cartes Astrales (1 gratuit chaque jour)",
+     "sub": [],
+     "options": [
+      {
+       "name": "ordre",
+       "description": "Ordre de révélation des cartes (retenu pour la suite)",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "mes-boosters",
+     "description": "🎴 Tes boosters à ouvrir : gratuits du jour, bonus des subs et stock",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "collection",
+     "description": "📖 Ton album de Cartes Astrales (ou celui d’un membre)",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Voir l’album d’un autre membre",
+       "required": false
+      },
+      {
+       "name": "prive",
+       "description": "L’afficher seulement pour toi",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "carte",
+     "description": "🃏 Regarde une Carte Astrale en grand",
+     "sub": [],
+     "options": [
+      {
+       "name": "nom",
+       "description": "Nom de la carte",
+       "required": true
+      },
+      {
+       "name": "membre",
+       "description": "Voir la carte dans la collection d’un membre",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "recycler",
+     "description": "♻️ Transforme tes cartes en double en poussière d’étoile",
+     "sub": [],
+     "options": [
+      {
+       "name": "jusqua",
+       "description": "Rareté maximale à recycler (par défaut : jusqu’aux légendaires)",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "fabriquer",
+     "description": "🔨 L’atelier : fabrique les cartes de ton choix avec ta poussière d’étoile",
+     "sub": [],
+     "options": [
+      {
+       "name": "carte",
+       "description": "Facultatif : une carte, ou des numéros (ex. 12, 15, 40 ou 12x3)",
+       "required": false
+      },
+      {
+       "name": "quantite",
+       "description": "Facultatif : combien d’exemplaires (1 à 20)",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "collectionneurs",
+     "description": "🏆 Les plus grands collectionneurs de Cartes Astrales",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "lier-twitch",
+     "description": "🔗 Relie ton compte Twitch pour recevoir les cartes gagnées pendant les lives",
+     "sub": [],
+     "options": [
+      {
+       "name": "action",
+       "description": "Lier (par défaut) ou délier ton compte",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "figurines",
+   "label": "Cosmo-Capsules : les figurines",
+   "emoji": "🎰",
+   "items": [
+    {
+     "name": "figurines",
+     "description": "🎰 Ton album de figurines Cosmo-Capsules (ou celui d’un membre)",
+     "sub": [],
+     "options": [
+      {
+       "name": "membre",
+       "description": "Voir l’album d’un autre membre",
+       "required": false
+      },
+      {
+       "name": "tri",
+       "description": "Ordre d’affichage",
+       "required": false
+      },
+      {
+       "name": "collection",
+       "description": "Une seule collection",
+       "required": false
+      },
+      {
+       "name": "afficher",
+       "description": "Toutes, obtenues ou manquantes",
+       "required": false
+      },
+      {
+       "name": "prive",
+       "description": "L’afficher seulement pour toi",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "figurine",
+     "description": "🫧 Regarde une figurine Cosmo-Capsules en grand",
+     "sub": [],
+     "options": [
+      {
+       "name": "nom",
+       "description": "Une figurine de ton album (ou de celui du membre choisi)",
+       "required": true
+      },
+      {
+       "name": "membre",
+       "description": "Voir la figurine dans l’album d’un membre",
+       "required": false
+      },
+      {
+       "name": "prive",
+       "description": "L’afficher seulement pour toi",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "site",
+   "label": "Récompenses des jeux du site",
+   "emoji": "🕹️",
+   "items": [
+    {
+     "name": "gratter",
+     "description": "🎟️ Récupère le gain de ton ticket à gratter (cycylive.fr/jeux)",
+     "sub": [],
+     "options": [
+      {
+       "name": "code",
+       "description": "Colle ici le code de ton ticket (bouton « Copier » sur le site), ex. CYCY-AB12-CD34",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "compagnon",
+     "description": "🥚 Récupère la récompense de ton compagnon de cycylive.fr (quêtes du jour faites)",
+     "sub": [],
+     "options": [
+      {
+       "name": "code",
+       "description": "Colle ici le code donné par ton compagnon (bouton « Copier le code »), ex. COMP-AB12-CD34",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "tresor",
+     "description": "🗝️ Récupère le trésor de tes coffres scellés (cycylive.fr/jeux)",
+     "sub": [],
+     "options": [
+      {
+       "name": "code",
+       "description": "Colle ici le code de ton coffre (bouton « Copier le code »), ex. TRIO-AB12-CD34",
+       "required": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "valorant",
+   "label": "Valorant",
+   "emoji": "🎯",
+   "items": [
+    {
+     "name": "agence",
+     "description": "🎯 Trouve des coéquipier·es Valorant de la commu (fiche, dispo, invitations)",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "code-groupe",
+     "description": "🎮 Le code de groupe VALORANT de Cycy (pour la rejoindre en partie)",
+     "sub": [],
+     "options": [
+      {
+       "name": "nouveau",
+       "description": "Cycy et modos : partager un nouveau code de groupe",
+       "required": false
+      },
+      {
+       "name": "note",
+       "description": "Cycy et modos : précision (mode, places, rang…)",
+       "required": false
+      },
+      {
+       "name": "fermer",
+       "description": "Cycy et modos : indiquer que le groupe est fermé",
+       "required": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "key": "galaxie",
+   "label": "Galaxie : Éclats, expéditions & Marché noir",
+   "emoji": "🌌",
+   "items": [
+    {
+     "name": "eclats",
+     "description": "✦ Tes Éclats Stellaires : solde, gains du jour et derniers mouvements",
+     "sub": [
+      {
+       "name": "solde",
+       "description": "✦ Ton solde et tes derniers mouvements"
+      },
+      {
+       "name": "classement",
+       "description": "🏆 Les plus grandes fortunes de la galaxie"
+      }
+     ],
+     "options": []
+    },
+    {
+     "name": "expedition",
+     "description": "🚀 Expéditions spatiales : pars en mission avec ton équipage",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "marche",
+     "description": "🕶️ Marché Noir Astral : dépense tes Éclats Stellaires",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "question",
+     "description": "💫 Question du jour",
+     "sub": [
+      {
+       "name": "archive",
+       "description": "📜 Les anciennes questions du jour et leurs résultats"
+      }
+     ],
+     "options": []
+    },
+    {
+     "name": "chronique",
+     "description": "📖 La Chronique CycyLive : les grands moments de la commu",
+     "sub": [
+      {
+       "name": "liste",
+       "description": "📖 Tous les chapitres (✅ = tu as le tampon)"
+      },
+      {
+       "name": "chapitre",
+       "description": "📜 Lire un chapitre"
+      }
+     ],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "musique",
+   "label": "Musique en vocal",
+   "emoji": "🎵",
+   "items": [
+    {
+     "name": "jouer",
+     "description": "🎶 Joue un lien Spotify dans ton salon vocal (morceau, album, playlist ou artiste)",
+     "sub": [],
+     "options": [
+      {
+       "name": "lien",
+       "description": "Lien Spotify : ⋯ → Partager → Copier le lien",
+       "required": true
+      },
+      {
+       "name": "ensuite",
+       "description": "La jouer juste après le morceau en cours (au lieu de la fin de la file)",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "pause",
+     "description": "⏸️ Met la musique en pause",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "reprendre",
+     "description": "▶️ Relance la musique mise en pause",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "passer",
+     "description": "⏭️ Passe au morceau suivant",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "stop",
+     "description": "⏹️ Arrête la musique, vide la file et quitte le salon vocal",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "file",
+     "description": "📜 Affiche la file d’attente de la musique",
+     "sub": [],
+     "options": [
+      {
+       "name": "page",
+       "description": "Page à afficher",
+       "required": false
+      }
+     ]
+    },
+    {
+     "name": "en-cours",
+     "description": "🎶 Affiche le morceau en cours et les boutons de contrôle",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "volume",
+     "description": "🔊 Règle le volume de la musique",
+     "sub": [],
+     "options": [
+      {
+       "name": "niveau",
+       "description": "En % (100 = normal)",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "boucle",
+     "description": "🔁 Répète le morceau ou toute la file",
+     "sub": [],
+     "options": [
+      {
+       "name": "mode",
+       "description": "Que répéter ?",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "melanger",
+     "description": "🔀 Mélange la file d’attente",
+     "sub": [],
+     "options": []
+    },
+    {
+     "name": "retirer",
+     "description": "🗑️ Retire un morceau de la file d’attente",
+     "sub": [],
+     "options": [
+      {
+       "name": "position",
+       "description": "Numéro du morceau dans /file",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "deplacer",
+     "description": "↕️ Change la place d’un morceau dans la file",
+     "sub": [],
+     "options": [
+      {
+       "name": "de",
+       "description": "Position actuelle (voir /file)",
+       "required": true
+      },
+      {
+       "name": "vers",
+       "description": "Nouvelle position (1 = le prochain)",
+       "required": true
+      }
+     ]
+    },
+    {
+     "name": "vider",
+     "description": "🧹 Vide la file d’attente (le morceau en cours continue)",
+     "sub": [],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "vocal",
+   "label": "Vocaux temporaires",
+   "emoji": "🔊",
+   "items": [
+    {
+     "name": "vocal",
+     "description": "🎛️ Règle ton vocal temporaire",
+     "sub": [
+      {
+       "name": "panneau",
+       "description": "Affiche le panneau de réglages de ton vocal"
+      },
+      {
+       "name": "nom",
+       "description": "✏️ Renomme ton vocal"
+      },
+      {
+       "name": "limite",
+       "description": "👥 Nombre de places (0 = illimité)"
+      },
+      {
+       "name": "qualite",
+       "description": "🎚️ Qualité audio"
+      },
+      {
+       "name": "verrouiller",
+       "description": "🔒 Seuls les membres autorisés peuvent entrer"
+      },
+      {
+       "name": "deverrouiller",
+       "description": "🔓 Tout le monde peut entrer"
+      },
+      {
+       "name": "cacher",
+       "description": "🙈 Cache ton vocal (visible seulement par les autorisés)"
+      },
+      {
+       "name": "afficher",
+       "description": "👁️ Rends ton vocal visible"
+      },
+      {
+       "name": "autoriser",
+       "description": "✅ Autorise un membre à voir et rejoindre ton vocal"
+      },
+      {
+       "name": "bloquer",
+       "description": "🚫 Bloque un membre (il ne voit plus ton vocal)"
+      },
+      {
+       "name": "retirer",
+       "description": "♻️ Retire une autorisation ou un blocage"
+      },
+      {
+       "name": "expulser",
+       "description": "👢 Expulse un membre de ton vocal"
+      },
+      {
+       "name": "transferer",
+       "description": "👑 Donne ton vocal à quelqu’un"
+      },
+      {
+       "name": "reclamer",
+       "description": "🙋 Récupère le vocal si son propriétaire est parti"
+      },
+      {
+       "name": "supprimer",
+       "description": "🗑️ Supprime ton vocal"
+      }
+     ],
+     "options": []
+    }
+   ]
+  },
+  {
+   "key": "aide",
+   "label": "Aide",
+   "emoji": "📖",
+   "items": [
+    {
+     "name": "aide",
+     "description": "📖 Le guide CycyBot : progression, passeport, jeux, cartes, Éclats, musique et commandes",
+     "sub": [],
+     "options": []
+    }
+   ]
+  }
+ ]
+}
