@@ -232,6 +232,16 @@ export const BANQUE = {
     <path {...T} d="M9.3 9.3A2.8 2.8 0 1 1 13 12c-.7.4-1 .9-1 1.7v.4" />
     <circle {...P} cx="12" cy="17.2" r="1.2" />
   </>),
+  aimant: I("Aimant", "Jeux", <>
+    <path {...F} d="M5 4h4v8a3 3 0 0 0 6 0V4h4v8a7 7 0 0 1-14 0V4Z" />
+    <path {...T} d="M5 8h4M15 8h4" />
+    {eclat(19.5, 18.5, 2)}
+  </>),
+  filet: I("Filet", "Jeux", <>
+    <path {...F} d="M3 7c2 9 16 9 18 0Z" />
+    <path {...T} d="M3 7c2 9 16 9 18 0M7.5 7.6 9 14M12 8v7M16.5 7.6 15 14M4.5 10.5h15" />
+    {eclat(12, 3.4, 2)}
+  </>),
   lettres: I("Mot mystère", "Jeux", <>
     <rect {...F} x="2.5" y="6.5" width="5.5" height="7" rx="1.4" />
     <rect {...T} x="9.25" y="6.5" width="5.5" height="7" rx="1.4" />

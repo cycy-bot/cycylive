@@ -19,9 +19,9 @@ const RARETES: Rarete[] = ["commune", "peu", "rare", "epique", "legendaire", "my
 const CHANCES_DEFAUT: Record<Rarete, number> = { commune: 52, peu: 27, rare: 13, epique: 5.5, legendaire: 2, mythique: 0.5 };
 const NIVEAU: Record<Rarete, number> = { commune: 0, peu: 1, rare: 2, epique: 3, legendaire: 4, mythique: 5 };
 
-type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; stock: number; distribues: number };
+type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number };
 type Collection = { id: string; nom: string; emoji: string; description: string; bonus: string; terminee: boolean };
-type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null };
+type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; description?: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null };
 type Etat = {
   disponible: boolean;
   derniere: Resultat | null;
@@ -236,7 +236,7 @@ export default function CosmoCapsules() {
                 </g>
               </g>
               <rect x="26" y="142" width="58" height="22" rx="11" fill="#7a3a8a" opacity=".55" />
-              <g transform="translate(-60 64)">
+              <g transform="translate(26 106)">
                 <ellipse cx="-6" cy="0" rx="3" ry="4" fill="#7a3a6a" />
                 <ellipse cx="8" cy="0" rx="3" ry="4" fill="#7a3a6a" />
                 <path d="M-2 6 Q1 9 4 6" stroke="#7a3a6a" strokeWidth="2" fill="none" strokeLinecap="round" />
@@ -271,6 +271,7 @@ export default function CosmoCapsules() {
                     <p className="mt-1 text-xs font-black uppercase tracking-widest" style={{ color: couleur }}>{resultat.rareteLabel}{resultat.garantie ? " · garantie" : ""}</p>
                     <p className="text-xl font-black leading-tight text-[#4a2470]">{resultat.nom}</p>
                     {resultat.collectionNom ? <p className="text-xs font-semibold text-[#9a7ac8]">{resultat.collectionNom}</p> : null}
+                    {resultat.description ? <p className="mx-auto mt-1 max-w-[260px] text-xs italic text-[#7a5aa8]">{resultat.description}</p> : null}
                     {resultat.stock ? (
                       <p className="mt-1 inline-block rounded-full bg-[#2a1640] px-3 py-0.5 text-xs font-black text-[#ffd23f]">
                         {resultat.stock === 1 ? "👑 EXEMPLAIRE UNIQUE" : `✨ Exemplaire n°${resultat.numero} / ${resultat.stock}`}
@@ -346,7 +347,7 @@ export default function CosmoCapsules() {
                 const n = etat.album[f.id] || 0;
                 const epuisee = f.stock > 0 && f.distribues >= f.stock;
                 return (
-                  <div key={f.id} className="relative flex flex-col items-center rounded-2xl border-2 bg-white/[.04] p-2 text-center" style={{ borderColor: COULEUR_RARETE[f.rarete] + (n ? "aa" : "33") }} title={n ? f.nom : "Pas encore trouvée"}>
+                  <div key={f.id} className="relative flex flex-col items-center rounded-2xl border-2 bg-white/[.04] p-2 text-center" style={{ borderColor: COULEUR_RARETE[f.rarete] + (n ? "aa" : "33") }} title={n ? f.nom + (f.description ? " : " + f.description : "") : "Pas encore trouvée"}>
                     <FigurineVisuel id={f.id} image={f.image} silhouette={!n} taille={76} />
                     <p className={`mt-1 text-[11px] font-semibold leading-tight ${n ? "text-ink" : "text-ink-soft/50"}`}>{n ? f.nom : "???"}</p>
                     {f.stock ? (

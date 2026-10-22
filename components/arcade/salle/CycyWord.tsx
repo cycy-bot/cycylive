@@ -266,7 +266,7 @@ export default function CycyWord({ onDebut, onFin }: PropsJeu) {
       {mode === "jour" || mode === "entrainement" ? (
         <div className="flex flex-col items-center">
           <div className="mb-3 flex w-full max-w-lg items-center justify-between text-sm">
-            <span className="font-semibold text-ink">{mode === "jour" ? <>🔤 Mot du {new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</> : "🏋️ Entraînement (sans score)"}</span>
+            <span className="font-semibold text-ink">{mode === "jour" ? <><Icone nom="lettres" className="w-4 h-4 mr-1.5 text-[#7ad7ff]" />Mot du {new Date(jour + "T12:00:00Z").toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</> : <><Icone nom="rejouer" className="w-4 h-4 mr-1.5 text-[#7ad7ff]" />Entraînement (sans score)</>}</span>
             <span className="text-ink-soft tabular-nums">Essai {Math.min(essais.length + 1, ESSAIS)} / {ESSAIS}</span>
           </div>
           {grille}
@@ -307,7 +307,7 @@ export default function CycyWord({ onDebut, onFin }: PropsJeu) {
             ))}
           </div>
           <div className="flex flex-wrap justify-center gap-2">
-            <button type="button" onClick={commencerEntrainement} className="rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-ink hover:bg-violet-light">🏋️ S&apos;entraîner sur un autre mot</button>
+            <button type="button" onClick={commencerEntrainement} className="rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-ink hover:bg-violet-light"><Icone nom="rejouer" className="w-4 h-4 mr-1.5" />S&apos;entraîner sur un autre mot</button>
           </div>
           <p className="mt-4 text-xs text-ink-soft/70">L&apos;entraînement ne compte ni dans le classement ni dans tes statistiques.</p>
         </div>

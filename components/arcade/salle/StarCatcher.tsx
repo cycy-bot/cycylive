@@ -1,12 +1,14 @@
 "use client";
 
 // Star Catcher : attrape les étoiles qui tombent avec ton filet cosmique.
-// ⭐ 50 points, 🌟 étoile dorée 150, multipliés par le combo (×1 → ×5, +1 toutes les 5 prises).
-// Une étoile qui tombe sans être attrapée casse le combo. ☄️ météorite et 🕳️ trou noir = une vie en moins.
-// Bonus : ❤️ vie, 🧲 aimant, 🥅 grand filet, ✖️2 points doublés. Trois vies.
+// Étoile 50 points, étoile dorée 150, multipliés par le combo (×1 → ×5, +1 toutes les 5 prises).
+// Une étoile qui tombe sans être attrapée casse le combo. Météorite et trou noir = une vie en moins.
+// Bonus : vie, aimant, grand filet, points doublés. Trois vies. Dessins : dessinsCanvas.ts
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
+import type { NomIcone } from "@/components/icones/banque";
+import { etoile as etoileCanvas, eclat, meteorite, trouNoir, pastilleBonus, iconeCoeur, iconeAimant, iconeFilet, iconeDouble } from "./dessinsCanvas";
 
 type Type = "etoile" | "doree" | "meteore" | "trou" | "vie" | "aimant" | "filet" | "double";
 type Objet = { x: number; y: number; vy: number; vx: number; type: Type; t: number; base: number };
@@ -15,23 +17,17 @@ type Eclat = { x: number; y: number; vx: number; vy: number; vie: number; c: str
 
 const DANGER: Type[] = ["meteore", "trou"];
 const BONUS: Type[] = ["vie", "aimant", "filet", "double"];
-const EMOJI: Partial<Record<Type, string>> = { vie: "❤️", aimant: "🧲", filet: "🥅", double: "✖️" };
+const DESSIN: Partial<Record<Type, (ctx: CanvasRenderingContext2D, s: number) => void>> = { vie: iconeCoeur, aimant: iconeAimant, filet: iconeFilet, double: iconeDouble };
+const ICONE: Record<"vie" | "aimant" | "filet" | "double", NomIcone> = { vie: "coeur", aimant: "aimant", filet: "filet", double: "eclair" };
+const NOM: Record<"vie" | "aimant" | "filet" | "double", string> = { vie: "Vie en plus", aimant: "Aimant à étoiles", filet: "Grand filet", double: "Points ×2" };
 const COULEUR: Record<Type, string> = { etoile: "#ffe066", doree: "#ffb627", meteore: "#ff7a45", trou: "#a855f7", vie: "#ff5c8a", aimant: "#60a5fa", filet: "#6bffc8", double: "#f0abfc" };
 const multDe = (combo: number) => Math.min(5, 1 + Math.floor(combo / 5));
 
-function etoile(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, a: number) {
-  ctx.beginPath();
-  for (let i = 0; i < 10; i++) {
-    const rr = i % 2 ? r * 0.45 : r, ang = a + (i * Math.PI) / 5 - Math.PI / 2;
-    ctx[i ? "lineTo" : "moveTo"](x + Math.cos(ang) * rr, y + Math.sin(ang) * rr);
-  }
-  ctx.closePath();
-}
 
 export default function StarCatcher({ onDebut, onFin }: PropsJeu) {
   const [phase, setPhase] = useState<"depart" | "decompte" | "jeu">("depart");
   const [decompte, setDecompte] = useState(3);
-  const [hud, setHud] = useState({ score: 0, vies: 3, combo: 0, effets: [] as string[] });
+  const [hud, setHud] = useState({ score: 0, vies: 3, combo: 0, effets: [] as ("aimant" | "filet" | "double")[] });
   const zone = useRef<HTMLDivElement | null>(null);
   const toile = useRef<HTMLCanvasElement | null>(null);
   const cibleX = useRef<number | null>(null);
@@ -169,30 +165,12 @@ export default function StarCatcher({ onDebut, onFin }: PropsJeu) {
       ctx.clearRect(-20, -20, W + 40, H + 40);
       for (const s of fond) { ctx.globalAlpha = 0.25 + 0.3 * Math.sin(now / 700 + s.p); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalAlpha = 1;
-      ctx.font = "22px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
       for (const o of objets) {
-        if (o.type === "etoile" || o.type === "doree") {
-          const r = o.type === "doree" ? 15 : 11;
-          ctx.shadowColor = COULEUR[o.type]; ctx.shadowBlur = o.type === "doree" ? 22 : 12;
-          etoile(ctx, o.x, o.y, r, o.t * 2); ctx.fillStyle = COULEUR[o.type]; ctx.fill();
-          ctx.shadowBlur = 0;
-        } else if (o.type === "meteore") {
-          const g = ctx.createLinearGradient(o.x, o.y, o.x - o.vx * 0.15, o.y - 46);
-          g.addColorStop(0, "rgba(255,122,69,0.8)"); g.addColorStop(1, "rgba(255,122,69,0)");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(o.x - 10, o.y); ctx.lineTo(o.x - o.vx * 0.15, o.y - 50); ctx.lineTo(o.x + 10, o.y); ctx.fill();
-          ctx.beginPath(); ctx.arc(o.x, o.y, 13, 0, Math.PI * 2); ctx.fillStyle = "#7a4a3a"; ctx.fill();
-          ctx.lineWidth = 2; ctx.strokeStyle = "#ffb08a"; ctx.stroke();
-        } else if (o.type === "trou") {
-          const g = ctx.createRadialGradient(o.x, o.y, 2, o.x, o.y, 22);
-          g.addColorStop(0, "#000"); g.addColorStop(0.55, "#1a0630"); g.addColorStop(1, "rgba(168,85,247,0)");
-          ctx.fillStyle = g; ctx.beginPath(); ctx.arc(o.x, o.y, 22, 0, Math.PI * 2); ctx.fill();
-          ctx.strokeStyle = "rgba(168,85,247,0.7)"; ctx.lineWidth = 2;
-          ctx.beginPath(); ctx.ellipse(o.x, o.y, 20, 7, o.t * 3, 0, Math.PI * 2); ctx.stroke();
-        } else {
-          ctx.beginPath(); ctx.arc(o.x, o.y, 16, 0, Math.PI * 2); ctx.fillStyle = COULEUR[o.type] + "33"; ctx.fill();
-          ctx.lineWidth = 2; ctx.strokeStyle = COULEUR[o.type]; ctx.stroke();
-          ctx.fillText(EMOJI[o.type] || "", o.x, o.y + 1);
-        }
+        if (o.type === "etoile") etoileCanvas(ctx, o.x, o.y, 12, COULEUR.etoile, o.t * 2, 12);
+        else if (o.type === "doree") { etoileCanvas(ctx, o.x, o.y, 16, COULEUR.doree, o.t * 2, 24); eclat(ctx, o.x + 14, o.y - 13, 4.5); eclat(ctx, o.x - 15, o.y + 9, 3); }
+        else if (o.type === "meteore") meteorite(ctx, o.x, o.y, o.vx, 13);
+        else if (o.type === "trou") trouNoir(ctx, o.x, o.y, o.t, 20);
+        else pastilleBonus(ctx, o.x, o.y, 16, COULEUR[o.type], o.t, DESSIN[o.type]!);
       }
       // filet cosmique (clignote quand on vient de perdre une vie)
       if (!(filet.invincible > 0 && Math.floor(now / 90) % 2)) {
@@ -215,7 +193,7 @@ export default function StarCatcher({ onDebut, onFin }: PropsJeu) {
 
       if (now - dernierHud > 90) {
         dernierHud = now;
-        setHud({ score, vies, combo, effets: [filet.aimant > 0 ? "🧲" : "", filet.grand > 0 ? "🥅" : "", filet.double > 0 ? "✖️2" : ""].filter(Boolean) });
+        setHud({ score, vies, combo, effets: ([filet.aimant > 0 ? "aimant" : "", filet.grand > 0 ? "filet" : "", filet.double > 0 ? "double" : ""].filter(Boolean)) as ("aimant" | "filet" | "double")[] });
       }
       if (!enJeu) {
         fin += dt;
@@ -250,16 +228,25 @@ export default function StarCatcher({ onDebut, onFin }: PropsJeu) {
         <EcranDepart
           icone="etoile"
           titre="Star Catcher"
-          regles={<>Déplace ton filet (souris, doigt ou ← →) et attrape les étoiles : ⭐ 50 pts, 🌟 dorée 150 pts. Enchaîne les prises pour monter le combo jusqu&apos;à <strong className="text-ink">×5</strong> ; une étoile ratée le casse. Évite ☄️ les météorites et 🕳️ les trous noirs : trois vies. Bonus : ❤️ vie, 🧲 aimant, 🥅 grand filet, ✖️ points doublés.</>}
+          regles={<>Déplace ton filet (souris, doigt ou ← →) et attrape les étoiles : <strong className="text-[#ffe066]">50 pts</strong>, la dorée <strong className="text-[#ffb627]">150 pts</strong>. Enchaîne les prises pour monter le combo jusqu&apos;à <strong className="text-ink">×5</strong> ; une étoile ratée le casse. Évite les météorites et les trous noirs : trois vies.
+            <span className="mt-3 flex flex-wrap justify-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#ff7a45]/60 px-2.5 py-1 text-xs font-semibold text-[#ffb08a]"><Icone nom="comete" className="w-4 h-4" />Météorite : −1 vie</span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-[#a855f7]/60 px-2.5 py-1 text-xs font-semibold text-[#d8b4fe]"><Icone nom="galaxie" className="w-4 h-4" />Trou noir : −1 vie</span>
+              {(["vie", "aimant", "filet", "double"] as const).map((k) => (
+                <span key={k} className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold" style={{ borderColor: COULEUR[k] + "88", color: COULEUR[k] }}><Icone nom={ICONE[k]} className="w-4 h-4" />{NOM[k]}</span>
+              ))}
+            </span></>}
           onJouer={lancer}
         />
       ) : null}
       {phase === "decompte" ? <p className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-ink glow-text">{decompte || "GO"}</p> : null}
       {phase === "jeu" ? (
         <div className="pointer-events-none absolute left-4 right-4 top-3 flex items-center justify-between text-sm font-semibold text-ink tabular-nums">
-          <span aria-label={`${hud.vies} vies`}>{"❤️".repeat(Math.max(0, hud.vies))}<span className="opacity-30">{"🖤".repeat(Math.max(0, 3 - hud.vies))}</span></span>
-          <span>
-            {hud.effets.join(" ")}{" "}
+          <span aria-label={`${hud.vies} vies`} className="flex items-center gap-0.5">
+            {Array.from({ length: Math.max(3, hud.vies) }, (_, i) => <Icone key={i} nom="coeur" className={`w-5 h-5 ${i < hud.vies ? "text-[#ff5c8a] drop-shadow-[0_0_6px_#ff5c8a]" : "text-white/20"}`} />)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            {hud.effets.map((e) => <span key={e} className="flex h-6 w-6 items-center justify-center rounded-full border" style={{ borderColor: COULEUR[e], color: COULEUR[e], background: COULEUR[e] + "22" }} title={NOM[e]}><Icone nom={ICONE[e]} className="w-3.5 h-3.5" /></span>)}
             <span className={`rounded-full px-2 py-0.5 ${mult > 1 ? "bg-[#ffe066]/25 text-[#ffe9a3]" : "bg-white/10 text-ink-soft"}`}>
               <Icone nom="flamme" className="w-3.5 h-3.5 mr-1" />combo {hud.combo} · ×{mult}
             </span>

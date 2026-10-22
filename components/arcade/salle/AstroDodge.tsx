@@ -2,22 +2,24 @@
 
 // Astro Dodge : pilote ton vaisseau à travers une pluie d'astéroïdes qui s'intensifie.
 // 10 points par seconde de survie, multipliés par le palier (×2 à 20 s, ×3 à 40 s, ×4 à 60 s).
-// Bonus : 🛡️ bouclier (encaisse un choc), ⏳ ralenti, 🔹 mini-vaisseau, ⭐ +150 points.
+// Bonus : bouclier (encaisse un choc), ralenti, mini-vaisseau, étoile (+150 points). Dessins : dessinsCanvas.ts
 // Souris / doigt : le vaisseau suit le pointeur. Clavier : flèches ou ZQSD / WASD.
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
+import type { NomIcone } from "@/components/icones/banque";
+import { asteroide, etoile as etoileCanvas, eclat, pastilleBonus, iconeBouclier, iconeSablier, iconeMiniVaisseau, iconeEtoile } from "./dessinsCanvas";
 
 type Roche = { x: number; y: number; vx: number; vy: number; r: number; a: number; va: number; forme: number[]; teinte: string };
 type TypeBonus = "bouclier" | "ralenti" | "mini" | "etoile";
 type Bonus = { x: number; y: number; vy: number; type: TypeBonus; t: number };
 type Eclat = { x: number; y: number; vx: number; vy: number; vie: number; c: string };
 
-const BONUS: Record<TypeBonus, { emoji: string; couleur: string; nom: string }> = {
-  bouclier: { emoji: "🛡️", couleur: "#5fd4ff", nom: "Bouclier" },
-  ralenti: { emoji: "⏳", couleur: "#c084fc", nom: "Ralenti" },
-  mini: { emoji: "🔹", couleur: "#6bffc8", nom: "Mini-vaisseau" },
-  etoile: { emoji: "⭐", couleur: "#ffd76b", nom: "+150" },
+const BONUS: Record<TypeBonus, { icone: NomIcone; dessin: (ctx: CanvasRenderingContext2D, s: number) => void; couleur: string; nom: string }> = {
+  bouclier: { icone: "bouclier", dessin: iconeBouclier, couleur: "#5fd4ff", nom: "Bouclier" },
+  ralenti: { icone: "sablier", dessin: iconeSablier, couleur: "#c084fc", nom: "Ralenti" },
+  mini: { icone: "fusee", dessin: iconeMiniVaisseau, couleur: "#6bffc8", nom: "Mini-vaisseau" },
+  etoile: { icone: "etoile", dessin: iconeEtoile, couleur: "#ffd76b", nom: "+150" },
 };
 const TEINTES = ["#8a6d5a", "#7a6a7f", "#9b7b62", "#6d5f7a"];
 const palier = (t: number) => Math.min(4, 1 + Math.floor(t / 20));
@@ -25,7 +27,7 @@ const palier = (t: number) => Math.min(4, 1 + Math.floor(t / 20));
 export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
   const [phase, setPhase] = useState<"depart" | "decompte" | "jeu">("depart");
   const [decompte, setDecompte] = useState(3);
-  const [hud, setHud] = useState({ t: 0, score: 0, mult: 1, effets: [] as string[] });
+  const [hud, setHud] = useState({ t: 0, score: 0, mult: 1, effets: [] as TypeBonus[] });
   const zone = useRef<HTMLDivElement | null>(null);
   const toile = useRef<HTMLCanvasElement | null>(null);
   const cible = useRef<{ x: number; y: number } | null>(null);
@@ -192,27 +194,10 @@ export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
       }
       ctx.globalAlpha = 1;
       if (ralenti > 0) { ctx.fillStyle = "rgba(192,132,252,0.08)"; ctx.fillRect(0, 0, W, H); }
-      for (const p of roches) {
-        ctx.save();
-        ctx.translate(p.x, p.y); ctx.rotate(p.a);
-        ctx.beginPath();
-        p.forme.forEach((k, i) => { const a = (i / p.forme.length) * Math.PI * 2; ctx[i ? "lineTo" : "moveTo"](Math.cos(a) * p.r * k, Math.sin(a) * p.r * k); });
-        ctx.closePath();
-        ctx.fillStyle = p.teinte; ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = "rgba(255,255,255,0.18)"; ctx.stroke();
-        ctx.fillStyle = "rgba(0,0,0,0.22)";
-        ctx.beginPath(); ctx.arc(p.r * 0.25, -p.r * 0.2, p.r * 0.22, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(-p.r * 0.3, p.r * 0.28, p.r * 0.14, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-      }
-      ctx.font = "20px system-ui, 'Apple Color Emoji', 'Segoe UI Emoji'";
-      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      for (const p of roches) asteroide(ctx, p.x, p.y, p.r, p.a, p.forme, p.teinte);
       for (const b of bonus) {
-        const pulse = 1 + Math.sin(b.t * 6) * 0.08;
-        ctx.beginPath(); ctx.arc(b.x, b.y, 17 * pulse, 0, Math.PI * 2);
-        ctx.fillStyle = BONUS[b.type].couleur + "33"; ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = BONUS[b.type].couleur; ctx.stroke();
-        ctx.fillText(BONUS[b.type].emoji, b.x, b.y + 1);
+        if (b.type === "etoile") { etoileCanvas(ctx, b.x, b.y, 15, "#ffd76b", b.t * 1.5, 18); eclat(ctx, b.x + 13, b.y - 12, 4); }
+        else pastilleBonus(ctx, b.x, b.y, 17, BONUS[b.type].couleur, b.t, BONUS[b.type].dessin);
       }
       if (vivant) {
         const s = vaisseau.mini > 0 ? 0.6 : 1;
@@ -242,7 +227,7 @@ export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
 
       if (now - dernierHud > 100) {
         dernierHud = now;
-        const effets = [vaisseau.bouclier > 0 ? "🛡️" : "", ralenti > 0 ? "⏳" : "", vaisseau.mini > 0 ? "🔹" : ""].filter(Boolean);
+        const effets = ([vaisseau.bouclier > 0 ? "bouclier" : "", ralenti > 0 ? "ralenti" : "", vaisseau.mini > 0 ? "mini" : ""].filter(Boolean)) as TypeBonus[];
         setHud({ t, score: Math.floor(score), mult: palier(t), effets });
       }
       if (!vivant) {
@@ -279,7 +264,14 @@ export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
         <EcranDepart
           icone="fusee"
           titre="Astro Dodge"
-          regles={<>Ton vaisseau suit la souris (ou ton doigt, ou les flèches du clavier). Esquive les astéroïdes : <strong className="text-ink">un seul choc et c&apos;est fini</strong>. La pluie s&apos;intensifie, mais le multiplicateur aussi (×4 après une minute). Ramasse les bonus : 🛡️ bouclier, ⏳ ralenti, 🔹 mini-vaisseau, ⭐ +150.</>}
+          regles={<>Ton vaisseau suit la souris (ou ton doigt, ou les flèches du clavier). Esquive les astéroïdes : <strong className="text-ink">un seul choc et c&apos;est fini</strong>. La pluie s&apos;intensifie, mais le multiplicateur aussi (×4 après une minute). Ramasse les bonus :
+            <span className="mt-3 flex flex-wrap justify-center gap-2">
+              {(Object.keys(BONUS) as TypeBonus[]).map((k) => (
+                <span key={k} className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold" style={{ borderColor: BONUS[k].couleur + "88", color: BONUS[k].couleur }}>
+                  <Icone nom={BONUS[k].icone} className="w-4 h-4" />{k === "etoile" ? "Étoile +150" : BONUS[k].nom}
+                </span>
+              ))}
+            </span></>}
           onJouer={lancer}
         />
       ) : null}
@@ -287,7 +279,10 @@ export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
       {phase === "jeu" ? (
         <div className="pointer-events-none absolute left-4 right-4 top-3 flex justify-between text-sm font-semibold text-ink tabular-nums">
           <span><Icone nom="chrono" className="w-4 h-4 mr-1" />{hud.t.toFixed(1)} s</span>
-          <span>{hud.effets.join(" ")} <span className="rounded-full bg-[#ff9d5c]/20 px-2 py-0.5 text-[#ffc59a]">×{hud.mult}</span></span>
+          <span className="flex items-center gap-1.5">
+            {hud.effets.map((e) => <span key={e} className="flex h-6 w-6 items-center justify-center rounded-full border" style={{ borderColor: BONUS[e].couleur, color: BONUS[e].couleur, background: BONUS[e].couleur + "22" }} title={BONUS[e].nom}><Icone nom={BONUS[e].icone} className="w-3.5 h-3.5" /></span>)}
+            <span className="rounded-full bg-[#ff9d5c]/20 px-2 py-0.5 text-[#ffc59a]">×{hud.mult}</span>
+          </span>
           <span className="text-lilac">{hud.score.toLocaleString("fr-FR")} pts</span>
         </div>
       ) : null}
