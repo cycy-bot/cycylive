@@ -171,3 +171,21 @@ export default function CosmoFigurine({ id, silhouette = false, taille = 80, cla
     </svg>
   );
 }
+
+/** Figurine dessinée (image de la collection) ou Cosmo-Copain en SVG. */
+export function FigurineVisuel({ id, image = "", taille = 80, silhouette = false, className = "" }: { id: string; image?: string; taille?: number; silhouette?: boolean; className?: string }) {
+  if (!image) return <CosmoFigurine id={id} taille={taille} silhouette={silhouette} className={className} />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={image}
+      alt=""
+      width={taille}
+      height={taille}
+      loading="lazy"
+      draggable={false}
+      className={className}
+      style={{ width: taille, height: taille, objectFit: "contain", filter: silhouette ? "brightness(0) opacity(.28)" : undefined }}
+    />
+  );
+}
