@@ -9,7 +9,7 @@ import type { NomIcone } from "@/components/icones/banque";
 export type FamilleJeu = "arcade" | "quotidien";
 
 export type FicheJeu = {
-  id: JeuArcade | "gratter" | "compagnon" | "coffres";
+  id: JeuArcade | "gratter" | "compagnon" | "coffres" | "grappin";
   famille: FamilleJeu;
   href: string;
   nom: string;
@@ -177,6 +177,20 @@ export const JEUX: FicheJeu[] = [
     controles: "Souris · tactile",
     teinte: { de: "#1d7a4a", a: "#0b1a12", accent: "#9dffb0" },
     badge: "Récompense Discord",
+  },
+  {
+    id: "grappin",
+    icone: "soucoupe",
+    famille: "quotidien",
+    href: "/jeux/grappin",
+    nom: "Le Grappin cosmique",
+    emoji: "🕹️",
+    accroche: "Une machine à pinces néon, 3 tirages par jour : vise les boosters, évite de rentrer bredouille… impossible !",
+    description: "Pilote le grappin de la borne néon et attrape les lots de la vitrine : Gloups, Éclats, capsules à boosters, fragments… et parfois la Reine des Gloups ou la soucoupe JACKPOT. Trois tirages par jour, jamais les mains vides : tout ton butin arrive sur ton compte Discord.",
+    duree: "3 tirages / jour",
+    controles: "◀ ▶ · Espace · tactile",
+    teinte: { de: "#7a1d6a", a: "#12062a", accent: "#ff4f9a" },
+    badge: "Nouveau",
   },
   {
     id: "coffres",
