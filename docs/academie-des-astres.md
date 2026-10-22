@@ -71,6 +71,12 @@ Avatar en calques PNG, deux vues synchronisées (Portrait / Plein pied) calculé
 
 **Éléments du visage** : yeux, sourcils, nez et bouches sont posés sur des ancres (par morphologie, surchargeables par visage). Toutes les variantes d'un même dossier partagent une échelle commune (taille médiane du jeu) pour conserver leurs différences de forme ; `reglage` permet un ajustement fin par variante.
 
-**Couleurs** : enregistrées dans l'apparence et utilisées par le portrait vectoriel des scènes. La teinte de l'aperçu PNG est désactivée (`teintes` dans le catalogue) en attendant des assets prévus pour la recoloration.
+**Couleurs** : appliquées à l'aperçu (`lib/academie/avatar/teinte.ts`, canevas, résultats en cache). Chaque calque a une couleur de référence et, si besoin, un masque (peau des paupières, iris, peau visible des tenues, dents exclues des bouches « trait ») dans `data/academie/avatar/teintes.genere.ts`. Ombres et contours sont conservés. Palettes : 8 carnations, 6 iris, 12 couleurs de cheveux (`data/academie/personnalisation.ts`).
+
+**Assets traités (22/10)** : `scripts/academie/traitement/` (voir son README) produit les calques nettoyés à partir du ZIP, puis `preparer_avatar.py` les copie et les mesure. Visages sans nez dessiné, coiffures recalées sur le crâne (`poses`), yeux et sourcils découpés des planches nettes, bouches féminines corrigées.
+
+**Portrait habillé** : sous le visage, la tenue en pied (fond, hors cadrage) et le buste haute définition (`public/academie-des-astres/avatar/bustes/`), placés avec la même pose que le plein pied. Les couleurs de maison (`accents/`) s'ajoutent quand `rendu.maison` est fourni (carte d'élève après la cérémonie).
+
+**Pose de la tête** : échelle 0,187 (crâne et menton du visage sur ceux de la tenue).
 
 **Sauvegarde** : même clé et même version qu'avant ; `apparence.avatar` et `apparence.sourcils` sont optionnels, les anciennes sauvegardes restent valides. L'écriture est différée de 400 ms et forcée à la fermeture de l'onglet.

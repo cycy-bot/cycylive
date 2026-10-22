@@ -109,3 +109,34 @@ export type CategorieCreateur = {
 };
 
 export type VueAvatar = "portrait" | "pleinPied";
+
+// ---------- Recoloration et calques de tenue (données générées) ----------
+
+export type RefTeinte = {
+  /** Couleur de référence du calque (RVB) : la teinte choisie la remplace en gardant les ombres. */
+  ref?: number[];
+  /** Masque RVB (même canevas) ; `canal` 0 = R, 1 = V. */
+  masque?: string;
+  canal?: number;
+  res?: number;
+  hi?: number;
+  comp?: number;
+  /** "assombrir" : simple assombrissement proportionnel à la carnation (lèvres dessinées). */
+  mode?: "assombrir";
+};
+
+export type DonneesTeintes = {
+  peau: Record<string, RefTeinte>;
+  iris: Record<string, RefTeinte>;
+  cheveux: Record<string, RefTeinte>;
+  sourcils: Record<string, RefTeinte>;
+  /** Coiffures recalées : origine du canevas, relative au sommet du crâne (espace "tete"). */
+  poses: Record<string, { x: number; y: number }>;
+  /** Buste haute définition de chaque tenue : origine et échelle dans l'espace "corps". */
+  bustes: Record<string, { fichier: string; l: number; h: number; origine: number[]; echelle: number; maisons: Record<string, string> }>;
+  /** Couleurs des maisons sur la tenue en pied (même canevas que la tenue). */
+  accents: Record<string, Record<string, string>>;
+};
+
+/** Couleurs de l'apparence utilisées pour teinter l'aperçu. */
+export type CouleursAvatar = { peau?: string; yeux?: string; cheveux?: string; sourcils?: string };

@@ -70,7 +70,8 @@ for (const v of K.optionsParCalque.visage) {
     const sel = { ...defF, visage: v.id, cheveux: h.id };
     const calques = C.composer(sel, "portrait");
     const zone = C.zoneCadrage(calques, "portrait");
-    for (const c of calques) verifier(`portrait ${v.id}+${h.id} contient ${c.cle}`, contient(zone, c.limites), `${r(zone)} ⊅ ${r(c.limites)}`);
+    // La tenue sous le portrait est un fond (horsCadrage) : elle déborde volontairement du cadre.
+    for (const c of calques.filter((x) => !x.horsCadrage)) verifier(`portrait ${v.id}+${h.id} contient ${c.cle}`, contient(zone, c.limites), `${r(zone)} ⊅ ${r(c.limites)}`);
     const visage = calques.find((c) => c.cle === "visage");
     const cx = (visage.limites[0] + visage.limites[2]) / 2;
     verifier(`portrait ${v.id}+${h.id} centré`, Math.abs((zone[0] + zone[2]) / 2 - cx) < 0.5);
@@ -99,7 +100,7 @@ for (const t of K.optionsParCalque.tenue) {
   for (const h of K.optionsParCalque.cheveux) {
     const calques = C.composer({ ...defF, tenue: t.id, cheveux: h.id }, "pleinPied");
     const zone = C.zoneCadrage(calques, "pleinPied");
-    for (const c of calques) verifier(`plein pied ${t.id}+${h.id} contient ${c.cle}`, contient(zone, c.limites));
+    for (const c of calques.filter((x) => !x.horsCadrage)) verifier(`plein pied ${t.id}+${h.id} contient ${c.cle}`, contient(zone, c.limites));
   }
   const calques = C.composer({ ...defF, tenue: t.id }, "pleinPied");
   const visage = calques.find((c) => c.cle === "visage").limites;

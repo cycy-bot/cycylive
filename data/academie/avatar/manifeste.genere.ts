@@ -8,10 +8,10 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      236,
+      237,
       79,
       798,
-      953
+      952
     ],
     "vignette": "visages/vignettes/01_feminin_ovale.webp"
   },
@@ -20,7 +20,7 @@ export const manifeste: ManifesteAvatar = {
     "h": 1024,
     "limites": [
       220,
-      79,
+      80,
       810,
       945
     ],
@@ -32,7 +32,7 @@ export const manifeste: ManifesteAvatar = {
     "limites": [
       220,
       77,
-      801,
+      800,
       948
     ],
     "vignette": "visages/vignettes/03_feminin_coeur.webp"
@@ -41,10 +41,10 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      244,
+      245,
       77,
-      788,
-      954
+      787,
+      953
     ],
     "vignette": "visages/vignettes/04_feminin_allonge.webp"
   },
@@ -52,10 +52,10 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      211,
+      212,
       67,
-      806,
-      947
+      804,
+      946
     ],
     "vignette": "visages/vignettes/05_masculin_ovale.webp"
   },
@@ -63,10 +63,10 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      208,
+      210,
       66,
-      818,
-      947
+      816,
+      946
     ],
     "vignette": "visages/vignettes/06_masculin_carre.webp"
   },
@@ -74,10 +74,10 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      201,
+      202,
       67,
-      811,
-      948
+      809,
+      947
     ],
     "vignette": "visages/vignettes/07_masculin_rectangulaire.webp"
   },
@@ -85,208 +85,208 @@ export const manifeste: ManifesteAvatar = {
     "l": 1024,
     "h": 1024,
     "limites": [
-      205,
-      67,
-      808,
+      207,
+      68,
+      806,
       947
     ],
     "vignette": "visages/vignettes/08_masculin_machoire_anguleuse.webp"
   },
   "yeux/01_feminin_ronds_doux.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 507,
+    "h": 115,
     "limites": [
-      186,
-      452,
-      895,
-      613
+      2,
+      1,
+      506,
+      114
     ],
     "vignette": "yeux/vignettes/01_feminin_ronds_doux.webp"
   },
   "yeux/02_feminin_amande.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 529,
+    "h": 103,
     "limites": [
-      171,
-      459,
-      911,
-      604
+      2,
+      1,
+      528,
+      102
     ],
     "vignette": "yeux/vignettes/02_feminin_amande.webp"
   },
   "yeux/03_feminin_etires.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 536,
+    "h": 98,
     "limites": [
-      164,
-      457,
-      911,
-      595
+      4,
+      1,
+      533,
+      97
     ],
     "vignette": "yeux/vignettes/03_feminin_etires.webp"
   },
   "yeux/04_feminin_tombants.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 514,
+    "h": 105,
     "limites": [
-      177,
-      440,
-      897,
-      587
+      1,
+      1,
+      513,
+      104
     ],
     "vignette": "yeux/vignettes/04_feminin_tombants.webp"
   },
   "yeux/05_feminin_fins_mysterieux.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 530,
+    "h": 84,
     "limites": [
-      170,
-      447,
-      911,
-      565
+      2,
+      1,
+      529,
+      83
     ],
     "vignette": "yeux/vignettes/05_feminin_fins_mysterieux.webp"
   },
   "yeux/06_masculin_classiques.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 471,
+    "h": 89,
     "limites": [
-      218,
-      466,
-      877,
-      590
+      1,
+      1,
+      469,
+      89
     ],
     "vignette": "yeux/vignettes/06_masculin_classiques.webp"
   },
   "yeux/07_masculin_fins_allonges.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 525,
+    "h": 82,
     "limites": [
-      181,
-      471,
-      911,
-      585
+      2,
+      1,
+      523,
+      81
     ],
     "vignette": "yeux/vignettes/07_masculin_fins_allonges.webp"
   },
   "yeux/08_masculin_tombants.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 495,
+    "h": 84,
     "limites": [
-      202,
-      467,
-      895,
-      584
+      1,
+      1,
+      493,
+      82
     ],
     "vignette": "yeux/vignettes/08_masculin_tombants.webp"
   },
   "yeux/09_masculin_ouverts.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 494,
+    "h": 98,
     "limites": [
-      201,
-      436,
-      893,
-      575
+      1,
+      0,
+      493,
+      97
     ],
     "vignette": "yeux/vignettes/09_masculin_ouverts.webp"
   },
   "yeux/10_masculin_percants.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 507,
+    "h": 91,
     "limites": [
-      192,
-      433,
-      901,
-      560
+      2,
+      0,
+      504,
+      89
     ],
     "vignette": "yeux/vignettes/10_masculin_percants.webp"
   },
   "sourcils/01_droits_fins.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 698,
+    "h": 63,
     "limites": [
-      164,
-      430,
-      859,
-      491
+      1,
+      0,
+      696,
+      61
     ],
     "vignette": "sourcils/vignettes/01_droits_fins.webp"
   },
   "sourcils/02_droits_epais.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 730,
+    "h": 80,
     "limites": [
-      148,
-      421,
-      875,
-      499
+      1,
+      1,
+      728,
+      79
     ],
     "vignette": "sourcils/vignettes/02_droits_epais.webp"
   },
   "sourcils/03_legerement_arques.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 701,
+    "h": 81,
     "limites": [
-      162,
-      421,
-      861,
-      500
+      0,
+      0,
+      700,
+      79
     ],
     "vignette": "sourcils/vignettes/03_legerement_arques.webp"
   },
   "sourcils/04_fortement_arques.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 731,
+    "h": 111,
     "limites": [
-      148,
-      406,
-      876,
-      514
+      1,
+      0,
+      730,
+      108
     ],
     "vignette": "sourcils/vignettes/04_fortement_arques.webp"
   },
   "sourcils/05_doux_arrondis.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 700,
+    "h": 77,
     "limites": [
-      163,
-      423,
-      860,
-      498
+      1,
+      1,
+      698,
+      76
     ],
     "vignette": "sourcils/vignettes/05_doux_arrondis.webp"
   },
   "sourcils/06_anguleux.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 746,
+    "h": 97,
     "limites": [
-      141,
-      412,
-      883,
-      508
+      2,
+      0,
+      745,
+      96
     ],
     "vignette": "sourcils/vignettes/06_anguleux.webp"
   },
   "sourcils/07_courts_epais.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 659,
+    "h": 81,
     "limites": [
-      184,
-      421,
-      840,
-      500
+      1,
+      0,
+      659,
+      80
     ],
     "vignette": "sourcils/vignettes/07_courts_epais.webp"
   },
   "sourcils/08_legerement_tombants.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 726,
+    "h": 67,
     "limites": [
-      151,
-      428,
-      872,
-      493
+      1,
+      1,
+      723,
+      66
     ],
     "vignette": "sourcils/vignettes/08_legerement_tombants.webp"
   },
@@ -379,90 +379,90 @@ export const manifeste: ManifesteAvatar = {
     "vignette": "nez/vignettes/08_nez_epate_doux.webp"
   },
   "bouches/existantes/01_neutre_fermee.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      354,
-      509,
-      695,
-      644
+      314,
+      530,
+      941,
+      790
     ],
     "vignette": "bouches/existantes/vignettes/01_neutre_fermee.webp"
   },
   "bouches/existantes/02_petit_sourire.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      348,
-      509,
-      683,
-      646
+      265,
+      506,
+      984,
+      809
     ],
     "vignette": "bouches/existantes/vignettes/02_petit_sourire.webp"
   },
   "bouches/existantes/03_sourire_chaleureux.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      324,
-      513,
-      689,
-      654
+      249,
+      522,
+      1005,
+      799
     ],
     "vignette": "bouches/existantes/vignettes/03_sourire_chaleureux.webp"
   },
   "bouches/existantes/04_grand_sourire_dents.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      321,
-      497,
-      686,
-      672
+      197,
+      456,
+      1058,
+      843
     ],
     "vignette": "bouches/existantes/vignettes/04_grand_sourire_dents.webp"
   },
   "bouches/existantes/05_sourire_malicieux.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      356,
-      414,
-      687,
-      555
+      246,
+      529,
+      1024,
+      822
     ],
     "vignette": "bouches/existantes/vignettes/05_sourire_malicieux.webp"
   },
   "bouches/existantes/06_bouche_surprise.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      402,
-      393,
-      633,
-      581
+      319,
+      489,
+      935,
+      815
     ],
     "vignette": "bouches/existantes/vignettes/06_bouche_surprise.webp"
   },
   "bouches/existantes/07_expression_contrariee.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      350,
-      419,
-      677,
-      551
+      321,
+      516,
+      935,
+      790
     ],
     "vignette": "bouches/existantes/vignettes/07_expression_contrariee.webp"
   },
   "bouches/existantes/08_moue_boudeuse.png": {
-    "l": 1024,
-    "h": 1024,
+    "l": 1254,
+    "h": 1254,
     "limites": [
-      376,
-      409,
-      638,
-      566
+      312,
+      528,
+      939,
+      784
     ],
     "vignette": "bouches/existantes/vignettes/08_moue_boudeuse.webp"
   },
@@ -556,177 +556,177 @@ export const manifeste: ManifesteAvatar = {
   },
   "cheveux/01_court_classique_raie_cote.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 685,
     "limites": [
-      175,
-      180,
-      843,
-      815
+      181,
+      96,
+      849,
+      677
     ],
     "vignette": "cheveux/vignettes/01_court_classique_raie_cote.webp"
   },
   "cheveux/02_court_ebouriffe_texture.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 686,
     "limites": [
-      143,
       153,
-      867,
-      799
+      73,
+      877,
+      676
     ],
     "vignette": "cheveux/vignettes/02_court_ebouriffe_texture.webp"
   },
   "cheveux/03_coupe_rideau_raie_centrale.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 689,
     "limites": [
-      161,
-      194,
-      899,
-      776
+      159,
+      98,
+      897,
+      680
     ],
     "vignette": "cheveux/vignettes/03_coupe_rideau_raie_centrale.webp"
   },
   "cheveux/04_degrade_court_volume.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 699,
     "limites": [
-      184,
-      152,
-      842,
-      835
+      183,
+      84,
+      841,
+      690
     ],
     "vignette": "cheveux/vignettes/04_degrade_court_volume.webp"
   },
   "cheveux/05_mi_long_legerement_ondule.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 829,
     "limites": [
-      135,
-      134,
-      871,
-      851
+      140,
+      106,
+      876,
+      823
     ],
     "vignette": "cheveux/vignettes/05_mi_long_legerement_ondule.webp"
   },
   "cheveux/06_court_boucle.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 656,
     "limites": [
-      165,
-      128,
-      873,
-      778
+      171,
+      100,
+      879,
+      649
     ],
     "vignette": "cheveux/vignettes/06_court_boucle.webp"
   },
   "cheveux/07_mi_long_meches_tombantes.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 847,
     "limites": [
-      135,
-      124,
-      886,
-      869
+      144,
+      96,
+      895,
+      841
     ],
     "vignette": "cheveux/vignettes/07_mi_long_meches_tombantes.webp"
   },
   "cheveux/08_court_afro_tres_frise.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 656,
     "limites": [
-      171,
-      133,
-      859,
-      793
+      177,
+      85,
+      865,
+      648
     ],
     "vignette": "cheveux/vignettes/08_court_afro_tres_frise.webp"
   },
   "cheveux/09_carre_court_frange.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 927,
     "limites": [
-      164,
-      93,
-      899,
-      972
+      108,
+      159,
+      917,
+      920
     ],
     "vignette": "cheveux/vignettes/09_carre_court_frange.webp"
   },
   "cheveux/10_carre_mi_long_ondule.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1099,
     "limites": [
-      105,
-      79,
-      950,
-      932
+      49,
+      153,
+      979,
+      1092
     ],
     "vignette": "cheveux/vignettes/10_carre_mi_long_ondule.webp"
   },
   "cheveux/11_longs_lisses_raie_centrale.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1171,
     "limites": [
-      108,
-      70,
-      949,
-      972
+      59,
+      174,
+      977,
+      1159
     ],
     "vignette": "cheveux/vignettes/11_longs_lisses_raie_centrale.webp"
   },
   "cheveux/12_longs_ondules.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1158,
     "limites": [
-      77,
-      70,
-      946,
-      972
+      42,
+      162,
+      998,
+      1147
     ],
     "vignette": "cheveux/vignettes/12_longs_ondules.webp"
   },
   "cheveux/13_queue_de_cheval_haute.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1410,
     "limites": [
-      143,
-      52,
-      895,
-      972
+      241,
+      25,
+      965,
+      1405
     ],
     "vignette": "cheveux/vignettes/13_queue_de_cheval_haute.webp"
   },
   "cheveux/14_chignon_decontracte.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1015,
     "limites": [
-      242,
-      57,
-      807,
-      960
+      192,
+      14,
+      814,
+      997
     ],
     "vignette": "cheveux/vignettes/14_chignon_decontracte.webp"
   },
   "cheveux/15_tresse_sur_le_cote.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1160,
     "limites": [
-      102,
-      52,
-      950,
-      972
+      194,
+      163,
+      814,
+      1149
     ],
     "vignette": "cheveux/vignettes/15_tresse_sur_le_cote.webp"
   },
   "cheveux/16_longs_boucles_frises.png": {
     "l": 1024,
-    "h": 1024,
+    "h": 1172,
     "limites": [
-      53,
-      52,
-      961,
-      963
+      27,
+      176,
+      1024,
+      1160
     ],
     "vignette": "cheveux/vignettes/16_longs_boucles_frises.webp"
   },
@@ -758,7 +758,7 @@ export const manifeste: ManifesteAvatar = {
     "limites": [
       366,
       14,
-      659,
+      658,
       1004
     ],
     "vignette": "tenues/vignettes/03_feminin_alternatif_chic.webp"
@@ -769,7 +769,7 @@ export const manifeste: ManifesteAvatar = {
     "limites": [
       373,
       12,
-      650,
+      649,
       1008
     ],
     "vignette": "tenues/vignettes/04_masculin_classique.webp"
@@ -791,7 +791,7 @@ export const manifeste: ManifesteAvatar = {
     "limites": [
       363,
       14,
-      662,
+      661,
       1005
     ],
     "vignette": "tenues/vignettes/06_masculin_decontracte_chic.webp"

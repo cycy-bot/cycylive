@@ -17,9 +17,12 @@ import {
   selectionsParDefaut,
 } from "../../../data/academie/avatar/catalogue";
 import { manifeste } from "../../../data/academie/avatar/manifeste.genere";
+import { donneesTeintes } from "../../../data/academie/avatar/teintes.genere";
+import type { OperationTeinte } from "./teinte";
 import type {
   Boite,
   CategorieCalque,
+  CouleursAvatar,
   EntreeManifeste,
   OptionCalque,
   OptionTenue,
@@ -44,7 +47,16 @@ export type Calque = {
   masque?: string;
   /** Vrai si les limites viennent du manifeste (sinon : canevas entier, par prudence). */
   mesure: boolean;
+  /** Clé de rendu quand plusieurs calques partagent une catégorie (tenue, buste, couleurs de maison). */
+  id?: string;
+  /** Recoloration à appliquer (couleurs de l'apparence). */
+  teinte?: OperationTeinte[];
+  /** Calque de fond exclu du cadrage automatique (tenue sous le portrait). */
+  horsCadrage?: boolean;
 };
+
+/** Options de rendu : couleurs de l'apparence et maison (couleurs de maison sur la tenue). */
+export type OptionsRendu = { couleurs?: CouleursAvatar; maison?: string | null };
 
 export type SelectionComplete = Required<SelectionAvatar>;
 
@@ -168,7 +180,13 @@ function calquesTete(sel: SelectionComplete): Calque[] {
   // Coiffure : canevas commun aux visages ; on la remonte si son
   // sommet est plus bas que le crâne (sinon le crâne apparaîtrait).
   const coiffure = trouverOption("cheveux", sel.cheveux);
-  if (coiffure) {
+  const pose = coiffure ? donneesTeintes.poses[coiffure.fichier] : undefined;
+  if (coiffure && pose) {
+    // Coiffure recalée sur le crâne : origine du canevas relative au sommet du visage choisi.
+    const x = pose.x + (coiffure.reglage?.dx ?? 0);
+    const y = sommetCrane(visage) + pose.y + (coiffure.reglage?.dy ?? 0);
+    calques.push(calqueDepuis("cheveux", coiffure, x, y, coiffure.reglage?.echelle ?? 1));
+  } else if (coiffure) {
     const e = entreeManifeste(coiffure.fichier);
     const s = (TAILLE_ESPACE / e.l) * (coiffure.reglage?.echelle ?? 1);
     const haut = e.limites[1] * s;
@@ -182,11 +200,42 @@ function calquesTete(sel: SelectionComplete): Calque[] {
 const pct = (v: number) => `${Math.round(v * 1000) / 10}%`;
 
 /** Liste ordonnée des calques à afficher pour une vue. */
-export function composer(selection: SelectionComplete, vue: VueAvatar): Calque[] {
+export function composer(selection: SelectionComplete, vue: VueAvatar, rendu: OptionsRendu = {}): Calque[] {
   const tete = calquesTete(selection);
-  if (vue === "portrait") return trier(tete);
-
   const tenue = trouverOption("tenue", selection.tenue) as OptionTenue;
+  const visageOpt = trouverOption("visage", selection.visage) as OptionVisage;
+  const maison = rendu.maison ?? null;
+
+  if (vue === "portrait") {
+    // Le haut de la tenue sous le visage : tenue en pied (fond, pour le cou et les épaules)
+    // puis buste haute définition par-dessus, placés avec la même pose que le plein pied.
+    const buste = donneesTeintes.bustes[tenue.fichier];
+    if (!buste) return teinter(trier(tete), rendu.couleurs);
+    const k = tenue.tete.echelle, ox = TAILLE_ESPACE / 2, oy = sommetCrane(visageOpt);
+    const vx = (bx: number) => (bx - tenue.tete.x) / k + ox;
+    const vy = (by: number) => (by - tenue.tete.y) / k + oy;
+    const eTenue = entreeManifeste(tenue.fichier);
+    const sT = TAILLE_ESPACE / eTenue.l / k;
+    const fond = calqueDepuis("tenue", tenue, vx(0), vy(0), sT);
+    fond.id = "tenue-fond";
+    fond.horsCadrage = true;
+    fond.masque = `linear-gradient(to bottom, transparent ${pct(tenue.masqueHaut[0])}, #000 ${pct(tenue.masqueHaut[1])})`;
+    const sB = buste.echelle / k;
+    const hd = (fichier: string, id: string): Calque => ({
+      cle: "tenue", optionId: tenue.id, label: tenue.label, src: cheminAsset(fichier), id,
+      x: vx(buste.origine[0]), y: vy(buste.origine[1]), l: buste.l * sB, h: buste.h * sB,
+      limites: [vx(buste.origine[0]), vy(buste.origine[1]), vx(buste.origine[0]) + buste.l * sB, vy(buste.origine[1]) + buste.h * sB],
+      mesure: true, horsCadrage: true,
+      masque: "linear-gradient(to bottom, transparent 10.5%, #000 13.5%)",
+    });
+    const calquesBuste = [fond, hd(buste.fichier, "buste")];
+    if (maison && buste.maisons[maison]) calquesBuste.push(hd(buste.maisons[maison], "buste-maison"));
+    const teteFondue = tete.map<Calque>((c) =>
+      c.cle === "visage" ? { ...c, masque: "linear-gradient(to bottom, #000 74.5%, transparent 79%)" } : c
+    );
+    return teinter(trier([...calquesBuste, ...teteFondue]), rendu.couleurs);
+  }
+
   const eTenue = entreeManifeste(tenue.fichier);
   const calqueTenue = calqueDepuis("tenue", tenue, 0, 0, TAILLE_ESPACE / eTenue.l);
   calqueTenue.masque = `linear-gradient(to bottom, transparent ${pct(tenue.masqueHaut[0])}, #000 ${pct(tenue.masqueHaut[1])})`;
@@ -207,7 +256,42 @@ export function composer(selection: SelectionComplete, vue: VueAvatar): Calque[]
     limites: [tx(c.limites[0]), ty(c.limites[1]), tx(c.limites[2]), ty(c.limites[3])],
     masque: c.cle === "visage" ? `linear-gradient(to bottom, #000 ${pct(fonduCouPleinPied[0])}, transparent ${pct(fonduCouPleinPied[1])})` : c.masque,
   }));
-  return trier([calqueTenue, ...teteSurCorps]);
+  const calquesCorps = [calqueTenue];
+  const accent = maison ? donneesTeintes.accents[tenue.fichier]?.[maison] : undefined;
+  if (accent) calquesCorps.push({ ...calqueTenue, id: "tenue-maison", src: cheminAsset(accent), masque: undefined });
+  return teinter(trier([...calquesCorps, ...teteSurCorps]), rendu.couleurs);
+}
+
+// ---------- Recoloration ----------
+
+const lum = (c: number[]) => c[0] * 0.299 + c[1] * 0.587 + c[2] * 0.114;
+const hexRvb = (h: string) => [1, 3, 5].map((i) => parseInt(h.replace("#", "").padEnd(6, "0").slice(i - 1, i + 1), 16));
+const PEAU_REFERENCE = [245, 204, 180];
+
+/** Opérations de teinte d'un calque d'après les couleurs choisies (aucune si la couleur manque). */
+export function operationsTeinte(c: Calque, couleurs: CouleursAvatar | undefined): OperationTeinte[] {
+  if (!couleurs) return [];
+  const fichier = c.src.startsWith(racineAssets) ? c.src.slice(racineAssets.length) : c.src;
+  const ops: OperationTeinte[] = [];
+  const peau = donneesTeintes.peau[fichier];
+  if (peau && couleurs.peau) {
+    if (peau.mode === "assombrir") ops.push({ mode: "assombrir", facteur: 0.5 + (0.5 * lum(hexRvb(couleurs.peau))) / lum(PEAU_REFERENCE) });
+    else if (peau.ref) ops.push({ mode: "remap", ref: peau.ref, cible: couleurs.peau, masque: peau.masque, canal: peau.canal, res: peau.res, hi: peau.hi, comp: peau.comp });
+  }
+  const iris = donneesTeintes.iris[fichier];
+  if (iris?.ref && couleurs.yeux) ops.push({ mode: "remap", ref: iris.ref, cible: couleurs.yeux, masque: iris.masque, canal: iris.canal, res: 0.15 });
+  const poils = c.cle === "sourcils" ? donneesTeintes.sourcils[fichier] : donneesTeintes.cheveux[fichier];
+  const couleurPoils = c.cle === "sourcils" ? couleurs.sourcils ?? couleurs.cheveux : couleurs.cheveux;
+  if (poils?.ref && couleurPoils) ops.push({ mode: "remap", ref: poils.ref, cible: couleurPoils, res: 0.12, hi: 0.7, comp: 0.55 });
+  return ops;
+}
+
+function teinter(calques: Calque[], couleurs: CouleursAvatar | undefined): Calque[] {
+  if (!couleurs) return calques;
+  return calques.map((c) => {
+    const ops = operationsTeinte(c, couleurs);
+    return ops.length ? { ...c, teinte: ops } : c;
+  });
 }
 
 function trier(calques: Calque[]): Calque[] {
@@ -237,7 +321,7 @@ export const MARGES_CADRAGE = {
  * `ignorer` : calques absents ou en erreur, exclus du calcul.
  */
 export function zoneCadrage(calques: Calque[], vue: VueAvatar, ignorer: ReadonlySet<CategorieCalque> = new Set()): Boite {
-  const visibles = calques.filter((c) => !ignorer.has(c.cle));
+  const visibles = calques.filter((c) => !ignorer.has(c.cle) && !c.horsCadrage);
   const u = union(visibles.map((c) => c.limites));
   if (!u) return [0, 0, TAILLE_ESPACE, TAILLE_ESPACE];
   const pivot = visibles.find((c) => c.cle === (vue === "portrait" ? "visage" : "tenue")) ?? visibles[0];

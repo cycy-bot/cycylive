@@ -157,9 +157,11 @@ const cheveux: OptionCalque[] = [
 ];
 
 // Point de pose de la tête mesuré sur chaque tenue (tête chauve dessinée
-// en haut du canevas : sommet vers y = 14, menton vers y = 122).
-const poseTete = { x: 511.5, y: 15, echelle: 0.162 };
-const masqueTete: [number, number] = [0.105, 0.122];
+// en haut du canevas : sommet vers y = 14, menton vers y = 139). L'échelle
+// fait coïncider le crâne ET le menton du visage avec ceux de la tenue,
+// pour que la tête garde la taille prévue par le dessin du corps.
+const poseTete = { x: 511.75, y: 14, echelle: 0.187 };
+const masqueTete: [number, number] = [0.118, 0.137];
 
 const tenues: OptionTenue[] = [
   { id: "f-classique", label: "Classique", fichier: "tenues/01_feminin_classique.png", morphologie: "feminin", tete: poseTete, masqueHaut: masqueTete, svg: { tenue: "uniforme" } },
@@ -201,14 +203,15 @@ export const palettes: Record<"peau" | "yeux" | "cheveux" | "sourcils", Couleur[
 };
 
 /**
- * Recoloration de l'aperçu : désactivée tant que les assets ne sont
- * pas fournis en niveaux de gris ou avec des masques de teinte.
+ * Recoloration de l'aperçu : appliquée à partir des couleurs de référence
+ * et des masques de data/academie/avatar/teintes.genere.ts (ombres et
+ * contours conservés, voir lib/academie/avatar/teinte.ts).
  */
 export const teintes: Record<"peau" | "yeux" | "cheveux" | "sourcils", Teinte> = {
-  peau: { appliquee: false, mode: "multiply" },
-  yeux: { appliquee: false, mode: "color" },
-  cheveux: { appliquee: false, mode: "color" },
-  sourcils: { appliquee: false, mode: "color" },
+  peau: { appliquee: true },
+  yeux: { appliquee: true },
+  cheveux: { appliquee: true },
+  sourcils: { appliquee: true },
 };
 
 // ---------- Sélections par défaut ----------

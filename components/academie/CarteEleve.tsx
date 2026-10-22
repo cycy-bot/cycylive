@@ -39,7 +39,11 @@ export default function CarteEleve({ personnage, maison, className }: { personna
         </svg>
 
         <div className="relative w-[34%] shrink-0 overflow-hidden rounded-xl border" style={{ borderColor: `${accent}66`, background: "linear-gradient(180deg,#2A2150,#120E2A)" }}>
-          <PortraitAvatar selection={normaliserSelection(personnage.apparence.avatar, personnage.identite)} className="absolute inset-0" />
+          <PortraitAvatar
+            selection={normaliserSelection(personnage.apparence.avatar, personnage.identite)}
+            rendu={{ couleurs: { peau: personnage.apparence.peau, yeux: personnage.apparence.yeux, cheveux: personnage.apparence.cheveux, sourcils: personnage.apparence.sourcils }, maison }}
+            className="absolute inset-0"
+          />
         </div>
 
         <div className="relative flex min-w-0 flex-1 flex-col">
@@ -58,7 +62,6 @@ export default function CarteEleve({ personnage, maison, className }: { personna
           </div>
 
           <p className="ada-titre mt-1 truncate text-lg leading-tight sm:mt-2 sm:text-2xl">{personnage.prenom.trim() || "Prénom"}</p>
-          <p className="ada-titre truncate text-sm leading-tight text-[color:var(--ada-encre-douce)] sm:text-base">{personnage.nom.trim() || " "}</p>
 
           <div className="mt-auto space-y-1 text-[0.62rem] leading-snug sm:text-xs">
             <p>

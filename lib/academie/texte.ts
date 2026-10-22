@@ -26,7 +26,7 @@ function majuscule(s: string): string {
 }
 
 export function nomComplet(p: Personnage): string {
-  return [p.prenom.trim(), p.nom.trim()].filter(Boolean).join(" ");
+  return p.prenom.trim();   // prénom ou pseudo seulement (plus de nom de famille)
 }
 
 export function interpoler(texte: string, ctx: ContexteTexte): string {

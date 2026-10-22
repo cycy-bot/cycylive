@@ -9,6 +9,9 @@
 # Résultat : data/academie/avatar/manifeste.genere.ts, lu par le
 # créateur pour cadrer le portrait et placer les calques.
 #
+# Source : le dossier produit par scripts/academie/traitement/traiter_pour_repo.py
+# (assets nettoyés, recalés et préparés pour la recoloration).
+#
 # Utilisation (depuis la racine du projet) :
 #   py -m pip install pillow
 #   py scripts/academie/preparer_avatar.py "C:/chemin/vers/Personnalisation_avatar"
@@ -34,8 +37,8 @@ DOSSIERS = {
     "yeux_avatar": "yeux",
     "sourcils_avatar": "sourcils",
     "nez_avatar": "nez",
-    "bouches_avatar/academie_des_astres_bouches_v2/01_bouches_existantes_nettoyees": "bouches/existantes",
-    "bouches_avatar/academie_des_astres_bouches_v2/02_bouches_masculines": "bouches/masculines",
+    "bouches_feminines": "bouches/existantes",
+    "bouches_masculines": "bouches/masculines",
     "coiffures_avatar": "cheveux",
     "tenues_avatar": "tenues",
 }

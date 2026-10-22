@@ -208,6 +208,7 @@ export default function CreateurPersonnage({ personnage, etape, onChange, onEtap
             pleinEcran={pleinEcran}
             onPleinEcran={setPleinEcran}
             titre={personnage.prenom.trim() ? `Aperçu de ${personnage.prenom.trim()}` : "Aperçu de ton personnage"}
+            rendu={{ couleurs: { peau: ap.peau, yeux: ap.yeux, cheveux: ap.cheveux, sourcils: ap.sourcils } }}
           />
         </div>
 
@@ -397,27 +398,16 @@ function ContenuCategorie({ categorie, personnage, selection, onPersonnage, onCa
 function Identite({ personnage, onPersonnage }: { personnage: Personnage; onPersonnage: PropsContenu["onPersonnage"] }) {
   return (
     <>
-      <Section titre="Prénom" aide="obligatoire">
+      <Section titre="Prénom ou pseudo" aide="obligatoire">
         <input
           className="ada-champ"
           value={personnage.prenom}
           maxLength={LONGUEUR_MAX_NOM}
-          placeholder="Ton prénom"
+          placeholder="Ton prénom ou ton pseudo"
           autoComplete="off"
           aria-label="Prénom"
           aria-required
           onChange={(e) => onPersonnage({ ...personnage, prenom: e.target.value }, "prenom")}
-        />
-      </Section>
-      <Section titre="Nom de famille" aide="facultatif">
-        <input
-          className="ada-champ"
-          value={personnage.nom}
-          maxLength={LONGUEUR_MAX_NOM}
-          placeholder="Ton nom"
-          autoComplete="off"
-          aria-label="Nom de famille"
-          onChange={(e) => onPersonnage({ ...personnage, nom: e.target.value }, "nom")}
         />
       </Section>
       <Section titre="Identité">
@@ -546,7 +536,7 @@ function Recapitulatif({
           <div>
             <dt>Identité</dt>
             <dd>
-              {[personnage.prenom.trim() || "—", personnage.nom.trim()].filter(Boolean).join(" ")} · {pronoms[personnage.pronoms].label}
+              {personnage.prenom.trim() || "—"} · {pronoms[personnage.pronoms].label}
             </dd>
             <button type="button" className="ada-lien" onClick={() => onAller("identite")} aria-label="Modifier l'identité">
               Modifier

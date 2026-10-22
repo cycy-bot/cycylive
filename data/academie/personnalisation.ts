@@ -35,13 +35,14 @@ export const pronoms: Record<PronomsId, { id: PronomsId; label: string; exemple:
 };
 
 export const couleursPeau: Couleur[] = [
-  { id: "porcelaine", label: "Porcelaine", valeur: "#F5D9C6" },
-  { id: "clair", label: "Clair", valeur: "#EBC2A2" },
-  { id: "dore", label: "Doré", valeur: "#D7A47C" },
-  { id: "olive", label: "Olive", valeur: "#BC8A62" },
-  { id: "ambre", label: "Ambré", valeur: "#966143" },
-  { id: "brun", label: "Brun", valeur: "#70452E" },
-  { id: "ebene", label: "Ébène", valeur: "#4E2F20" },
+  { id: "porcelaine", label: "Porcelaine", valeur: "#F4D9CA" },
+  { id: "clair", label: "Clair", valeur: "#EBC4AD" },
+  { id: "beige-dore", label: "Beige doré", valeur: "#D6A083" },
+  { id: "mat", label: "Mat", valeur: "#BA8467" },
+  { id: "caramel", label: "Caramel", valeur: "#A96D50" },
+  { id: "brun", label: "Brun", valeur: "#89563F" },
+  { id: "brun-fonce", label: "Brun foncé", valeur: "#6D4335" },
+  { id: "tres-fonce", label: "Très foncé", valeur: "#492C26" },
 ];
 
 export const formesVisage: Option<FormeVisage>[] = [
@@ -63,24 +64,27 @@ export const coiffures: Option<Coiffure>[] = [
 ];
 
 export const couleursCheveux: Couleur[] = [
-  { id: "noir", label: "Noir", valeur: "#1F1A1F" },
-  { id: "brun", label: "Brun", valeur: "#4A2F23" },
-  { id: "chatain", label: "Châtain", valeur: "#7A5034" },
-  { id: "auburn", label: "Auburn", valeur: "#8E3A22" },
-  { id: "blond", label: "Blond", valeur: "#D2AA66" },
-  { id: "platine", label: "Platine", valeur: "#E9DFC8" },
-  { id: "nuit", label: "Bleu nuit", valeur: "#2C3A6E" },
-  { id: "lavande", label: "Lavande", valeur: "#A08AD0" },
+  { id: "noir", label: "Noir", valeur: "#242126" },
+  { id: "brun-fonce", label: "Brun foncé", valeur: "#48372F" },
+  { id: "chatain", label: "Châtain", valeur: "#80634F" },
+  { id: "blond", label: "Blond", valeur: "#D7B782" },
+  { id: "blond-clair", label: "Blond clair", valeur: "#E9D5AC" },
+  { id: "roux", label: "Roux", valeur: "#B96843" },
+  { id: "cuivre", label: "Cuivré", valeur: "#C5835C" },
+  { id: "blanc", label: "Blanc", valeur: "#E9E7E6" },
+  { id: "gris", label: "Gris", valeur: "#A5A3AC" },
+  { id: "rose", label: "Rose pastel", valeur: "#D9A0B8" },
+  { id: "violet", label: "Violet", valeur: "#987DAD" },
+  { id: "bleu", label: "Bleu", valeur: "#728FB6" },
 ];
 
 export const couleursYeux: Couleur[] = [
-  { id: "brun", label: "Brun", valeur: "#5A3820" },
-  { id: "noisette", label: "Noisette", valeur: "#8C6233" },
-  { id: "vert", label: "Vert", valeur: "#4F7E52" },
-  { id: "bleu", label: "Bleu", valeur: "#4877B6" },
-  { id: "gris", label: "Gris", valeur: "#8A94A3" },
-  { id: "ambre", label: "Ambre", valeur: "#C38A2C" },
-  { id: "violet", label: "Améthyste", valeur: "#7D5BC4" },
+  { id: "marron", label: "Marron", valeur: "#75513C" },
+  { id: "noisette", label: "Noisette", valeur: "#9A784C" },
+  { id: "vert", label: "Vert", valeur: "#63816B" },
+  { id: "bleu", label: "Bleu", valeur: "#668BAF" },
+  { id: "gris", label: "Gris", valeur: "#89959C" },
+  { id: "violet", label: "Violet", valeur: "#8976AD" },
 ];
 
 export const tenues: (Option<Tenue> & { description: string })[] = [

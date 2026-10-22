@@ -18,6 +18,7 @@ import {
   type Cadre,
   type EtatZoom,
   type SelectionComplete,
+  type OptionsRendu,
 } from "@/lib/academie/avatar/composition";
 import { optionsParCalque, ordreCalques } from "@/data/academie/avatar/catalogue";
 import AvatarCalques from "./AvatarCalques";
@@ -74,13 +75,17 @@ type Props = {
   pleinEcran: boolean;
   onPleinEcran: (v: boolean) => void;
   titre: string;
+  /** Couleurs de l'apparence et maison, appliquées à l'aperçu. */
+  rendu?: OptionsRendu;
 };
 
-export default function ApercuAvatar({ selection, vue, onVue, pleinEcran, onPleinEcran, titre }: Props) {
+export default function ApercuAvatar({ selection, vue, onVue, pleinEcran, onPleinEcran, titre, rendu }: Props) {
   const [ref, taille] = useTaille<HTMLDivElement>();
   const [zoom, setZoom] = useState<EtatZoom>(ZOOM_NEUTRE);
   const [geste, setGeste] = useState(false);
-  const calques = useMemo(() => composer(selection, vue), [selection, vue]);
+  const cleRendu = JSON.stringify(rendu ?? {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const calques = useMemo(() => composer(selection, vue, rendu), [selection, vue, cleRendu]);
   const cleSources = calques.map((c) => c.src).join("|");
   const [etats, onEtat] = useEtatsCalques(cleSources);
 
@@ -290,19 +295,20 @@ export default function ApercuAvatar({ selection, vue, onVue, pleinEcran, onPlei
 }
 
 /** Portrait fixe (carte d'élève...) : même composition, sans commandes. */
-export function PortraitAvatar({ selection, className, vue = "portrait" }: { selection: SelectionComplete; className?: string; vue?: VueAvatar }) {
+export function PortraitAvatar({ selection, className, vue = "portrait", rendu }: { selection: SelectionComplete; className?: string; vue?: VueAvatar; rendu?: OptionsRendu }) {
   const [ref, taille] = useTaille<HTMLDivElement>();
   // Clé de contenu : la sélection est souvent recréée par le parent à chaque rendu.
-  const cle = ordreCalques.map((c) => selection[c]).join("|");
+  const cle = ordreCalques.map((c) => selection[c]).join("|") + JSON.stringify(rendu ?? {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const calques = useMemo(() => composer(selection, vue), [cle, vue]);
+  const calques = useMemo(() => composer(selection, vue, rendu), [cle, vue]);
   const [etats, onEtat] = useEtatsCalques(calques.map((c) => c.src).join("|"));
   const enErreur = useMemo(() => new Set((Object.keys(etats) as CategorieCalque[]).filter((k) => etats[k] === "erreur")), [etats]);
   const zone = useMemo(() => zoneCadrage(calques, vue, enErreur), [calques, vue, enErreur]);
   const cadre: Cadre = { largeur: taille.l, hauteur: taille.h, reserve: { haut: 0, bas: 0, gauche: 0, droite: 0 } };
   const t = taille.l > 0 ? transformation(zone, cadre, ZOOM_NEUTRE) : null;
   return (
-    <div ref={ref} className={`relative overflow-hidden ${className ?? ""}`} aria-hidden>
+    // « relative » écrasait « absolute inset-0 » passé par la carte d'élève (cadre de hauteur nulle, portrait invisible).
+    <div ref={ref} className={`${/\babsolute\b/.test(className ?? "") ? "" : "relative "}overflow-hidden ${className ?? ""}`} aria-hidden>
       {t && <AvatarCalques calques={calques} transform={t} anime={false} onEtat={onEtat} />}
     </div>
   );

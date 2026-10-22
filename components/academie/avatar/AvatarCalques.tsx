@@ -6,8 +6,9 @@
 
 import { memo, useEffect, useRef, useState } from "react";
 import type { CategorieCalque } from "@/data/academie/avatar/types";
-import { TAILLE_ESPACE } from "@/data/academie/avatar/catalogue";
+import { TAILLE_ESPACE, racineAssets } from "@/data/academie/avatar/catalogue";
 import type { Calque } from "@/lib/academie/avatar/composition";
+import { imageTeintee } from "@/lib/academie/avatar/teinte";
 
 type Props = {
   calques: Calque[];
@@ -28,7 +29,7 @@ function AvatarCalques({ calques, transform, anime = true, onEtat }: Props) {
       }}
     >
       {calques.map((c, i) => (
-        <CalqueStable key={c.cle} calque={c} z={i} onEtat={onEtat} />
+        <CalqueStable key={c.id ?? c.cle} calque={c} z={i} onEtat={onEtat} />
       ))}
     </div>
   );
@@ -37,37 +38,45 @@ function AvatarCalques({ calques, transform, anime = true, onEtat }: Props) {
 export default memo(AvatarCalques);
 
 /** Charge et décode l'image suivante avant de remplacer l'actuelle. */
+type Affiche = Calque & { url: string; cleImage: string };
+const cleImageDe = (c: Calque) => c.src + (c.teinte ? "|" + JSON.stringify(c.teinte) : "");
+
 function CalqueStable({ calque, z, onEtat }: { calque: Calque; z: number; onEtat?: Props["onEtat"] }) {
-  const [affiche, setAffiche] = useState<Calque | null>(null);
+  const [affiche, setAffiche] = useState<Affiche | null>(null);
   const [erreur, setErreur] = useState(false);
   const rappel = useRef(onEtat);
   rappel.current = onEtat;
 
   useEffect(() => {
+    const cleImage = cleImageDe(calque);
     // Même image (seule la position change) : mise à jour immédiate.
-    if (affiche?.src === calque.src) {
-      if (affiche !== calque) setAffiche(calque);
+    if (affiche?.cleImage === cleImage) {
+      setAffiche({ ...calque, url: affiche.url, cleImage });
       return;
     }
     let annule = false;
-    const img = new Image();
-    img.decoding = "async";
-    const pret = () => {
-      if (annule) return;
-      setErreur(false);
-      setAffiche(calque);
-      rappel.current?.(calque.cle, "pret");
-    };
-    img.onload = () => {
-      (img.decode ? img.decode() : Promise.resolve()).catch(() => undefined).then(pret);
-    };
-    img.onerror = () => {
+    const echec = () => {
       if (annule) return;
       setErreur(true);
       setAffiche(null);
       rappel.current?.(calque.cle, "erreur");
     };
-    img.src = calque.src;
+    // Image teintée (couleurs de l'apparence) préparée hors écran, puis décodée avant affichage.
+    imageTeintee(calque.src, calque.teinte, racineAssets).then((url) => {
+      if (annule) return;
+      const img = new Image();
+      img.decoding = "async";
+      img.onload = () => {
+        (img.decode ? img.decode() : Promise.resolve()).catch(() => undefined).then(() => {
+          if (annule) return;
+          setErreur(false);
+          setAffiche({ ...calque, url, cleImage });
+          rappel.current?.(calque.cle, "pret");
+        });
+      };
+      img.onerror = echec;
+      img.src = url;
+    }, echec);
     return () => {
       annule = true;
     };
@@ -79,7 +88,7 @@ function CalqueStable({ calque, z, onEtat }: { calque: Calque; z: number; onEtat
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={affiche.src}
+      src={affiche.url}
       alt=""
       draggable={false}
       className="ada-avatar-calque"
