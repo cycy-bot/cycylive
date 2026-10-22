@@ -47,42 +47,34 @@ async function appel(action: "etat" | "tourner"): Promise<Etat> {
   return d as Etat;
 }
 
-// Capsules décoratives dans le globe (positions fixes : même rendu serveur / navigateur)
-const BOULES: [number, number, Rarete, number][] = [
-  [-62, 34, "commune", 0], [-30, 46, "peu", 1], [4, 50, "commune", 2], [38, 44, "rare", 3], [66, 30, "commune", 4],
-  [-50, 4, "peu", 5], [-16, 16, "commune", 6], [20, 18, "epique", 7], [54, 0, "peu", 8], [-34, -24, "commune", 9],
-  [2, -14, "rare", 10], [36, -28, "commune", 11], [-6, -46, "legendaire", 12], [-66, -6, "commune", 13], [70, -12, "peu", 14],
-];
+// Les boules de la machine (dessins de Cycy) : une couleur par rareté
+const BOULE: Record<Rarete, string> = {
+  commune: "/figurines/boule-rose.webp", peu: "/figurines/boule-lilas.webp", rare: "/figurines/boule-bleue.webp",
+  epique: "/figurines/boule-violette.webp", legendaire: "/figurines/boule-doree.webp", mythique: "/figurines/boule-noire.webp",
+};
+// Repères sur l'image de la machine (en % de sa largeur / hauteur)
+const GLOBE = { x: 51.5, y: 42.5, rx: 44, ry: 19 };
+const BOUTON = { x: 53.9, y: 72.7, r: 8.6 };
+const SORTIE = { x: 53.9, y: 89 };
+const LUMIERES: [number, number, number][] = [[50.3, 8, 1], [25, 74, 0.6], [79.7, 73.8, 0.6], [7, 73, 0.7], [94, 73, 0.7], [16, 5, 0.5], [86, 5, 0.5]];
 
-const fondCapsule = (r: Rarete) => (r === "mythique" ? "linear-gradient(135deg,#ff6bd6,#ffd23f 35%,#3df5ff 70%,#b26bff)" : COULEUR_RARETE[r]);
-
-/** Petite capsule SVG (globe, légende). */
-function CapsuleSvg({ rarete, r = 15, id }: { rarete: Rarete; r?: number; id: string }) {
-  const arc = rarete === "mythique";
-  return (
-    <g>
-      {arc ? (
-        <defs>
-          <linearGradient id={`cap-${id}`} x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#ff6bd6" /><stop offset="35%" stopColor="#ffd23f" /><stop offset="70%" stopColor="#3df5ff" /><stop offset="100%" stopColor="#b26bff" /></linearGradient>
-        </defs>
-      ) : null}
-      <path d={`M${-r} 0 A${r} ${r} 0 0 1 ${r} 0 Z`} fill={arc ? `url(#cap-${id})` : COULEUR_RARETE[rarete]} />
-      <path d={`M${-r * 0.62} ${-r * 0.5} Q${-r * 0.3} ${-r * 0.82} ${r * 0.05} ${-r * 0.86}`} stroke="#fff" strokeOpacity=".8" strokeWidth={r * 0.16} fill="none" strokeLinecap="round" />
-      <path d={`M${-r} 0 A${r} ${r} 0 0 0 ${r} 0 Z`} fill="#fffaff" fillOpacity=".92" />
-      <path d={`M${-r} 0 H${r}`} stroke={arc ? "#fff" : COULEUR_RARETE[rarete]} strokeWidth={r * 0.14} />
-    </g>
-  );
+/** Petite boule (légende, album). */
+function BouleImg({ rarete, taille = 28, className = "" }: { rarete: Rarete; taille?: number; className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={BOULE[rarete]} alt="" width={taille} height={taille} className={className} style={{ width: taille, height: taille }} draggable={false} />;
 }
 
-/** La grande capsule : moitié haute colorée translucide, moitié basse en verre, la figurine se devine dedans. */
+/** La grande capsule : la boule de la bonne couleur, la figurine se devine à travers le haut transparent. */
 function GrandeCapsule({ res, etape }: { res: Resultat; etape: "tombe" | "posee" | "ouvre" }) {
   return (
     <div className={`cc-grande ${etape === "tombe" ? "cc-chute" : etape === "posee" ? "cc-balance" : "cc-craque"}`}>
-      <div className="cc-interieur"><FigurineVisuel id={res.figurine} image={res.image} taille={132} /></div>
-      <div className="cc-haut" style={{ background: fondCapsule(res.rarete) }} />
-      <div className="cc-bas" />
-      <div className="cc-joint" style={{ background: fondCapsule(res.rarete) }} />
-      <div className="cc-reflet" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BOULE[res.rarete]} alt="" className="cc-moitie cc-bas" draggable={false} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BOULE[res.rarete]} alt="" className="cc-moitie cc-haut" draggable={false} />
+      <div className="cc-interieur"><FigurineVisuel id={res.figurine} image={res.image} taille={130} /></div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={BOULE[res.rarete]} alt="" className="cc-moitie cc-brillance" draggable={false} />
     </div>
   );
 }
@@ -202,56 +194,34 @@ export default function CosmoCapsules() {
           <p className="relative mb-2 text-center text-sm text-[#7a5aa8]">Une capsule par jour · une figurine à collectionner · un cadeau sur Discord</p>
 
           <div className="relative mx-auto w-full max-w-[420px]">
-            <svg viewBox="-130 -170 260 360" className={`w-full ${anim === "tourne" ? "cc-secoue" : ""}`} role="img" aria-label="Machine gatchapon Cosmo-Capsules">
-              <defs>
-                <radialGradient id="cc-verre" cx="38%" cy="30%" r="75%"><stop offset="0%" stopColor="#ffffff" stopOpacity=".9" /><stop offset="45%" stopColor="#f3e8ff" stopOpacity=".35" /><stop offset="100%" stopColor="#c9a8ff" stopOpacity=".35" /></radialGradient>
-                <linearGradient id="cc-corps" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#ffb3d6" /><stop offset="100%" stopColor="#ff8fc4" /></linearGradient>
-                <linearGradient id="cc-socle" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#c9a8ff" /><stop offset="100%" stopColor="#a585f0" /></linearGradient>
-                <clipPath id="cc-globe"><circle cx="0" cy="-60" r="96" /></clipPath>
-              </defs>
-              <path d="M0 -156 L0 -176" stroke="#c9a8ff" strokeWidth="4" />
-              <circle cx="0" cy="-178" r="7" fill="#ffd23f" />
-              <ellipse cx="0" cy="-158" rx="34" ry="10" fill="#c9a8ff" />
-              <circle cx="0" cy="-60" r="98" fill="#fff" opacity=".35" />
-              <g clipPath="url(#cc-globe)">
-                <g transform="translate(0 -60)"><g className={anim === "tourne" ? "cc-brasse" : ""}>
-                  {BOULES.map(([x, y, r, i]) => (
-                    <g key={i} transform={`translate(${x} ${y}) rotate(${(i * 47) % 360})`}><CapsuleSvg rarete={r} r={17} id={`b${i}`} /></g>
-                  ))}
-                </g></g>
-              </g>
-              <circle cx="0" cy="-60" r="96" fill="url(#cc-verre)" stroke="#fff" strokeWidth="4" />
-              <path d="M-62 -110 Q-40 -140 -6 -146" stroke="#fff" strokeWidth="8" fill="none" strokeLinecap="round" opacity=".85" />
-              <path d="M-96 30 L96 30 L110 150 Q110 168 92 168 L-92 168 Q-110 168 -110 150 Z" fill="url(#cc-corps)" stroke="#fff" strokeWidth="3" />
-              <rect x="-104" y="22" width="208" height="18" rx="9" fill="url(#cc-socle)" stroke="#fff" strokeWidth="3" />
-              <rect x="-60" y="52" width="120" height="30" rx="15" fill="#fff" opacity=".9" />
-              <text x="0" y="72" textAnchor="middle" fontSize="15" fontWeight="900" fill="#b26bff" fontFamily="system-ui, sans-serif">1 CAPSULE / JOUR</text>
-              <rect x="56" y="96" width="30" height="40" rx="8" fill="#fff" opacity=".85" />
-              <rect x="68" y="104" width="6" height="22" rx="3" fill="#7a5aa8" />
-              <g transform="translate(-28 118)">
-                <circle r="26" fill="#fff" stroke="#c9a8ff" strokeWidth="4" />
-                <g className={anim === "tourne" ? "cc-manivelle" : ""}>
-                  <rect x="-24" y="-7" width="48" height="14" rx="7" fill="#b26bff" />
-                  <circle r="7" fill="#ffd23f" />
-                </g>
-              </g>
-              <rect x="26" y="142" width="58" height="22" rx="11" fill="#7a3a8a" opacity=".55" />
-              <g transform="translate(26 106)">
-                <ellipse cx="-6" cy="0" rx="3" ry="4" fill="#7a3a6a" />
-                <ellipse cx="8" cy="0" rx="3" ry="4" fill="#7a3a6a" />
-                <path d="M-2 6 Q1 9 4 6" stroke="#7a3a6a" strokeWidth="2" fill="none" strokeLinecap="round" />
-              </g>
-            </svg>
+            <div className={`cc-machine relative w-full ${anim === "tourne" ? "cc-secoue" : ""}`} role="img" aria-label="Machine gatchapon Cosmo-Capsules">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/figurines/machine.webp" alt="" className="block w-full select-none" draggable={false} />
+              {/* le globe : les boules tournent pendant le tirage */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/figurines/machine.webp" alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-brasse" : ""}`}
+                style={{ clipPath: `ellipse(${GLOBE.rx}% ${GLOBE.ry}% at ${GLOBE.x}% ${GLOBE.y}%)`, transformOrigin: `${GLOBE.x}% ${GLOBE.y}%` }} />
+              {/* le bouton doré : il tourne */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/figurines/machine.webp" alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-manivelle" : ""}`}
+                style={{ clipPath: `circle(${BOUTON.r}% at ${BOUTON.x}% ${BOUTON.y}%)`, transformOrigin: `${BOUTON.x}% ${BOUTON.y}%` }} />
+              {/* les étoiles de la machine scintillent */}
+              {LUMIERES.map(([x, y, k], i) => (
+                <span key={i} className={`cc-lumiere ${anim === "tourne" ? "cc-lumiere-vite" : ""}`} style={{ left: `${x}%`, top: `${y}%`, width: `${18 * k}%`, animationDelay: `${i * 0.35}s` }} aria-hidden />
+              ))}
+              {/* lueur de la sortie */}
+              <span className="cc-sortie" style={{ left: `${SORTIE.x}%`, top: `${SORTIE.y}%` }} aria-hidden />
+            </div>
 
             {/* la capsule tombe, se pose, puis s'ouvre */}
             {grandeVisible && resultat ? (
-              <div className="absolute inset-0 z-10 flex items-end justify-center pb-[14%]">
+              <div className="absolute inset-0 z-10 flex items-end justify-center pb-[6%]">
                 <div className="cc-voile" aria-hidden />
                 <button type="button" onClick={ouvrir} disabled={anim !== "posee"} className="relative" aria-label={anim === "posee" ? "Ouvrir la capsule" : "Capsule"}>
                   <div className="cc-halo" style={{ background: `radial-gradient(circle, ${couleur}aa 0%, transparent 65%)` }} aria-hidden />
                   <GrandeCapsule res={resultat} etape={anim === "tombe" ? "tombe" : anim === "posee" ? "posee" : "ouvre"} />
                   {anim === "posee" ? (
-                    <span className="absolute -bottom-12 left-1/2 w-max -translate-x-1/2 rounded-full bg-white/90 px-4 py-1.5 text-sm font-black text-[#7a3a8a] shadow">
+                    <span className="absolute -top-10 left-1/2 w-max -translate-x-1/2 rounded-full bg-white/90 px-4 py-1.5 text-sm font-black text-[#7a3a8a] shadow">
                       Touche la capsule pour l&apos;ouvrir ! <span style={{ color: couleur }}>· {NOM_RARETE[rar]}</span>
                     </span>
                   ) : null}
@@ -378,7 +348,7 @@ export default function CosmoCapsules() {
         <ul className="space-y-2 text-sm">
           {RARETES.map((r) => (
             <li key={r} className="flex items-start gap-2.5">
-              <svg viewBox="-20 -20 40 40" width="28" height="28" className="mt-0.5 shrink-0"><CapsuleSvg rarete={r} r={15} id={`l${r}`} /></svg>
+              <BouleImg rarete={r} taille={30} className="mt-0.5 shrink-0" />
               <span className="flex-1 text-ink-soft">
                 <span className="font-semibold" style={{ color: COULEUR_RARETE[r] }}>{NOM_RARETE[r]}</span> <span className="text-ink-soft/60">· {String(chances[r] ?? 0).replace(".", ",")} %</span>
                 {etat?.gains?.[r] ? <><br />{etat.gains[r].join(", ou ")}</> : null}
@@ -396,37 +366,42 @@ export default function CosmoCapsules() {
         .cc-bouton{background:linear-gradient(180deg,#ff8fc4,#b26bff);box-shadow:0 6px 0 #8a4fd6,0 12px 30px -6px #b26bffaa}
         .cc-bouton:not(:disabled):hover{filter:brightness(1.08)}
         .cc-bouton:not(:disabled):active{transform:translateY(4px);box-shadow:0 2px 0 #8a4fd6}
-        .cc-secoue{animation:cc-secoue .18s ease-in-out 8}
+        .cc-secoue{animation:cc-secoue .2s ease-in-out 8}
         @keyframes cc-secoue{25%{transform:rotate(-1.5deg)}75%{transform:rotate(1.5deg)}}
         .cc-brasse{animation:cc-brasse 1.6s cubic-bezier(.4,0,.2,1)}
-        @keyframes cc-brasse{to{transform:rotate(360deg)}}
+        @keyframes cc-brasse{0%,100%{transform:none}15%{transform:rotate(-9deg) scale(1.02)}35%{transform:rotate(8deg) translateY(-1.5%)}55%{transform:rotate(-7deg) translateY(1%)}75%{transform:rotate(6deg)}90%{transform:rotate(-3deg)}}
         .cc-manivelle{animation:cc-tour 1.6s cubic-bezier(.4,0,.2,1)}
         @keyframes cc-tour{to{transform:rotate(720deg)}}
         .cc-voile{position:absolute;inset:-10%;background:radial-gradient(closest-side at 50% 74%,#2a164040,transparent);animation:cc-fondu .4s both;pointer-events:none}
         @keyframes cc-fondu{from{opacity:0}}
         .cc-halo{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;animation:cc-pulse 1.4s ease-in-out infinite;pointer-events:none}
         @keyframes cc-pulse{50%{transform:scale(1.12);opacity:.7}}
-        .cc-grande{position:relative;width:170px;height:170px;border-radius:50%}
-        .cc-interieur{position:absolute;inset:14px;display:flex;align-items:center;justify-content:center;filter:blur(1.2px) saturate(.9);opacity:.85;transition:filter .5s,opacity .5s}
-        .cc-haut,.cc-bas{position:absolute;left:0;right:0;height:50%;border:4px solid #fff}
-        .cc-haut{top:0;border-radius:85px 85px 0 0;border-bottom:0;opacity:.62;box-shadow:inset 0 10px 24px #ffffff88}
-        .cc-bas{bottom:0;border-radius:0 0 85px 85px;border-top:0;background:linear-gradient(180deg,#ffffff22,#ffffff66);box-shadow:inset 0 -10px 24px #ffffffaa}
-        .cc-joint{position:absolute;left:-4px;right:-4px;top:calc(50% - 6px);height:12px;border-radius:6px;border:3px solid #fff}
-        .cc-reflet{position:absolute;left:24px;top:18px;width:50px;height:26px;border-radius:50%;background:#fff;opacity:.7;transform:rotate(-30deg);filter:blur(1px)}
+        .cc-machine{filter:drop-shadow(0 18px 30px #8a4fd655)}
+        .cc-couche{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;user-select:none}
+        .cc-lumiere{position:absolute;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fff6c8cc 0%,#ffd23f55 35%,transparent 70%);mix-blend-mode:screen;animation:cc-lueur 2.6s ease-in-out infinite;pointer-events:none}
+        .cc-lumiere-vite{animation-duration:.4s}
+        @keyframes cc-lueur{0%,100%{opacity:.25;transform:translate(-50%,-50%) scale(.8)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}}
+        .cc-sortie{position:absolute;width:30%;aspect-ratio:2/1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse,#d58bff99,transparent 70%);mix-blend-mode:screen;animation:cc-lueur 3s ease-in-out infinite;pointer-events:none}
+        .cc-grande{position:relative;width:180px;height:180px}
+        .cc-moitie{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+        .cc-bas{clip-path:inset(50% 0 0 0)}
+        .cc-haut{clip-path:inset(0 0 50% 0);opacity:.72}
+        .cc-brillance{mix-blend-mode:screen;opacity:.35;clip-path:inset(0 0 48% 0)}
+        .cc-interieur{position:absolute;inset:8% 14% 26% 14%;display:flex;align-items:center;justify-content:center;filter:blur(1.4px) saturate(.85);opacity:.6;transition:filter .5s,opacity .5s,transform .5s;overflow:hidden;border-radius:50% 50% 8% 8%}
+        .cc-interieur img,.cc-interieur svg{max-width:100%;max-height:100%}
         .cc-chute{animation:cc-chute 1.1s cubic-bezier(.55,0,.6,1.35) both}
-        @keyframes cc-chute{0%{transform:translate(40px,-260px) scale(.25) rotate(-90deg);opacity:0}15%{opacity:1}70%{transform:translate(0,8px) scale(1.02,.96) rotate(8deg)}85%{transform:translate(0,-14px) scale(.98,1.03) rotate(-3deg)}100%{transform:none}}
+        @keyframes cc-chute{0%{transform:translate(0,20px) scale(.22) rotate(-60deg);opacity:0}15%{opacity:1}35%{transform:translate(0,-30px) scale(.6) rotate(-20deg)}70%{transform:translate(0,8px) scale(1.02,.96) rotate(8deg)}85%{transform:translate(0,-14px) scale(.98,1.03) rotate(-3deg)}100%{transform:none}}
         .cc-balance{animation:cc-balance 1.3s ease-in-out infinite}
         @keyframes cc-balance{0%,55%,100%{transform:rotate(0)}65%{transform:rotate(-9deg)}75%{transform:rotate(8deg)}85%{transform:rotate(-4deg)}}
-        .cc-balance .cc-interieur{filter:blur(.8px);opacity:.9}
+        .cc-balance .cc-interieur{filter:blur(1px) saturate(.9);opacity:.7}
         .cc-craque{animation:cc-tremble2 .09s linear infinite}
         @keyframes cc-tremble2{25%{transform:translate(-3px,1px) rotate(-3deg)}75%{transform:translate(3px,-1px) rotate(3deg)}}
         .cc-craque .cc-haut{animation:cc-haut .5s .5s cubic-bezier(.3,0,.6,1) forwards}
-        .cc-craque .cc-joint{animation:cc-joint .5s .5s ease-out forwards}
-        .cc-craque .cc-bas{animation:cc-bas .5s .5s ease-in forwards}
-        .cc-craque .cc-interieur{filter:none;opacity:1}
+                .cc-craque .cc-bas{animation:cc-bas .5s .5s ease-in forwards}
+        .cc-craque .cc-interieur{filter:none;opacity:1;overflow:visible;transform:scale(1.25)}
+        .cc-craque .cc-brillance{animation:cc-haut .5s .5s cubic-bezier(.3,0,.6,1) forwards}
         @keyframes cc-haut{to{transform:translate(-40px,-160px) rotate(-75deg);opacity:0}}
         @keyframes cc-bas{to{transform:translate(30px,120px) rotate(40deg);opacity:0}}
-        @keyframes cc-joint{to{transform:scaleX(1.8);opacity:0}}
         .cc-carte{animation:cc-apparait .5s cubic-bezier(.3,1.6,.5,1) both;overflow:hidden}
         @keyframes cc-apparait{from{transform:scale(.5);opacity:0}}
         .cc-rayons{position:absolute;inset:-40%;animation:cc-rayons 14s linear infinite;pointer-events:none}
