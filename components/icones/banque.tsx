@@ -232,6 +232,13 @@ export const BANQUE = {
     <path {...T} d="M9.3 9.3A2.8 2.8 0 1 1 13 12c-.7.4-1 .9-1 1.7v.4" />
     <circle {...P} cx="12" cy="17.2" r="1.2" />
   </>),
+  lettres: I("Mot mystère", "Jeux", <>
+    <rect {...F} x="2.5" y="6.5" width="5.5" height="7" rx="1.4" />
+    <rect {...T} x="9.25" y="6.5" width="5.5" height="7" rx="1.4" />
+    <rect {...F} x="16" y="6.5" width="5.5" height="7" rx="1.4" />
+    <path {...T} d="M4 17.5h16" />
+    {eclat(12, 10, 1.8)}
+  </>),
   cerveau: I("Mémoire", "Jeux", <>
     <path {...F} d="M9 3.5a3 3 0 0 0-3 3 3 3 0 0 0-2.5 4.4A3.3 3.3 0 0 0 5 16.5a3 3 0 0 0 4 3.8V3.5Zm6 0a3 3 0 0 1 3 3 3 3 0 0 1 2.5 4.4 3.3 3.3 0 0 1-1.5 5.6 3 3 0 0 1-4 3.8V3.5Z" />
     <path {...T} d="M12 3.5v17M9 9H7.5M15 9h1.5M9 14H7M15 14h2" />

@@ -215,6 +215,93 @@ function Quiz({ accent }: { accent: string }) {
   );
 }
 
+function AstroDodge({ k, accent }: { k: string; accent: string }) {
+  const roches: [number, number, number, number][] = [[60, 46, 18, 10], [236, 36, 24, -20], [270, 120, 14, 30], [110, 118, 12, 0], [196, 86, 16, 45], [34, 150, 10, 15]];
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${k}-coque`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#b57cff" />
+          <stop offset="100%" stopColor="#f0abfc" />
+        </linearGradient>
+        <linearGradient id={`${k}-flamme`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#fff3c4" />
+          <stop offset="60%" stopColor={accent} />
+          <stop offset="100%" stopColor={accent} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {roches.map(([x, y, r, a], i) => (
+        <g key={i} transform={`translate(${x} ${y}) rotate(${a})`}>
+          <path d={`M${-r} ${-r * 0.3} L${-r * 0.4} ${-r} L${r * 0.6} ${-r * 0.8} L${r} ${r * 0.1} L${r * 0.4} ${r} L${-r * 0.7} ${r * 0.7} Z`} fill="#8a6d5a" stroke="#fff" strokeOpacity="0.2" strokeWidth="2" />
+          <circle cx={r * 0.25} cy={-r * 0.2} r={r * 0.22} fill="#000" opacity="0.22" />
+        </g>
+      ))}
+      {/* traînées des astéroïdes */}
+      {[[236, 36], [196, 86]].map(([x, y], i) => (
+        <path key={i} d={`M${x - 8} ${y - 26} L${x - 20} ${y - 60}`} stroke="#fff" strokeOpacity="0.25" strokeWidth="3" strokeLinecap="round" />
+      ))}
+      <g transform="translate(160 148)">
+        <circle r="34" fill="none" stroke="#5fd4ff" strokeOpacity="0.7" strokeWidth="2.5" strokeDasharray="6 5" />
+        <path d="M-7 14 L0 46 L7 14 Z" fill={`url(#${k}-flamme)`} />
+        <path d="M0 -28 L17 16 L0 9 L-17 16 Z" fill={`url(#${k}-coque)`} stroke="#fff" strokeWidth="2" strokeLinejoin="round" />
+        <ellipse cy="-8" rx="4.5" ry="8" fill="#5fd4ff" />
+      </g>
+      <g transform="translate(268 168)">
+        <circle r="13" fill="#ffd76b" fillOpacity="0.2" stroke="#ffd76b" strokeWidth="2" />
+        <path d="M0 -7 L2 -2 L7 -2 L3 1.5 L4.5 7 L0 3.8 L-4.5 7 L-3 1.5 L-7 -2 L-2 -2 Z" fill="#ffd76b" />
+      </g>
+    </>
+  );
+}
+
+function StarCatcher({ accent }: { accent: string }) {
+  const etoile = (x: number, y: number, r: number, c: string, o = 1) => (
+    <path transform={`translate(${x} ${y}) scale(${r / 10})`} d="M0 -10 L2.9 -3.1 L9.5 -3.1 L4.3 1.2 L6.2 8.1 L0 4.1 L-6.2 8.1 L-4.3 1.2 L-9.5 -3.1 L-2.9 -3.1 Z" fill={c} opacity={o} />
+  );
+  return (
+    <>
+      {etoile(84, 50, 13, accent)}
+      {etoile(150, 92, 10, accent, 0.9)}
+      {etoile(226, 38, 17, "#ffb627")}
+      {etoile(196, 122, 9, accent, 0.8)}
+      {etoile(62, 112, 8, accent, 0.7)}
+      {/* météorite */}
+      <path d="M268 64 L246 20" stroke="#ff7a45" strokeOpacity="0.5" strokeWidth="9" strokeLinecap="round" />
+      <circle cx="270" cy="70" r="12" fill="#7a4a3a" stroke="#ffb08a" strokeWidth="2" />
+      {/* trou noir */}
+      <circle cx="38" cy="62" r="16" fill="#000" stroke="#a855f7" strokeOpacity="0.6" strokeWidth="2" />
+      <ellipse cx="38" cy="62" rx="22" ry="6" fill="none" stroke="#a855f7" strokeOpacity="0.8" strokeWidth="2" transform="rotate(-18 38 62)" />
+      {/* filet cosmique */}
+      <path d="M104 160 Q160 196 216 160" fill="none" stroke={accent} strokeWidth="5" strokeLinecap="round" />
+      {[118, 132, 146, 160, 174, 188, 202].map((x) => (
+        <line key={x} x1={x} y1={164} x2={160 + (x - 160) * 0.5} y2={182} stroke="#fff" strokeOpacity="0.4" strokeWidth="1.2" />
+      ))}
+      <circle cx="104" cy="160" r="5" fill="#fff" />
+      <circle cx="216" cy="160" r="5" fill="#fff" />
+      <text x="248" y="176" fontSize="16" fontWeight="800" fill={accent} fontFamily="system-ui, sans-serif">×5</text>
+    </>
+  );
+}
+
+function CycyWord({ accent }: { accent: string }) {
+  const lignes: [string, ("b" | "m" | "a")[]][] = [["ASTRE", ["a", "m", "a", "a", "b"]], ["CYCLE", ["m", "a", "a", "b", "b"]], ["COMBO", ["b", "b", "b", "b", "b"]]];
+  const fond = { b: "#9146ff", m: "#e8b83a", a: "#ffffff22" };
+  return (
+    <>
+      {lignes.map(([mot, c], l) => (
+        <g key={mot} transform={`translate(78 ${30 + l * 50})`}>
+          {mot.split("").map((lettre, i) => (
+            <g key={i} transform={`translate(${i * 34} 0)`}>
+              <rect width="30" height="40" rx="7" fill={fond[c[i]]} stroke={l === 2 ? accent : "none"} strokeOpacity="0.6" />
+              <text x="15" y="28" textAnchor="middle" fontSize="20" fontWeight="800" fill={c[i] === "m" ? "#1a1206" : "#fff"} fontFamily="system-ui, sans-serif">{l === 2 ? "?" : lettre}</text>
+            </g>
+          ))}
+        </g>
+      ))}
+    </>
+  );
+}
+
 function Gratter({ k, accent }: { k: string; accent: string }) {
   return (
     <>
@@ -302,6 +389,9 @@ export default function MiniatureJeu({ id, className = "", anime = false }: Prop
         {id === "constellations" && <Constellations accent={accent} />}
         {id === "memory" && <Memory accent={accent} />}
         {id === "quiz" && <Quiz accent={accent} />}
+        {id === "astrododge" && <AstroDodge k={k} accent={accent} />}
+        {id === "starcatcher" && <StarCatcher accent={accent} />}
+        {id === "cycyword" && <CycyWord accent={accent} />}
         {id === "gratter" && <Gratter k={k} accent={accent} />}
         {id === "compagnon" && <Compagnon accent={accent} />}
         {id === "coffres" && <Coffres k={k} accent={accent} />}

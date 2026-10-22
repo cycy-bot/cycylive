@@ -70,7 +70,7 @@ export function verifierPseudo(brut: unknown): { ok: true; pseudo: string; cle: 
 // score plus haut que ce qui est possible pour le temps écoulé depuis
 // le début de la partie (dureeMin = durée minimale d'une vraie partie).
 
-export type JeuSalle = "reflexes" | "memory" | "quiz" | "constellations" | "rythme";
+export type JeuSalle = "reflexes" | "memory" | "quiz" | "constellations" | "rythme" | "astrododge" | "starcatcher" | "cycyword";
 export type JeuArcade = "runner" | JeuSalle;
 
 export const JEUX_SALLE: Record<JeuSalle, { nom: string; emoji: string; dureeMin: number; scoreMax: (t: number) => number }> = {
@@ -84,9 +84,15 @@ export const JEUX_SALLE: Record<JeuSalle, { nom: string; emoji: string; dureeMin
   constellations: { nom: "Puzzle des constellations", emoji: "✨", dureeMin: 4, scoreMax: (t) => t * 160 + 200 },
   // 60 s de musique, 4 notes/s au plus, 100 points × multiplicateur 4
   rythme: { nom: "Rythme cosmique", emoji: "🎵", dureeMin: 50, scoreMax: (t) => Math.min(t, 70) * 4 * 400 },
+  // 10 points par seconde de survie × palier (jusqu'à ×4) + 150 par bonus ramassé (≈ 1 toutes les 4 s)
+  astrododge: { nom: "Astro Dodge", emoji: "🚀", dureeMin: 3, scoreMax: (t) => t * 40 + (t / 3) * 150 + 300 },
+  // jusqu'à ~3 étoiles/s, 50 points × combo ×5, étoiles dorées ×3
+  starcatcher: { nom: "Star Catcher", emoji: "⭐", dureeMin: 3, scoreMax: (t) => t * 3 * 50 * 5 * 1.6 + 500 },
+  // mot du jour : 100 × (7 − essais) + bonus de rapidité (≤ 150)
+  cycyword: { nom: "CycyWord", emoji: "🔤", dureeMin: 4, scoreMax: () => 750 },
 };
 
-export const JEUX_ARCADE: JeuArcade[] = ["runner", "reflexes", "memory", "quiz", "constellations", "rythme"];
+export const JEUX_ARCADE: JeuArcade[] = ["runner", "reflexes", "memory", "quiz", "constellations", "rythme", "astrododge", "starcatcher", "cycyword"];
 export const estJeuArcade = (j: unknown): j is JeuArcade => JEUX_ARCADE.includes(j as JeuArcade);
 export const nomJeu = (j: JeuArcade) => (j === "runner" ? ARCADE.nom : JEUX_SALLE[j].nom);
 

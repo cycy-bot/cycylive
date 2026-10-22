@@ -6,7 +6,7 @@ import { lireRecords } from "@/lib/recordsJeux";
 // Ancienne adresse de la salle d'arcade (/jeux/arcade#reflexes…) : on ouvre le bon jeu, sinon la vitrine.
 export const metadata: Metadata = {
   title: "Salle d'arcade | Cycylive",
-  description: "Six jeux gratuits et leurs tableaux des records : Cycy Runner, réflexes Valorant, rythme cosmique, constellations, memory et quiz.",
+  description: "Neuf jeux gratuits et leurs tableaux des records : Cycy Runner, Astro Dodge, Star Catcher, CycyWord, réflexes Valorant, rythme cosmique, constellations, memory et quiz.",
   alternates: { canonical: "/jeux" },
 };
 

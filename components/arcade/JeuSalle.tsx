@@ -8,6 +8,9 @@ import Memory from "@/components/arcade/salle/Memory";
 import Quiz from "@/components/arcade/salle/Quiz";
 import Constellations from "@/components/arcade/salle/Constellations";
 import Rythme from "@/components/arcade/salle/Rythme";
+import AstroDodge from "@/components/arcade/salle/AstroDodge";
+import StarCatcher from "@/components/arcade/salle/StarCatcher";
+import CycyWord from "@/components/arcade/salle/CycyWord";
 import type { JeuSalle as IdJeu } from "@/lib/arcadeRegles";
 
 export default function JeuSalle({ jeu }: { jeu: IdJeu }) {
@@ -37,6 +40,9 @@ export default function JeuSalle({ jeu }: { jeu: IdJeu }) {
       {jeu === "quiz" ? <Quiz key={`q${partie}`} {...props} /> : null}
       {jeu === "constellations" ? <Constellations key={`c${partie}`} {...props} /> : null}
       {jeu === "rythme" ? <Rythme key={`y${partie}`} {...props} /> : null}
+      {jeu === "astrododge" ? <AstroDodge key={`a${partie}`} {...props} /> : null}
+      {jeu === "starcatcher" ? <StarCatcher key={`s${partie}`} {...props} /> : null}
+      {jeu === "cycyword" ? <CycyWord key={`w${partie}`} {...props} /> : null}
       {fin ? <FinDePartie key={`f${partie}`} jeu={jeu} score={fin.score} resume={fin.resume} jeton={jetonFin} onRejouer={rejouer} /> : null}
     </div>
   );

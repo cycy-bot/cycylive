@@ -29,7 +29,7 @@ export default function ExplorerAccueil() {
           <div className="relative aspect-[16/10] overflow-hidden">
             <MiniatureJeu id="runner" className="absolute inset-0 h-full w-full transition-transform duration-500 group-hover:scale-105" />
           </div>
-          <Pied icone="joystick" titre="Les jeux" texte="Six jeux à records et des récompenses du jour pour le Discord." />
+          <Pied icone="joystick" titre="Les jeux" texte="Neuf jeux à records, dont un mot mystère par jour, et des récompenses du jour pour le Discord." />
         </Link>
 
         <Link href="/cycybot" className={carte}>
