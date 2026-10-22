@@ -15,11 +15,12 @@ import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from 
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 
-type TypeObjet = "gloup" | "cristal" | "peluche" | "orbe" | "fusee" | "capsule" | "fragment" | "doree" | "reine" | "soucoupe";
-type Objet = { id: number; type: TypeObjet; couche: number; x: number; a: number };
-type Lot = { type: TypeObjet; nom: string; rarete: string; rareteLabel: string; label: string };
-type Prise = Lot & { glisse: Lot | null; x: number };
-type Resultat = { cible: number | null; type: TypeObjet; attrape: Lot; glisse: Lot | null; vide: boolean };
+// Apparence d'un objet : tirée au hasard par CycyBot, sans lien avec le lot caché dedans.
+type Look = "gloup" | "reine" | "etoile" | "lune" | "planete" | "fusee" | "soucoupe" | "robot" | "nibi" | "chat" | "comete" | "cristal" | "orbe" | "capsule" | "fragment" | "manette" | "casque" | "micro" | "cible" | "badge" | "coeur" | "de";
+type Objet = { id: number; look: Look; couche: number; x: number; a: number };
+type Lot = { look: Look; nom: string; rarete: string; rareteLabel: string; label: string };
+type Prise = Lot & { glisse: { look: Look; nom: string } | null; x: number };
+type Resultat = { cible: number | null; look: Look; attrape: Lot; glisse: { look: Look; nom: string } | null; vide: boolean };
 type Partie = {
   restants: number;
   tirages: number;
@@ -41,23 +42,11 @@ const BAS_COUCHE = [104, 60, 16]; // bas des objets selon la couche (0 = dessus 
 const PIT_G = 0.15, PIT_L = 0.83; // le tas occupe 15 % → 98 % de la largeur ; à gauche, la sortie
 const SORTIE = 0.07;
 const PORTEE = 0.06, GENE = 0.025; // mêmes règles que CycyBot
-const taille = (t: TypeObjet) => (t === "reine" || t === "soucoupe" ? 86 : t === "capsule" || t === "doree" ? 62 : 58);
+const taille = (t: Look) => (t === "soucoupe" || t === "reine" ? 74 : t === "manette" || t === "casque" || t === "planete" ? 64 : 58);
 const versVitrine = (x: number) => PIT_G + x * PIT_L;
 const versTas = (gx: number) => (gx - PIT_G) / PIT_L;
 
 const COULEUR_RARETE: Record<string, string> = { commune: "#c9c3e6", peu: "#7ee2a8", rare: "#5fd4ff", epique: "#ff5cf0", legendaire: "#ffb627", mythique: "#ff4f9a" };
-const LEGENDE: [TypeObjet, string, string, string][] = [
-  ["gloup", "Petit Gloup", "3 points stellaires + 4 Éclats", "commune"],
-  ["cristal", "Cristal lunaire", "7 Éclats", "commune"],
-  ["peluche", "Étoile en peluche", "6 points stellaires", "commune"],
-  ["orbe", "Orbe néon", "12 Éclats", "peu"],
-  ["fusee", "Mini-fusée", "8 points + 6 Éclats", "peu"],
-  ["capsule", "Capsule booster", "1 booster", "rare"],
-  ["fragment", "Fragment d'étoile", "1 fragment", "rare"],
-  ["doree", "Capsule dorée", "2 boosters", "epique"],
-  ["reine", "Reine des Gloups", "2 boosters + 1 fragment + 15 Éclats", "legendaire"],
-  ["soucoupe", "Soucoupe JACKPOT", "4 boosters + 2 fragments + 50 Éclats", "mythique"],
-];
 
 class ConnexionRequise extends Error {}
 async function appel(corps: Record<string, unknown>): Promise<Partie> {
@@ -109,7 +98,7 @@ function Gloup({ teinte, couronne = false }: { teinte: string; couronne?: boolea
   );
 }
 
-function DessinObjet({ type, id = 0 }: { type: TypeObjet; id?: number }) {
+function DessinObjet({ type, id = 0 }: { type: Look; id?: number }) {
   switch (type) {
     case "gloup":
       return <Gloup teinte={TEINTES_GLOUP[id % TEINTES_GLOUP.length]} />;
@@ -123,7 +112,7 @@ function DessinObjet({ type, id = 0 }: { type: TypeObjet; id?: number }) {
           <circle cx="-5" cy="-6" r="2" fill="#fff" />
         </g>
       );
-    case "peluche":
+    case "etoile":
       return (
         <g>
           <path d="M0 -25 L7 -8 L25 -7 L11 5 L16 23 L0 13 L-16 23 L-11 5 L-25 -7 L-7 -8 Z" fill="#ffe066" stroke="#fff3b0" strokeWidth="2" strokeLinejoin="round" />
@@ -151,9 +140,8 @@ function DessinObjet({ type, id = 0 }: { type: TypeObjet; id?: number }) {
           <path d="M-4 15 L0 26 L4 15 Z" fill="#ffb627" />
         </g>
       );
-    case "capsule":
-    case "doree": {
-      const or = type === "doree";
+    case "capsule": {
+      const or = id % 3 === 0;
       return (
         <g>
           <path d="M-22 0 A22 22 0 0 1 22 0 Z" fill={or ? "#ffd23f" : "#9146ff"} opacity=".95" />
@@ -173,6 +161,131 @@ function DessinObjet({ type, id = 0 }: { type: TypeObjet; id?: number }) {
           <path d="M0 -10 L3 -3 L10 -2 L4 3 L6 10 L0 6 L-6 10 L-4 3 L-10 -2 L-3 -3 Z" fill="#fff6c8" />
         </g>
       );
+    case "lune":
+      return (
+        <g>
+          <path d="M8 -24 A24 24 0 1 0 22 14 A19 19 0 1 1 8 -24 Z" fill="#fff3b0" stroke="#ffd23f" strokeWidth="2" strokeLinejoin="round" />
+          <circle cx="-6" cy="2" r="2.2" fill="#2b1640" /><circle cx="4" cy="8" r="2.2" fill="#2b1640" />
+          <path d="M-4 12 Q0 15 3 12" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <ellipse cx="-11" cy="10" rx="3" ry="2" fill="#ff9ec7" opacity=".7" />
+        </g>
+      );
+    case "planete":
+      return (
+        <g>
+          <circle r="17" fill="#c56bff" stroke="#e8c8ff" strokeWidth="2" />
+          <path d="M-12 -8 Q-4 -14 6 -12" stroke="#fff" strokeOpacity=".6" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <ellipse rx="30" ry="8" fill="none" stroke="#ffd23f" strokeWidth="3" transform="rotate(-16)" />
+          <circle cx="-6" cy="2" r="2.2" fill="#2b1640" /><circle cx="6" cy="2" r="2.2" fill="#2b1640" />
+          <path d="M-3 8 Q0 11 3 8" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case "robot":
+      return (
+        <g>
+          <line x1="0" y1="-24" x2="0" y2="-32" stroke="#c9a8ff" strokeWidth="2.5" /><circle cy="-33" r="3.5" fill="#ffd23f" />
+          <rect x="-20" y="-24" width="40" height="36" rx="14" fill="#f3ecff" stroke="#c9a8ff" strokeWidth="2.5" />
+          <rect x="-14" y="-15" width="28" height="16" rx="8" fill="#1a1033" />
+          <circle cx="-6" cy="-7" r="3" fill="#6bf0ff" /><circle cx="6" cy="-7" r="3" fill="#6bf0ff" />
+          <rect x="-15" y="12" width="10" height="10" rx="5" fill="#cbbdf0" /><rect x="5" y="12" width="10" height="10" rx="5" fill="#cbbdf0" />
+        </g>
+      );
+    case "nibi":
+      return (
+        <g>
+          <path d="M-8 -16 Q-12 -28 -18 -28 M8 -16 Q12 -28 18 -28" stroke="#b98cff" strokeWidth="2.6" fill="none" strokeLinecap="round" />
+          <circle cx="-18" cy="-28" r="4" fill="#ffe066" /><circle cx="18" cy="-28" r="4" fill="#ffe066" />
+          <ellipse cy="2" rx="21" ry="19" fill="#c9b3ff" />
+          <ellipse cx="-7" cy="0" rx="5.5" ry="6.5" fill="#2b1640" /><ellipse cx="7" cy="0" rx="5.5" ry="6.5" fill="#2b1640" />
+          <circle cx="-5.5" cy="-2" r="1.8" fill="#fff" /><circle cx="8.5" cy="-2" r="1.8" fill="#fff" />
+          <path d="M-3 9 Q0 12 3 9" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+          <ellipse cx="-14" cy="9" rx="3" ry="2" fill="#ff9ec7" opacity=".7" /><ellipse cx="14" cy="9" rx="3" ry="2" fill="#ff9ec7" opacity=".7" />
+        </g>
+      );
+    case "chat":
+      return (
+        <g>
+          <path d="M-18 -6 L-15 -24 L-4 -14 Z M18 -6 L15 -24 L4 -14 Z" fill="#8f7bff" stroke="#c9b3ff" strokeWidth="1.5" strokeLinejoin="round" />
+          <ellipse cy="2" rx="20" ry="17" fill="#8f7bff" />
+          <path d="M14 14 Q30 10 26 -6" stroke="#8f7bff" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <circle cx="26" cy="-7" r="3" fill="#ffd23f" />
+          <path d="M-9 0 q3 3 6 0 M3 0 q3 3 6 0" stroke="#1a0b2e" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M-2 7 L0 9 L2 7" stroke="#1a0b2e" strokeWidth="1.5" fill="none" />
+          <circle cx="-8" cy="-8" r="1.5" fill="#fff" opacity=".8" /><circle cx="9" cy="-6" r="1" fill="#fff" opacity=".8" />
+        </g>
+      );
+    case "comete":
+      return (
+        <g>
+          <path d="M6 -6 Q-10 -30 -30 -26 Q-16 -18 -10 4 Z" fill="#ff8fe0" opacity=".55" />
+          <path d="M6 -6 Q-4 -20 -20 -22 Q-10 -12 -6 4 Z" fill="#ffd1f2" opacity=".8" />
+          <circle cx="8" cy="4" r="13" fill="#ffe066" stroke="#fff3b0" strokeWidth="2" />
+          <circle cx="4" cy="3" r="1.8" fill="#2b1640" /><circle cx="12" cy="3" r="1.8" fill="#2b1640" />
+          <path d="M6 8 Q8 10 10 8" stroke="#2b1640" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case "manette":
+      return (
+        <g>
+          <path d="M-26 -4 Q-26 -14 -14 -14 L14 -14 Q26 -14 26 -4 L28 10 Q28 20 18 18 L10 10 L-10 10 L-18 18 Q-28 20 -28 10 Z" fill="#b26bff" stroke="#e0c8ff" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M-17 -6 V2 M-21 -2 H-13" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
+          <circle cx="14" cy="-6" r="2.6" fill="#3df5ff" /><circle cx="19" cy="-1" r="2.6" fill="#ff6bd6" /><circle cx="9" cy="-1" r="2.6" fill="#ffe066" />
+          <circle cx="-4" cy="2" r="1.6" fill="#2b1640" /><circle cx="4" cy="2" r="1.6" fill="#2b1640" />
+          <path d="M-2 6 Q0 8 2 6" stroke="#2b1640" strokeWidth="1.4" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case "casque":
+      return (
+        <g>
+          <path d="M-22 6 Q-22 -24 0 -24 Q22 -24 22 6" stroke="#c9a8ff" strokeWidth="5" fill="none" strokeLinecap="round" />
+          <rect x="-28" y="0" width="14" height="20" rx="6" fill="#9146ff" stroke="#e0c8ff" strokeWidth="2" />
+          <rect x="14" y="0" width="14" height="20" rx="6" fill="#9146ff" stroke="#e0c8ff" strokeWidth="2" />
+          <circle cx="-21" cy="10" r="3" fill="#3df5ff" /><circle cx="21" cy="10" r="3" fill="#ff6bd6" />
+          <path d="M-14 18 Q-6 24 2 22" stroke="#c9a8ff" strokeWidth="2.5" fill="none" strokeLinecap="round" /><circle cx="4" cy="22" r="3" fill="#ffe066" />
+        </g>
+      );
+    case "micro":
+      return (
+        <g>
+          <rect x="-10" y="-26" width="20" height="30" rx="10" fill="#e0c8ff" stroke="#fff" strokeWidth="2" />
+          <path d="M-10 -14 H10 M-10 -8 H10" stroke="#b26bff" strokeWidth="1.6" />
+          <path d="M-16 -2 Q-16 14 0 14 Q16 14 16 -2" stroke="#c9a8ff" strokeWidth="3" fill="none" strokeLinecap="round" />
+          <path d="M0 14 V24 M-9 24 H9" stroke="#c9a8ff" strokeWidth="3.5" strokeLinecap="round" />
+          <circle cx="15" cy="-22" r="4" fill="#ff4f6d" /><circle cx="15" cy="-22" r="7" fill="none" stroke="#ff4f6d" strokeOpacity=".4" strokeWidth="2" />
+        </g>
+      );
+    case "cible":
+      return (
+        <g>
+          <circle r="22" fill="#ff4f6d" stroke="#fff" strokeWidth="2" />
+          <circle r="15" fill="#fff" /><circle r="9" fill="#ff4f6d" /><circle r="3.5" fill="#fff" />
+          <path d="M-22 0 H-28 M22 0 H28 M0 -22 V-28 M0 22 V28" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+        </g>
+      );
+    case "badge":
+      return (
+        <g>
+          <path d="M0 -26 L20 -10 L14 18 L0 26 L-14 18 L-20 -10 Z" fill="#7fd0ff" stroke="#e8f8ff" strokeWidth="2" strokeLinejoin="round" />
+          <path d="M0 -16 L11 -6 L8 12 L0 17 L-8 12 L-11 -6 Z" fill="#b26bff" />
+          <path d="M0 -8 L3 -2 L9 -1 L4 3 L6 9 L0 6 L-6 9 L-4 3 L-9 -1 L-3 -2 Z" fill="#ffe066" />
+        </g>
+      );
+    case "coeur":
+      return (
+        <g>
+          <path d="M0 22 C-34 0 -20 -26 0 -10 C20 -26 34 0 0 22 Z" fill="#ff6bd6" stroke="#ffd1f2" strokeWidth="2" strokeLinejoin="round" />
+          <rect x="-12" y="-12" width="5" height="5" fill="#fff" opacity=".7" /><rect x="-7" y="-15" width="5" height="5" fill="#fff" opacity=".5" />
+          <circle cx="-6" cy="2" r="2" fill="#2b1640" /><circle cx="6" cy="2" r="2" fill="#2b1640" />
+          <path d="M-3 7 Q0 10 3 7" stroke="#2b1640" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        </g>
+      );
+    case "de":
+      return (
+        <g transform="rotate(12)">
+          <rect x="-18" y="-18" width="36" height="36" rx="9" fill="#f3ecff" stroke="#c9a8ff" strokeWidth="2.5" />
+          {[[-8, -8], [8, -8], [0, 0], [-8, 8], [8, 8]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill={i === 2 ? "#ffd23f" : "#9146ff"} />)}
+        </g>
+      );
     case "soucoupe":
       return (
         <g>
@@ -182,7 +295,6 @@ function DessinObjet({ type, id = 0 }: { type: TypeObjet; id?: number }) {
           <ellipse cy="2" rx="36" ry="10" fill="url(#gr-arcenciel)" opacity=".6" />
           {[-24, -8, 8, 24].map((x) => <circle key={x} cx={x} cy="4" r="2.6" fill="#ffe066" />)}
           <g transform="translate(0 -9) scale(.42)"><Gloup teinte="#9dff3d" /></g>
-          <text y="-24" textAnchor="middle" fontSize="9" fontWeight="900" fill="#ffe066" letterSpacing="1.5" style={{ filter: "drop-shadow(0 0 3px #ff4f9a)" }}>JACKPOT</text>
         </g>
       );
   }
@@ -217,9 +329,9 @@ export default function GrappinCosmique() {
   const [ouverture, setOuverture] = useState(1);
   const [phase, setPhase] = useState<Phase>("viser");
   const [duree, setDuree] = useState(0); // durée des transitions (ms)
-  const [tenu, setTenu] = useState<{ type: TypeObjet; id: number; chute?: boolean } | null>(null);
+  const [tenu, setTenu] = useState<{ look: Look; id: number; chute?: boolean } | null>(null);
   const [cache, setCache] = useState<number | null>(null); // objet en train d'être soulevé (masqué du tas)
-  const [glisse, setGlisse] = useState<{ type: TypeObjet; id: number; o: Objet } | null>(null);
+  const [glisse, setGlisse] = useState<{ look: Look; id: number; o: Objet } | null>(null);
   const [annonce, setAnnonce] = useState<Lot | null>(null);
   const [chrono, setChrono] = useState(20);
   const dir = useRef(0);
@@ -260,7 +372,7 @@ export default function GrappinCosmique() {
     dir.current = 0;
     const x = versTas(gx);
     const vise = sousLaPince(partie.objets, x);
-    const fond = vise ? H - BAS_COUCHE[vise.couche] - taille(vise.type) * 0.55 : H - SOL - 20;
+    const fond = vise ? H - BAS_COUCHE[vise.couche] - taille(vise.look) * 0.55 : H - SOL - 20;
     const longueur = Math.max(40, fond - RAIL - TETE + 14);
     const requete = appel({ action: "tirer", x }).then((p) => ({ p }), (e: unknown) => ({ e }));
     // 1. descente
@@ -287,15 +399,15 @@ export default function GrappinCosmique() {
     // 3. remontée, avec l'objet visé
     setPhase("remontee");
     const cibleObj = r.cible != null ? partie.objets.find((o) => o.id === r.cible) || null : null;
-    if (cibleObj) { setCache(cibleObj.id); setTenu({ type: cibleObj.type, id: cibleObj.id }); }
-    else setTenu({ type: "gloup", id: Math.floor(Math.random() * 4) });
+    if (cibleObj) { setCache(cibleObj.id); setTenu({ look: cibleObj.look, id: cibleObj.id }); }
+    else setTenu({ look: "gloup", id: Math.floor(Math.random() * 4) });
     setDuree(r.glisse ? 650 : 1200);
     setCable(r.glisse ? longueur * 0.45 : 0);
     await attendre(r.glisse ? 700 : 1250);
     if (r.glisse && cibleObj) {
       // l'objet glisse… et retombe dans le tas, un Gloup s'accroche à sa place
-      setGlisse({ type: cibleObj.type, id: cibleObj.id, o: cibleObj });
-      setTenu({ type: "gloup", id: cibleObj.id + 1 });
+      setGlisse({ look: cibleObj.look, id: cibleObj.id, o: cibleObj });
+      setTenu({ look: "gloup", id: cibleObj.id + 1 });
       await attendre(150);
       setCache(null);
       setDuree(650);
@@ -414,25 +526,25 @@ export default function GrappinCosmique() {
             {/* le tas de lots */}
             {[...objets].sort((a, b) => b.couche - a.couche).map((o) => {
               if (o.id === cache) return null;
-              const t = taille(o.type);
+              const t = taille(o.look);
               const vise = enCours && phase === "viser" && sousLaPince(objets, versTas(gx))?.id === o.id;
               return (
                 <div
                   key={o.id}
                   className={`absolute transition-[filter] duration-200 ${vise ? "gr-vise" : ""}`}
                   style={{ left: `calc(${versVitrine(o.x) * 100}% - ${t / 2}px)`, bottom: BAS_COUCHE[o.couche], width: t, height: t, zIndex: 10 - o.couche }}
-                  title={LEGENDE.find((l) => l[0] === o.type)?.[1]}
+                  title="Un objet mystère : à toi de voir ce qu'il cache !"
                 >
                   <svg viewBox="-32 -34 64 64" width={t} height={t} className="overflow-visible" style={{ transform: `rotate(${o.a}deg)` }}>
-                    <DessinObjet type={o.type} id={o.id} />
+                    <DessinObjet type={o.look} id={o.id} />
                   </svg>
                 </div>
               );
             })}
             {/* l'objet qui glisse retombe à sa place */}
             {glisse ? (
-              <div className="gr-retombe absolute" style={{ left: `calc(${versVitrine(glisse.o.x) * 100}% - ${taille(glisse.type) / 2}px)`, bottom: BAS_COUCHE[glisse.o.couche], width: taille(glisse.type), height: taille(glisse.type), zIndex: 9 }}>
-                <svg viewBox="-32 -34 64 64" width={taille(glisse.type)} height={taille(glisse.type)} className="overflow-visible"><DessinObjet type={glisse.type} id={glisse.id} /></svg>
+              <div className="gr-retombe absolute" style={{ left: `calc(${versVitrine(glisse.o.x) * 100}% - ${taille(glisse.look) / 2}px)`, bottom: BAS_COUCHE[glisse.o.couche], width: taille(glisse.look), height: taille(glisse.look), zIndex: 9 }}>
+                <svg viewBox="-32 -34 64 64" width={taille(glisse.look)} height={taille(glisse.look)} className="overflow-visible"><DessinObjet type={glisse.look} id={glisse.id} /></svg>
               </div>
             ) : null}
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#ff4f9a]/25 to-transparent" style={{ height: SOL + 10 }} />
@@ -447,8 +559,8 @@ export default function GrappinCosmique() {
                 </div>
                 {tenu ? (
                   <div className={`absolute left-1/2 -translate-x-1/2 ${tenu.chute ? "gr-chute" : ""}`} style={{ top: TETE - 18 }}>
-                    <svg viewBox="-32 -34 64 64" width={taille(tenu.type) * 0.9} height={taille(tenu.type) * 0.9} className="overflow-visible">
-                      <DessinObjet type={tenu.type} id={tenu.id} />
+                    <svg viewBox="-32 -34 64 64" width={taille(tenu.look) * 0.9} height={taille(tenu.look) * 0.9} className="overflow-visible">
+                      <DessinObjet type={tenu.look} id={tenu.id} />
                     </svg>
                   </div>
                 ) : null}
@@ -458,7 +570,7 @@ export default function GrappinCosmique() {
             {/* annonce du lot */}
             {annonce ? (
               <div className="gr-annonce absolute left-1/2 top-[22%] z-30 -translate-x-1/2 rounded-2xl border-2 bg-[#12062a]/90 px-6 py-4 text-center backdrop-blur" style={{ borderColor: COULEUR_RARETE[annonce.rarete], boxShadow: `0 0 30px ${COULEUR_RARETE[annonce.rarete]}88` }}>
-                <svg viewBox="-32 -34 64 64" width="70" height="70" className="mx-auto overflow-visible"><DessinObjet type={annonce.type} id={3} /></svg>
+                <svg viewBox="-32 -34 64 64" width="70" height="70" className="mx-auto overflow-visible"><DessinObjet type={annonce.look} id={3} /></svg>
                 <p className="mt-1 text-xs font-bold uppercase tracking-widest" style={{ color: COULEUR_RARETE[annonce.rarete] }}>{annonce.rareteLabel}</p>
                 <p className="text-lg font-bold text-ink">{annonce.nom}</p>
                 <p className="text-sm text-ink-soft">{annonce.label}</p>
@@ -470,7 +582,7 @@ export default function GrappinCosmique() {
               <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0b0418]/75 p-5 text-center backdrop-blur-[2px]">
                 <div className="max-w-md">
                   <p className="gr-neon mb-2 text-2xl font-black uppercase tracking-widest">Insert coin</p>
-                  <p className="mb-5 text-sm text-ink-soft">Trois tirages par jour. Les Gloups gardent la vitrine, mais les capsules à boosters et la soucoupe <strong className="text-ink">JACKPOT</strong> sont tout au fond… À toi de bien viser !</p>
+                  <p className="mb-5 text-sm text-ink-soft">Trois tirages par jour. Chaque peluche et chaque objet cache un <strong className="text-ink">lot mystère</strong> : impossible de savoir lequel avant de l&apos;avoir sorti… Les plus beaux lots se cachent souvent tout au fond !</p>
                   {compte.joueur ? (
                     <>
                       <button type="button" onClick={entrer} disabled={charge} className="gr-bouton rounded-full px-8 py-3 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-60">
@@ -518,7 +630,7 @@ export default function GrappinCosmique() {
             <div className="grid gap-3 sm:grid-cols-3">
               {partie.prises.map((p, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-2xl border bg-black/20 p-3" style={{ borderColor: COULEUR_RARETE[p.rarete] + "66" }}>
-                  <svg viewBox="-32 -34 64 64" width="48" height="48" className="shrink-0 overflow-visible"><DessinObjet type={p.type} id={i} /></svg>
+                  <svg viewBox="-32 -34 64 64" width="48" height="48" className="shrink-0 overflow-visible"><DessinObjet type={p.look} id={i} /></svg>
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-ink">{p.nom}</p>
                     <p className="text-xs text-ink-soft">{p.label}</p>
@@ -551,17 +663,14 @@ export default function GrappinCosmique() {
           <li>Les lots précieux glissent plus souvent… mais tu ne repars <strong className="text-ink">jamais les mains vides</strong> : un petit Gloup s&apos;accroche toujours.</li>
           <li>Après 3 tirages, tout est ajouté à ton compte Discord.</li>
         </ol>
-        <h3 className="mb-2 text-sm font-semibold text-ink">Dans la vitrine</h3>
-        <ul className="space-y-1.5 text-sm">
-          {LEGENDE.map(([t, nom, lot, r]) => (
-            <li key={t} className="flex items-center gap-2">
-              <svg viewBox="-32 -34 64 64" width="30" height="30" className="shrink-0 overflow-visible"><DessinObjet type={t} id={0} /></svg>
-              <span className="flex-1 text-ink-soft"><span className="text-ink">{nom}</span> · {lot}</span>
-              <span className="whitespace-nowrap text-[11px]" style={{ color: COULEUR_RARETE[r] }}>{r === "commune" ? "commun" : r === "peu" ? "peu commun" : r === "epique" ? "épique" : r === "legendaire" ? "légendaire" : r}</span>
-            </li>
+        <h3 className="mb-2 text-sm font-semibold text-ink">Que cache la vitrine ?</h3>
+        <p className="text-sm text-ink-soft">Peluches, manettes, mini-fusées, soucoupes… <strong className="text-ink">chaque objet cache un lot mystère</strong>, et son apparence ne dit rien de ce qu&apos;il y a dedans ! Un petit lot d&apos;Éclats, un booster, un fragment… ou peut-être le <strong className="text-ink">JACKPOT</strong>. Tu le découvres en le sortant de la machine.</p>
+        <div className="mt-3 flex flex-wrap gap-1.5" aria-hidden>
+          {(["etoile", "manette", "robot", "nibi", "soucoupe", "casque", "lune", "cible", "chat", "micro", "planete", "coeur"] as Look[]).map((t) => (
+            <svg key={t} viewBox="-32 -34 64 64" width="34" height="34" className="overflow-visible opacity-90"><DessinObjet type={t} id={1} /></svg>
           ))}
-        </ul>
-        <p className="mt-4 text-xs text-ink-soft/60">La vitrine change chaque jour et est remplie par CycyBot : la Reine des Gloups et la soucoupe JACKPOT ne sont pas là tous les jours. Il faut être membre du Discord Cycylive pour recevoir sa récompense.</p>
+        </div>
+        <p className="mt-4 text-xs text-ink-soft/60">La vitrine change chaque jour et est remplie par CycyBot. Il faut être membre du Discord Cycylive pour recevoir sa récompense.</p>
       </aside>
 
       <style>{`

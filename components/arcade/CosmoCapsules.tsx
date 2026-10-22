@@ -19,7 +19,7 @@ const RARETES: Rarete[] = ["commune", "peu", "rare", "epique", "legendaire", "my
 const CHANCES_DEFAUT: Record<Rarete, number> = { commune: 52, peu: 27, rare: 13, epique: 5.5, legendaire: 2, mythique: 0.5 };
 const NIVEAU: Record<Rarete, number> = { commune: 0, peu: 1, rare: 2, epique: 3, legendaire: 4, mythique: 5 };
 
-type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number };
+type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number; numero?: number };
 type Collection = { id: string; nom: string; emoji: string; description: string; bonus: string; terminee: boolean };
 type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; description?: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null };
 type Etat = {
@@ -319,6 +319,7 @@ export default function CosmoCapsules() {
                 return (
                   <div key={f.id} className="relative flex flex-col items-center rounded-2xl border-2 bg-white/[.04] p-2 text-center" style={{ borderColor: COULEUR_RARETE[f.rarete] + (n ? "aa" : "33") }} title={n ? f.nom + (f.description ? " : " + f.description : "") : "Pas encore trouvée"}>
                     <FigurineVisuel id={f.id} image={f.image} silhouette={!n} taille={76} />
+                    {f.numero ? <span className="absolute left-1.5 top-1.5 text-[10px] font-bold text-ink-soft/70">n°{f.numero}</span> : null}
                     <p className={`mt-1 text-[11px] font-semibold leading-tight ${n ? "text-ink" : "text-ink-soft/50"}`}>{n ? f.nom : "???"}</p>
                     {f.stock ? (
                       <p className="mt-0.5 text-[10px] font-bold" style={{ color: "#ffd23f" }}>
