@@ -25,7 +25,7 @@ function miniatureYoutube(url: string): string | null {
 // Les images de TikTok expirent et refusent d'être affichées depuis un autre site :
 // la miniature passe par notre propre adresse, qui la récupère à jour (app/api/miniature/tiktok).
 function miniatureTiktok(url: string): string | null {
-  return /tiktok\.com/i.test(url) ? `/api/miniature/tiktok?url=${encodeURIComponent(url)}` : null;
+  return /tiktok\.com/i.test(url) ? `/api/miniature/tiktok?url=${encodeURIComponent(url)}&strict=1` : null;
 }
 
 let tokenTwitchEnCache: { token: string; expireLe: number } | null = null;

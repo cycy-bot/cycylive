@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const NAVIGATEUR = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 const CACHE_OK = "public, max-age=3600, s-maxage=21600, stale-while-revalidate=86400";
 
-function secours(): NextResponse {
+function secoursSvg(): NextResponse {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 1280"><defs><linearGradient id="f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a0b2e"/><stop offset="1" stop-color="#0b0817"/></linearGradient></defs><rect width="720" height="1280" fill="url(#f)"/><g transform="translate(360 600)"><circle r="120" fill="#7b38ff" opacity=".18"/><path d="M-30 -60 L50 0 L-30 60 Z" fill="#f5f1ff"/></g><text x="360" y="820" text-anchor="middle" font-family="system-ui,sans-serif" font-size="54" font-weight="700" fill="#e0b3ff">TikTok</text></svg>`;
   return new NextResponse(svg, { headers: { "Content-Type": "image/svg+xml", "Cache-Control": "public, max-age=600, s-maxage=1800" } });
 }
@@ -30,6 +30,9 @@ async function urlCanonique(url: string): Promise<string> {
 
 export async function GET(request: NextRequest) {
   const brut = request.nextUrl.searchParams.get("url") || "";
+  // strict=1 : erreur 404 au lieu de l'image de secours (la page affiche alors le lecteur TikTok)
+  const strict = request.nextUrl.searchParams.get("strict") === "1";
+  const secours = () => (strict ? new NextResponse("", { status: 404, headers: { "Cache-Control": "public, max-age=300, s-maxage=600" } }) : secoursSvg());
   let video: URL;
   try {
     video = new URL(brut);

@@ -1,4 +1,5 @@
 "use client";
+import ImageMiniature from "@/components/ImageMiniature";
 
 import { useState } from "react";
 import type { ContenuAvecMiniature } from "@/lib/miniatures";
@@ -75,13 +76,13 @@ export default function GalerieContenus({ contenus }: { contenus: ContenuAvecMin
                     vertical ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={contenu.miniature} alt="" aria-hidden loading="lazy" className="absolute inset-0 w-full h-full object-cover scale-125 blur-xl opacity-60" />
+                        <ImageMiniature src={contenu.miniature} video={contenu.url} alt="" aria-hidden loading="lazy" className="absolute inset-0 w-full h-full object-cover scale-125 blur-xl opacity-60" />
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={contenu.miniature} alt={contenu.titre} loading="lazy" className="relative h-full w-auto object-contain shadow-[0_0_30px_rgba(0,0,0,.6)] transition-transform duration-500 group-hover:scale-105" />
+                        <ImageMiniature src={contenu.miniature} video={contenu.url} alt={contenu.titre} loading="lazy" className="relative h-full w-auto object-contain shadow-[0_0_30px_rgba(0,0,0,.6)] transition-transform duration-500 group-hover:scale-105" />
                       </>
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={contenu.miniature} alt={contenu.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <ImageMiniature src={contenu.miniature} video={contenu.url} alt={contenu.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     )
                   ) : (
                     <span>{contenu.plateforme}</span>

@@ -1,3 +1,4 @@
+import ImageMiniature from "@/components/ImageMiniature";
 import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
@@ -59,7 +60,7 @@ function CarteClip({ c }: { c: ClipTwitch }) {
     <a href={c.url} target="_blank" rel="noopener noreferrer" className="group block overflow-hidden rounded-2xl border border-violet/15 bg-card/80 transition-all hover:-translate-y-1 hover:border-violet/50 hover:shadow-glow-sm">
       <div className="relative aspect-video overflow-hidden bg-nebula">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={c.miniature} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+        <ImageMiniature src={c.miniature} video={c.url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30" aria-hidden>
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet/90 text-white opacity-0 shadow-glow transition-opacity group-hover:opacity-100"><Icone nom="lecture" className="w-6 h-6" /></span>
         </span>
@@ -316,7 +317,7 @@ export default async function GamingPage() {
                   <div className="relative aspect-[9/16] bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
                     {c.miniature ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={c.miniature} alt={c.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
+                      <ImageMiniature src={c.miniature} video={c.url} alt={c.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
                     ) : (
                       <span>Clip</span>
                     )}
@@ -361,7 +362,7 @@ export default async function GamingPage() {
                             <a key={c.id} href={c.url} target="_blank" rel="noopener noreferrer" title={c.titre || `Voir sur ${c.plateforme}`} className={`group/c relative block overflow-hidden rounded-lg border border-white/10 bg-nebula ${contenus.length === 1 ? "aspect-video" : "aspect-[4/5]"}`}>
                               {c.miniature ? (
                                 // eslint-disable-next-line @next/next/no-img-element
-                                <img src={c.miniature} alt={c.titre || ""} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/c:scale-105" />
+                                <ImageMiniature src={c.miniature} video={c.url} alt={c.titre || ""} loading="lazy" className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/c:scale-105" />
                               ) : (
                                 <span className="absolute inset-0 flex items-center justify-center" style={{ background: `linear-gradient(160deg, rgba(${illu.couleur},.35), rgba(13,10,23,.95))` }}><Icone nom="clap" className="w-6 h-6 text-white/70" /></span>
                               )}

@@ -1,3 +1,4 @@
+import ImageMiniature from "@/components/ImageMiniature";
 import type { Metadata } from "next";
 import EntetePage from "@/components/EntetePage";
 import { liens } from "@/data/liens";
@@ -29,8 +30,7 @@ function CarteVideo({ c, largeur }: { c: ContenuAvecMiniature; largeur: string }
       >
         {c.miniature ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={c.miniature}
+          <ImageMiniature src={c.miniature} video={c.url}
             alt={c.titre}
             loading="lazy"
             className="absolute inset-0 w-full h-full object-cover"
@@ -182,8 +182,7 @@ export default async function ReseauxPage() {
                 <div className="relative aspect-square bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
                   {c.miniature ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={c.miniature}
+                    <ImageMiniature src={c.miniature} video={c.url}
                       alt={c.titre}
                       loading="lazy"
                       className="absolute inset-0 w-full h-full object-cover"
