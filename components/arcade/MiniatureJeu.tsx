@@ -361,25 +361,101 @@ function Compagnon({ accent }: { accent: string }) {
 }
 
 function Coffres({ k, accent }: { k: string; accent: string }) {
-  // Les trois coffres illustrés : celui du milieu s'ouvre et laisse échapper la lumière
+  // La salle des coffres : une alcôve voûtée ouverte sur la nébuleuse, des colonnes dorées, une estrade
+  // de marbre violet, un rayon de lumière sur le coffre ouvert, et des pièces et gemmes qui flottent.
+  const pieces: [number, number, number, number][] = [[60, 58, 7, -20], [262, 64, 6, 25], [82, 120, 5, 10], [248, 118, 5, -15], [120, 30, 4, 0], [206, 34, 4.5, 30]];
+  const gemmes: [number, number, number, string][] = [[42, 96, 6, "#7ad7ff"], [282, 100, 6, "#ff8fd6"], [104, 74, 4.5, "#c9a8ff"], [222, 78, 4.5, "#7ad7ff"]];
   return (
     <>
       <defs>
-        <radialGradient id={`${k}-lueur`} cx="50%" cy="50%" r="50%">
-          <stop offset="0" stopColor="#bcd8ff" stopOpacity="0.9" />
-          <stop offset=".5" stopColor="#8fb6ff" stopOpacity="0.3" />
-          <stop offset="1" stopColor={accent} stopOpacity="0" />
+        <linearGradient id={`${k}-salle`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2a1450" />
+          <stop offset="1" stopColor="#0f0820" />
+        </linearGradient>
+        <radialGradient id={`${k}-ciel`} cx="50%" cy="35%" r="75%">
+          <stop offset="0" stopColor="#5b2f9c" />
+          <stop offset=".55" stopColor="#2a1660" />
+          <stop offset="1" stopColor="#120a30" />
         </radialGradient>
+        <linearGradient id={`${k}-or`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff0b8" />
+          <stop offset=".5" stopColor="#e9b65a" />
+          <stop offset="1" stopColor="#9a6424" />
+        </linearGradient>
+        <linearGradient id={`${k}-col`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#2b1652" />
+          <stop offset=".45" stopColor="#6a45a8" />
+          <stop offset="1" stopColor="#1e0f3c" />
+        </linearGradient>
+        <linearGradient id={`${k}-marbre`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#7a52bf" />
+          <stop offset="1" stopColor="#2e1860" />
+        </linearGradient>
+        <linearGradient id={`${k}-rayon`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#fff1c4" stopOpacity=".6" />
+          <stop offset="1" stopColor={accent} stopOpacity="0" />
+        </linearGradient>
+        <radialGradient id={`${k}-lueur`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#bcd8ff" stopOpacity=".95" />
+          <stop offset=".45" stopColor="#8fb6ff" stopOpacity=".35" />
+          <stop offset="1" stopColor="#8fb6ff" stopOpacity="0" />
+        </radialGradient>
+        <filter id={`${k}-flou`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="9" /></filter>
+        <clipPath id={`${k}-arche`}><path d="M64 168 V70 Q64 14 160 14 Q256 14 256 70 V168 Z" /></clipPath>
       </defs>
-      <ellipse cx="160" cy="176" rx="140" ry="14" fill="#000" opacity="0.4" />
-      <ellipse cx="160" cy="88" rx="78" ry="74" fill={`url(#${k}-lueur)`} />
-      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-        <path key={i} d="M160 96 L154 6 L166 6 Z" fill="#dcebff" opacity=".22" transform={`rotate(${-70 + i * 20} 160 96)`} />
+      {/* la salle */}
+      <rect width="320" height="200" fill={`url(#${k}-salle)`} />
+      {/* l'alcôve ouverte sur la nébuleuse */}
+      <g clipPath={`url(#${k}-arche)`}>
+        <rect width="320" height="200" fill={`url(#${k}-ciel)`} />
+        <ellipse cx="110" cy="58" rx="46" ry="22" fill="#ff7fd6" opacity=".35" filter={`url(#${k}-flou)`} />
+        <ellipse cx="214" cy="80" rx="52" ry="24" fill="#6bc4ff" opacity=".3" filter={`url(#${k}-flou)`} />
+        <ellipse cx="170" cy="40" rx="30" ry="14" fill="#ffd27a" opacity=".25" filter={`url(#${k}-flou)`} />
+        {[[86, 36], [118, 24], [150, 52], [196, 28], [232, 46], [100, 92], [226, 104], [176, 70], [140, 82], [210, 60]].map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r={i % 3 ? 0.8 : 1.3} fill="#fff" opacity={0.5 + (i % 3) * 0.2} />
+        ))}
+        <path d="M128 14 L192 14 L236 168 L84 168 Z" fill={`url(#${k}-rayon)`} />
+      </g>
+      <path d="M64 168 V70 Q64 14 160 14 Q256 14 256 70 V168" fill="none" stroke={`url(#${k}-or)`} strokeWidth="3" />
+      <path d="M71 168 V72 Q71 22 160 22 Q249 22 249 72 V168" fill="none" stroke="#e9b65a" strokeOpacity=".45" strokeWidth="1" />
+      <path d="M152 9 L160 1 L168 9 L160 17 Z" fill={`url(#${k}-or)`} />
+      {/* colonnes */}
+      {[18, 272].map((x) => (
+        <g key={x}>
+          <rect x={x} y="20" width="30" height="150" fill={`url(#${k}-col)`} />
+          {[0, 1, 2].map((r) => <rect key={r} x={x + 6 + r * 8} y="26" width="2" height="138" fill="#000" opacity=".18" />)}
+          <rect x={x - 4} y="12" width="38" height="9" rx="2" fill={`url(#${k}-or)`} />
+          <rect x={x - 4} y="166" width="38" height="8" rx="2" fill={`url(#${k}-or)`} />
+        </g>
       ))}
-      <image href="/coffres/comete-ferme.webp" x="6" y="74" width="118" height="113" />
-      <image href="/coffres/nebuleuse-ferme.webp" x="196" y="74" width="118" height="113" />
-      <image href="/coffres/lune-ouvert.webp" x="88" y="34" width="150" height="144" />
-      {[[110, 40, 0.9], [216, 46, 0.7], [148, 18, 0.6], [196, 22, 0.8]].map(([x, y, s2], i) => (
+      {/* estrade de marbre */}
+      <ellipse cx="160" cy="186" rx="150" ry="18" fill="#000" opacity=".45" />
+      <path d="M22 176 Q160 154 298 176 L298 200 L22 200 Z" fill={`url(#${k}-marbre)`} />
+      <path d="M22 176 Q160 154 298 176" fill="none" stroke={`url(#${k}-or)`} strokeWidth="2" />
+      <path d="M60 186 Q160 172 260 186" fill="none" stroke="#e9b65a" strokeOpacity=".35" strokeWidth="1" />
+      {/* lueur du coffre ouvert */}
+      <ellipse cx="163" cy="92" rx="70" ry="62" fill={`url(#${k}-lueur)`} />
+      {/* ombres et coffres */}
+      <ellipse cx="66" cy="182" rx="48" ry="6" fill="#000" opacity=".4" />
+      <ellipse cx="254" cy="182" rx="48" ry="6" fill="#000" opacity=".4" />
+      <ellipse cx="163" cy="176" rx="62" ry="7" fill="#000" opacity=".45" />
+      <image href="/coffres/comete-ferme.webp" x="8" y="76" width="116" height="111" />
+      <image href="/coffres/nebuleuse-ferme.webp" x="196" y="76" width="116" height="111" />
+      <image href="/coffres/lune-ouvert.webp" x="90" y="38" width="146" height="140" />
+      {/* pièces et gemmes qui flottent */}
+      {pieces.map(([x, y, r, a], i) => (
+        <g key={`p${i}`} transform={`rotate(${a} ${x} ${y})`}>
+          <ellipse cx={x} cy={y} rx={r} ry={r * 0.82} fill={`url(#${k}-or)`} />
+          <ellipse cx={x} cy={y} rx={r * 0.6} ry={r * 0.48} fill="none" stroke="#fff3c9" strokeOpacity=".7" strokeWidth=".8" />
+        </g>
+      ))}
+      {gemmes.map(([x, y, r, c], i) => (
+        <g key={`g${i}`}>
+          <path d={`M${x} ${y - r} L${x + r * 0.8} ${y - r * 0.2} L${x} ${y + r} L${x - r * 0.8} ${y - r * 0.2} Z`} fill={c} />
+          <path d={`M${x} ${y - r} L${x + r * 0.8} ${y - r * 0.2} L${x} ${y - r * 0.05} Z`} fill="#fff" opacity=".55" />
+        </g>
+      ))}
+      {[[116, 46, 0.9], [214, 50, 0.75], [150, 26, 0.6], [190, 22, 0.8], [36, 140, 0.6], [292, 142, 0.6]].map(([x, y, s2], i) => (
         <path key={i} transform={`translate(${x} ${y}) scale(${s2})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#fff3d0" />
       ))}
     </>

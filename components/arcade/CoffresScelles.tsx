@@ -89,6 +89,64 @@ async function appel(corps: Record<string, unknown>): Promise<Partie> {
   return d as Partie;
 }
 
+// Le décor de la salle : une alcôve voûtée ouverte sur la nébuleuse, des colonnes dorées, une estrade de
+// marbre, un rayon de lumière et des paillettes qui flottent (dans la même ambiance que les autres jeux).
+function DecorSalle() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid slice" aria-hidden>
+      <defs>
+        <linearGradient id="cs-salle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2a1450" /><stop offset="1" stopColor="#0d071c" /></linearGradient>
+        <radialGradient id="cs-ciel" cx="50%" cy="30%" r="75%"><stop offset="0" stopColor="#4d2788" /><stop offset=".55" stopColor="#221250" /><stop offset="1" stopColor="#0f0826" /></radialGradient>
+        <linearGradient id="cs-or" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff0b8" /><stop offset=".5" stopColor="#e9b65a" /><stop offset="1" stopColor="#9a6424" /></linearGradient>
+        <linearGradient id="cs-col" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stopColor="#1f0f3d" /><stop offset=".45" stopColor="#4f3283" /><stop offset="1" stopColor="#160a2e" /></linearGradient>
+        <linearGradient id="cs-marbre" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#5a3a96" /><stop offset="1" stopColor="#1a0d38" /></linearGradient>
+        <linearGradient id="cs-rayon" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#ffe9b0" stopOpacity=".26" /><stop offset="1" stopColor="#ffc46b" stopOpacity="0" /></linearGradient>
+        <radialGradient id="cs-voile" cx="50%" cy="50%" r="50%"><stop offset="0" stopColor="#0d071c" stopOpacity="0" /><stop offset="1" stopColor="#0d071c" stopOpacity=".55" /></radialGradient>
+        <filter id="cs-flou" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="24" /></filter>
+        <clipPath id="cs-arche"><path d="M330 400 V190 Q330 34 600 34 Q870 34 870 190 V400 Z" /></clipPath>
+      </defs>
+      <rect width="1200" height="460" fill="url(#cs-salle)" />
+      {/* murs : panneaux sombres et arcs secondaires */}
+      {[90, 1110].map((x) => (
+        <path key={x} d={`M${x - 70} 400 V170 Q${x - 70} 90 ${x} 90 Q${x + 70} 90 ${x + 70} 170 V400 Z`} fill="#1a0d36" stroke="#e9b65a" strokeOpacity=".25" strokeWidth="2" />
+      ))}
+      <g clipPath="url(#cs-arche)">
+        <rect width="1200" height="460" fill="url(#cs-ciel)" />
+        <ellipse cx="470" cy="150" rx="130" ry="55" fill="#ff7fd6" opacity=".22" filter="url(#cs-flou)" />
+        <ellipse cx="740" cy="210" rx="150" ry="60" fill="#6bc4ff" opacity=".2" filter="url(#cs-flou)" />
+        <ellipse cx="620" cy="100" rx="90" ry="34" fill="#ffd27a" opacity=".18" filter="url(#cs-flou)" />
+        {Array.from({ length: 46 }, (_, i) => (
+          <circle key={i} className={i % 4 ? undefined : "cs-scint"} style={{ animationDelay: `${(i % 7) * 0.4}s` }} cx={340 + ((i * 137) % 520)} cy={44 + ((i * 89) % 300)} r={i % 5 ? 1.1 : 2} fill="#fff" opacity={0.35 + (i % 3) * 0.2} />
+        ))}
+        <path d="M530 34 L670 34 L790 400 L410 400 Z" fill="url(#cs-rayon)" />
+      </g>
+      <path d="M330 400 V190 Q330 34 600 34 Q870 34 870 190 V400" fill="none" stroke="url(#cs-or)" strokeWidth="5" opacity=".85" />
+      <path d="M348 400 V194 Q348 54 600 54 Q852 54 852 194 V400" fill="none" stroke="#e9b65a" strokeOpacity=".3" strokeWidth="2" />
+      <path d="M586 20 L600 4 L614 20 L600 36 Z" fill="url(#cs-or)" />
+      {[226, 900].map((x) => (
+        <g key={x}>
+          <rect x={x} y="44" width="74" height="352" fill="url(#cs-col)" />
+          {[0, 1, 2, 3].map((r) => <rect key={r} x={x + 12 + r * 16} y="60" width="4" height="324" fill="#000" opacity=".2" />)}
+          <rect x={x - 10} y="28" width="94" height="20" rx="4" fill="url(#cs-or)" />
+          <rect x={x - 10} y="390" width="94" height="16" rx="4" fill="url(#cs-or)" />
+        </g>
+      ))}
+      <path d="M0 410 Q600 368 1200 410 L1200 460 L0 460 Z" fill="url(#cs-marbre)" />
+      <path d="M0 410 Q600 368 1200 410" fill="none" stroke="url(#cs-or)" strokeWidth="3" />
+      <path d="M160 444 Q600 410 1040 444" fill="none" stroke="#e9b65a" strokeOpacity=".25" strokeWidth="2" />
+      {[[410, 140, 9], [800, 160, 8], [440, 300, 6], [770, 300, 7], [520, 80, 5], [690, 88, 6], [150, 250, 6], [1050, 240, 7]].map(([x, y, r], i) => (
+        <g key={i} className="cs-flotte" style={{ animationDelay: `${i * 0.5}s` }}>
+          <ellipse cx={x} cy={y} rx={r} ry={r * 0.82} fill="url(#cs-or)" opacity=".85" />
+        </g>
+      ))}
+      <rect width="1200" height="460" fill="url(#cs-voile)" />
+      <style>{`.cs-scint{animation:cs-scint 3s ease-in-out infinite}@keyframes cs-scint{50%{opacity:.1}}
+        .cs-flotte{animation:cs-flotte 4s ease-in-out infinite}@keyframes cs-flotte{50%{transform:translateY(-8px)}}
+        @media (prefers-reduced-motion: reduce){.cs-scint,.cs-flotte{animation:none}}`}</style>
+    </svg>
+  );
+}
+
 export default function CoffresScelles() {
   const compte = useCompteDiscord();
   const [partie, setPartie] = useState<Partie | null>(null);
@@ -134,7 +192,9 @@ export default function CoffresScelles() {
 
   return (
     <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-      <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8 shadow-glow-sm">
+      <div className="relative overflow-hidden rounded-3xl border border-[#e9b65a]/25 p-5 pb-10 md:p-8 md:pb-14 shadow-glow-sm bg-[#120a24]">
+        <DecorSalle />
+        <div className="relative">
         {!partie ? (
           <div className="text-center py-10 md:py-14">
             <Pastille nom="coffre" teinte="or" taille="lg" className="mb-4" />
@@ -247,6 +307,7 @@ export default function CoffresScelles() {
             {erreur && <p className="text-sm text-red-300 mt-4 text-center">{erreur}</p>}
           </div>
         )}
+        </div>
       </div>
 
       <aside className="carte-holo rounded-2xl border border-violet/12 p-5">

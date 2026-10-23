@@ -145,7 +145,7 @@ export const JEUX: FicheJeu[] = [
     nom: "Quiz de la galaxie",
     emoji: "❓",
     accroche: "10 questions, 15 secondes chacune.",
-    description: "Valorant, l'espace, les jeux vidéo et le stream : dix questions, quinze secondes pour chacune. Réponds juste, et vite, pour décrocher le bonus de rapidité.",
+    description: "Valorant, l'espace, les jeux vidéo, le stream, la culture G, le cinéma et la musique : dix questions tirées d'une banque de plus de 300, presque jamais les mêmes d'une partie à l'autre. Quinze secondes par question : réponds juste, et vite, pour décrocher le bonus de rapidité.",
     duree: "≈ 2 min",
     controles: "Souris · tactile",
     teinte: { de: "#1d6a5a", a: "#0b1a18", accent: "#6bffc8" },
@@ -217,7 +217,7 @@ export const JEUX: FicheJeu[] = [
     description: "Choisis un coffre parmi trois. CycyBot ouvre alors un des deux autres, qui ne cache jamais le gros lot. À toi de décider : garder ton coffre ou tenter l'autre. Ton trésor arrive directement sur ton compte Discord.",
     duree: "1 partie / jour",
     controles: "Souris · tactile · clavier",
-    teinte: { de: "#7a3a1d", a: "#1a0e0b", accent: "#ffb86b" },
+    teinte: { de: "#4a2470", a: "#120a24", accent: "#ffc46b" },
     badge: "Récompense Discord",
   },
 ];
