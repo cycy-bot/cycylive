@@ -57,12 +57,12 @@ const R = REPERES as unknown as Record<string, Record<string, Repere>>;
 const POSE: Record<string, { w: number; ay: number; ax?: number; dy?: number }> = {
   fleur: { w: 0.95, ay: 0.5 },
   noeud: { w: 1.35, ay: 0.72 },
-  casquette: { w: 2.25, ay: 0.68 },
+  casquette: { w: 2.05, ay: 0.61 },
   bonnet: { w: 1.95, ay: 0.7 },
   hautdeforme: { w: 1.6, ay: 0.86 },
   sorciere: { w: 2.25, ay: 0.82 },
   couronne: { w: 1.45, ay: 0.85 },
-  aureole: { w: 1.45, ay: 0.78 },
+  aureole: { w: 1.55, ay: 1.2 },
   monocle: { w: 0.66, ay: 0.3 },
   soleil: { w: 2.1, ay: 0.5 },
   coeurs: { w: 2.2, ay: 0.5 },
@@ -71,7 +71,7 @@ const POSE: Record<string, { w: number; ay: number; ax?: number; dy?: number }> 
   collier: { w: 1.6, ay: 0.12 },
 };
 // proportions (hauteur / largeur) des images portées
-const RATIO: Record<string, number> = { fleur: 350 / 328, noeud: 313 / 378, casquette: 321 / 362, bonnet: 383 / 321, hautdeforme: 312 / 375, sorciere: 342 / 374, couronne: 250 / 364, aureole: 316 / 336, monocle: 346 / 273, soleil: 201 / 555, coeurs: 206 / 577, papillon: 234 / 439, echarpe: 379 / 435, collier: 331 / 479 };
+const RATIO: Record<string, number> = { fleur: 350 / 328, noeud: 313 / 378, casquette: 502 / 728, bonnet: 383 / 321, hautdeforme: 312 / 375, sorciere: 342 / 374, couronne: 250 / 364, aureole: 450 / 640, monocle: 346 / 273, soleil: 201 / 555, coeurs: 206 / 577, papillon: 234 / 439, echarpe: 379 / 435, collier: 331 / 479 };
 const DOSSIER: Record<Emplacement, string> = { tete: "tetes", yeux: "yeux", cou: "yeux" };
 
 // Les têtes n'ont pas toutes la même largeur par rapport à l'écart des yeux (bulle du chat, casque du robot…)

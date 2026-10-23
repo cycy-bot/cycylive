@@ -642,7 +642,7 @@ export default function Compagnon() {
             </>
           )}
           {/* habitat : décorations installées */}
-          <DecorScene habitat={etat.habitat || {}} />
+          <DecorScene habitat={etat.habitat || {}} nuit={etat.dort} />
 
           {/* bulle de dialogue */}
           <div className="absolute left-1/2 top-4 -translate-x-1/2 max-w-[85%] rounded-2xl bg-white/90 px-4 py-2 text-sm text-[#2a1552] font-medium text-center shadow-lg">

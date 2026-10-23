@@ -160,14 +160,44 @@ function Effets({ k }: { k: string }) {
 
 const BOUGE: Record<string, string> = { herbe: "hb-ondule", plante: "hb-feuilles" };
 
-function Objet({ k }: { k: string }) {
+// La nuit : la partie lumineuse de l'objet reste éclairée (découpée dans l'image) et diffuse un halo doux.
+const VEILLEUSE: Record<string, { clip?: string; halo: string; c: string }> = {
+  lave: { clip: "ellipse(24% 34% at 50% 40%)", halo: "left:-90%;top:-15%;width:280%;height:110%", c: "255,127,214" },
+  aquarium: { clip: "ellipse(41% 30% at 50% 47%)", halo: "left:-35%;top:-20%;width:170%;height:140%", c: "107,196,255" },
+  arcade: { clip: "inset(22% 26% 57% 26% round 6%)", halo: "left:-10%;top:0%;width:120%;height:65%", c: "107,196,255" },
+  lune: { clip: "inset(0 0 0 0)", halo: "left:-40%;top:-10%;width:180%;height:130%", c: "255,230,150" },
+  hublot: { clip: "ellipse(33% 38% at 50% 51%)", halo: "left:-20%;top:-20%;width:140%;height:140%", c: "160,200,255" },
+  mobile: { halo: "left:-15%;top:20%;width:130%;height:80%", c: "255,226,122" },
+  guirlande: { halo: "left:-10%;top:10%;width:120%;height:90%", c: "255,226,122" },
+  poster: { halo: "left:-15%;top:-15%;width:130%;height:130%", c: "201,168,255" },
+  etagere: { halo: "left:0%;top:-40%;width:100%;height:110%", c: "214,179,255" },
+  plante: { halo: "left:-20%;top:-20%;width:140%;height:90%", c: "255,159,224" },
+  herbe: { halo: "left:-5%;top:-30%;width:110%;height:120%", c: "143,243,255" },
+  telescope: { halo: "left:20%;top:-25%;width:90%;height:80%", c: "214,179,255" },
+  nuage: { halo: "left:-10%;top:-10%;width:120%;height:120%", c: "255,240,200" },
+  coffre: { halo: "left:5%;top:5%;width:90%;height:80%", c: "255,226,122" },
+  tapis: { halo: "left:0;top:-20%;width:100%;height:140%", c: "255,226,122" },
+};
+const css = (t: string) => Object.fromEntries(t.split(";").map((d) => d.split(":")).map(([k, v]) => [k, v]));
+
+// La nuit, les objets s'assombrissent ; leurs lueurs (lave, aquarium, étoiles…) restent allumées.
+function Objet({ k, nuit = false }: { k: string; nuit?: boolean }) {
   const p = PLACE[k];
   if (!p) return null;
   const { anim, ...style } = p;
   return (
     <span aria-hidden className={anim} style={{ position: "absolute", pointerEvents: "none", aspectRatio: String(TAILLE_IMG[k] || 1), ...style }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/compagnon/decos/${k}.webp`} alt="" draggable={false} className={BOUGE[k]} style={{ display: "block", width: "100%", height: "100%", filter: "drop-shadow(0 6px 10px rgba(10,4,30,.35))" }} />
+      <img src={`/compagnon/decos/${k}.webp`} alt="" draggable={false} className={BOUGE[k]} style={{ display: "block", width: "100%", height: "100%", filter: nuit ? "brightness(.36) saturate(.7) drop-shadow(0 6px 10px rgba(10,4,30,.35))" : "drop-shadow(0 6px 10px rgba(10,4,30,.35))", transition: "filter 1.2s ease" }} />
+      {nuit && VEILLEUSE[k] && (
+        <>
+          <span className="hb-veille" style={{ position: "absolute", ...css(VEILLEUSE[k].halo), background: `radial-gradient(closest-side, rgba(${VEILLEUSE[k].c},.38), rgba(${VEILLEUSE[k].c},0))` }} />
+          {VEILLEUSE[k].clip && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={`/compagnon/decos/${k}.webp`} alt="" draggable={false} className={`hb-veille-img ${BOUGE[k] || ""}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", clipPath: VEILLEUSE[k].clip }} />
+          )}
+        </>
+      )}
       <Effets k={k} />
     </span>
   );
@@ -215,7 +245,7 @@ function VueFenetres({ fond }: { fond: string }) {
 }
 
 /** Toutes les décorations installées, à placer DANS la scène (derrière la créature). */
-export function DecorScene({ habitat }: { habitat: Habitat }) {
+export function DecorScene({ habitat, nuit = false }: { habitat: Habitat; nuit?: boolean }) {
   return (
     <>
       <style>{`
@@ -253,10 +283,12 @@ export function DecorScene({ habitat }: { habitat: Habitat }) {
         .hb-aurore{animation:hbAur 7s ease-in-out infinite}@keyframes hbAur{50%{transform:translateY(30px) skewY(-8deg);opacity:.5}}
         .hb-aurore2{animation:hbAur 9s ease-in-out infinite reverse}
         .hb-filante{opacity:0;animation:hbFil 7s ease-in infinite}@keyframes hbFil{0%,80%{opacity:0;transform:translate(0,0)}84%{opacity:1}100%{opacity:0;transform:translate(-90px,60px)}}
+        .hb-veille{pointer-events:none;mix-blend-mode:screen;animation:hbVeille 4.5s ease-in-out infinite,hbAllume 1.4s ease-out both}@keyframes hbVeille{50%{opacity:.7}}@keyframes hbAllume{from{opacity:0}}
+        .hb-veille-img{filter:brightness(.9) saturate(1.1);animation:hbAllume 1.4s ease-out both}
         @media (prefers-reduced-motion: reduce){[class*="hb-"]{animation:none!important}}
       `}</style>
       {habitat.fond && <VueFenetres fond={habitat.fond} />}
-      {(["mur", "plafond", "sol", "gauche", "droite"] as EmplacementDeco[]).map((em) => (habitat[em] ? <Objet key={em} k={habitat[em]!} /> : null))}
+      {(["mur", "plafond", "sol", "gauche", "droite"] as EmplacementDeco[]).map((em) => (habitat[em] ? <Objet key={em} k={habitat[em]!} nuit={nuit} /> : null))}
     </>
   );
 }
