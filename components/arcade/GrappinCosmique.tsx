@@ -38,14 +38,18 @@ type Partie = {
 
 // ── Les peluches (planche découpée dans public/grappin/peluches) ──
 const PELUCHES = [
-  "chat-nuit", "lapin", "dragon", "astronaute", "chat-clin", "nuage", "lune", "planete-bleue", "etoile", "planete-lilas",
-  "chat-dodo", "planete-rose", "sorcier", "etoile-creme", "soucoupe", "poulpe", "etoile-or", "planete-cristal", "sac", "fusee",
-  "orbe-violet", "orbe-or", "bulle-etoiles", "boule-velours", "etoile-cristal", "coeur", "nuage-rose", "comete",
+  "chat-nuit", "chat-dodo", "chat-sorcier", "chat-capuche", "dragon", "dragon-dodo", "astronaute", "ourson-astro",
+  "lapin", "lapin-lune", "nuage", "nuage-rose", "arc-en-ciel", "comete", "lune", "lune-bonnet",
+  "lune-breloque", "lune-cristal", "etoile", "etoile-rose", "etoile-mer", "etoile-cristal", "planete", "planete-donut",
+  "orbe", "boule-velours", "poulpe", "fusee", "soucoupe", "soucoupe-bulle", "sac", "bocal",
+  "boule-etoiles", "coeur-planete", "coeur", "coeur-ailes", "chauve-chat", "pingouin", "baleine", "meduse",
+  "axolotl", "renard", "mouton", "escargot", "licorne", "macaron", "tortue",
 ];
-const PETITES = new Set(["orbe-violet", "orbe-or", "bulle-etoiles", "boule-velours", "etoile-or", "etoile-cristal"]);
-const MOYENNES = new Set(["etoile-creme", "fusee", "coeur", "porte-bonheur"]);
+// Tailles : grosses peluches (animaux), moyennes (lunes, planètes, nuages…), petites (orbes, cœurs, breloques)
+const MOYENNES = new Set(["lune", "chat-sorcier", "nuage-rose", "arc-en-ciel", "comete", "lune-bonnet", "lune-cristal", "etoile", "etoile-rose", "etoile-mer", "planete", "planete-donut", "poulpe", "fusee", "sac", "mouton", "escargot", "tortue"]);
+const PETITES = new Set(["lune-breloque", "etoile-cristal", "orbe", "boule-velours", "soucoupe-bulle", "bocal", "boule-etoiles", "coeur-planete", "coeur", "coeur-ailes", "macaron"]);
 const fichier = (look: Look) => {
-  if (look === "porte-bonheur") return "etoile-or";
+  if (look === "porte-bonheur") return "etoile";
   if (PELUCHES.includes(look)) return look;
   // ancienne apparence : une peluche choisie d'après son nom (toujours la même)
   let h = 0;
@@ -53,7 +57,7 @@ const fichier = (look: Look) => {
   return PELUCHES[h % PELUCHES.length];
 };
 const src = (look: Look) => `/grappin/peluches/${fichier(look)}.webp`;
-const echelle = (look: Look) => (PETITES.has(fichier(look)) && look !== "porte-bonheur" ? 0.72 : MOYENNES.has(look) || MOYENNES.has(fichier(look)) ? 0.86 : 1);
+const echelle = (look: Look) => (look === "porte-bonheur" ? 0.7 : PETITES.has(fichier(look)) ? 0.62 : MOYENNES.has(fichier(look)) ? 0.8 : 1);
 
 // ── Géométrie de la borne (fractions de la largeur W / hauteur H de l'image) ──
 const RATIO = 1087 / 1447; // H / W
@@ -88,16 +92,32 @@ function sousLaPince(objets: Objet[], x: number): Objet | null {
   return l[0] || null;
 }
 
-// Billes et petites peluches décoratives sous le tas (toujours les mêmes, ne s'attrapent pas)
-// Au fond du tas, une rangée de peluches un peu dans l'ombre : la vitrine paraît bien remplie
-const FOND = ["lapin", "planete-lilas", "chat-dodo", "nuage-rose", "lune", "poulpe", "etoile-creme", "planete-rose", "comete", "coeur", "chat-clin", "planete-bleue"].map((look, i) => {
-  const r = (n: number) => ((Math.sin(i * 61.7 + n * 29.3) + 1) / 2);
-  return { look, x: TAS_G + 0.01 + ((i + 0.5) / 12) * (TAS_D - TAS_G - 0.02) + (r(1) - 0.5) * 0.02, bas: 0.655 + r(2) * 0.02, t: 0.1 + r(3) * 0.03, a: (r(4) - 0.5) * 30 };
-});
-const DECOR = Array.from({ length: 34 }, (_, i) => {
-  const r = (n: number) => ((Math.sin(i * 97.13 + n * 13.7) + 1) / 2);
-  return { look: ["orbe-violet", "bulle-etoiles", "orbe-or", "boule-velours", "nuage", "etoile-creme"][i % 6], x: TAS_G - 0.03 + r(1) * (TAS_D - TAS_G + 0.06), bas: 0.805 - r(2) * 0.06, t: 0.065 + r(3) * 0.04, a: (r(4) - 0.5) * 50 };
-});
+// ── Effet de tas en relief ──
+// Le tas est bombé (plus haut au centre), chaque peluche est un peu décalée selon son numéro, et plus elle est
+// enfouie, plus elle est dans l'ombre. Une ombre de contact sous chaque peluche lui donne du volume.
+const bosse = (x: number) => Math.pow(Math.sin(Math.PI * Math.min(1, Math.max(0, x))), 0.8) * 0.04;
+const hasard = (n: number) => ((Math.sin(n * 127.1 + 311.7) * 43758.5453) % 1 + 1) % 1;
+const basDe = (o: { x: number; couche: number; id: number }) => BAS_COUCHE[o.couche] - bosse(o.x) * (1 - o.couche * 0.35) + (hasard(o.id) - 0.5) * 0.014;
+const LUMIERE = [1, 0.86, 0.74]; // luminosité selon la couche (0 = dessus du tas)
+const OMBRE = "drop-shadow(0 5px 4px rgba(22,6,44,.55)) drop-shadow(0 1px 1px rgba(22,6,44,.35))";
+
+// Peluches du décor (toujours les mêmes, ne s'attrapent pas) : une rangée au fond, dans l'ombre, et le
+// fond du bac rempli entre les lots, pour qu'on ait l'impression d'un vrai tas de peluches.
+const melange = [...PELUCHES].sort((a, b) => hasard(a.length * 7 + a.charCodeAt(1)) - hasard(b.length * 7 + b.charCodeAt(1)));
+const DECOR = [
+  ...Array.from({ length: 15 }, (_, i) => {
+    const x = (i + 0.5) / 15 + (hasard(i + 50) - 0.5) * 0.04;
+    return { look: melange[i % melange.length], x, bas: 0.655 - bosse(x) * 1.25 + hasard(i + 80) * 0.012, k: 0.78, lum: 0.68, a: (hasard(i + 90) - 0.5) * 34, z: 1 };
+  }),
+  ...Array.from({ length: 13 }, (_, i) => {
+    const x = (i + 0.5) / 13 + (hasard(i + 150) - 0.5) * 0.05;
+    return { look: melange[(i + 17) % melange.length], x, bas: 0.715 - bosse(x) * 0.8 + hasard(i + 180) * 0.012, k: 0.82, lum: 0.76, a: (hasard(i + 190) - 0.5) * 40, z: 2 };
+  }),
+  ...Array.from({ length: 14 }, (_, i) => {
+    const x = (i + 0.5) / 14 + (hasard(i + 250) - 0.5) * 0.05;
+    return { look: melange[(i + 31) % melange.length], x, bas: 0.812 + hasard(i + 280) * 0.01, k: 0.76, lum: 0.78, a: (hasard(i + 290) - 0.5) * 50, z: 6 };
+  }),
+];
 
 function Peluche({ look, taille, className = "", style }: { look: Look; taille: number; className?: string; style?: React.CSSProperties }) {
   // eslint-disable-next-line @next/next/no-img-element
@@ -180,7 +200,7 @@ export default function GrappinCosmique() {
     const x = versTas(gx);
     const vise = sousLaPince(partie.objets, x);
     // les doigts descendent autour de l'objet visé (ou jusqu'au fond)
-    const bas = vise ? BAS_COUCHE[vise.couche] * H - S * echelle(vise.look) * 0.3 : BAS_COUCHE[2] * H - S * 0.1;
+    const bas = vise ? basDe(vise) * H - S * echelle(vise.look) * 0.3 : BAS_COUCHE[2] * H - S * 0.1;
     const descente = Math.max(H * 0.08, bas - PH * BOUT_OUVERT);
     const requete = appel({ action: "tirer", x }).then((p) => ({ p }), (e: unknown) => ({ e }));
     // 1. descente
@@ -337,20 +357,24 @@ export default function GrappinCosmique() {
             <div className="absolute rounded-full bg-gradient-to-b from-[#f5d6ff] via-[#9b6bb5] to-[#3a2048] shadow-[0_2px_10px_#0008]" style={{ left: W * 0.12, width: W * 0.76, top: H * 0.005, height: Math.max(4, H * 0.012) }} aria-hidden />
 
             {/* le tas : billes décoratives, puis les peluches (le dessus du tas devant) */}
-            {FOND.map((d, i) => (
-              <Peluche key={`f${i}`} look={d.look} taille={W * d.t} className="absolute brightness-[.62] saturate-[.85]" style={{ left: d.x * W - (W * d.t) / 2, top: d.bas * H - W * d.t, transform: `rotate(${d.a}deg)`, zIndex: 0 }} />
-            ))}
-            {DECOR.map((d, i) => (
-              <Peluche key={`d${i}`} look={d.look} taille={W * d.t} className="absolute opacity-80 brightness-[.8]" style={{ left: d.x * W - (W * d.t) / 2, top: d.bas * H - W * d.t, transform: `rotate(${d.a}deg)`, zIndex: 1 }} />
-            ))}
+            {/* ombre portée du tas sur le fond du bac */}
+            <div className="pointer-events-none absolute" style={{ left: versVitrine(-0.04) * W, width: (TAS_D - TAS_G) * 1.08 * W, top: 0.78 * H, height: 0.06 * H, background: "radial-gradient(closest-side, rgba(16,4,34,.7), rgba(16,4,34,0))", zIndex: 0 }} aria-hidden />
+            {DECOR.map((d, i) => {
+              const t = S * echelle(d.look) * d.k;
+              return (
+                <div key={`d${i}`} className="pointer-events-none absolute" style={{ left: versVitrine(d.x) * W - t / 2, top: d.bas * H - t, width: t, height: t, zIndex: d.z, filter: `brightness(${d.lum}) saturate(.95) ${OMBRE}` }} aria-hidden>
+                  <Peluche look={d.look} taille={t} style={{ transform: `rotate(${d.a}deg)` }} />
+                </div>
+              );
+            })}
             {[...objets].sort((a, b) => b.couche - a.couche).map((o) => {
               if (o.id === cache) return null;
-              const t = S * echelle(o.look);
+              const t = S * echelle(o.look) * (1.04 - o.couche * 0.06) * (0.94 + hasard(o.id + 7) * 0.14);
               return (
                 <div
                   key={o.id}
                   className={`absolute transition-[filter] duration-200 ${vise?.id === o.id ? "gr-vise" : ""}`}
-                  style={{ left: versVitrine(o.x) * W - t / 2, top: BAS_COUCHE[o.couche] * H - t, width: t, height: t, zIndex: 10 - o.couche }}
+                  style={{ left: versVitrine(o.x) * W - t / 2, top: basDe(o) * H - t, width: t, height: t, zIndex: 10 - o.couche, filter: vise?.id === o.id ? undefined : `brightness(${LUMIERE[o.couche] ?? 0.74}) ${OMBRE}` }}
                   title="Une peluche mystère : à toi de voir ce qu'elle cache !"
                 >
                   <Peluche look={o.look} taille={t} style={{ transform: `rotate(${o.a * 0.6}deg)` }} />
@@ -359,7 +383,7 @@ export default function GrappinCosmique() {
             })}
             {/* la peluche qui glisse retombe à sa place */}
             {glisse ? (
-              <div className="gr-retombe absolute" style={{ left: versVitrine(glisse.x) * W - (S * echelle(glisse.look)) / 2, top: BAS_COUCHE[glisse.couche] * H - S * echelle(glisse.look), zIndex: 9 }}>
+              <div className="gr-retombe absolute" style={{ left: versVitrine(glisse.x) * W - (S * echelle(glisse.look)) / 2, top: basDe(glisse) * H - S * echelle(glisse.look), zIndex: 9, filter: OMBRE }}>
                 <Peluche look={glisse.look} taille={S * echelle(glisse.look)} />
               </div>
             ) : null}
