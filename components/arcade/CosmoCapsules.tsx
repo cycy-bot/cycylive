@@ -288,23 +288,30 @@ export default function CosmoCapsules() {
               </div>
               <div className="min-w-[200px] flex-1 sm:max-w-[260px]">
                 <div className="h-2.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-gradient-to-r from-[#ffb3d6] via-[#c9a8ff] to-[#7fd0ff]" style={{ width: `${(etat.possedees / Math.max(1, etat.total)) * 100}%` }} /></div>
-                {etat.garantie.actif !== false ? <p className="mt-1 text-xs text-ink-soft">✨ Épique ou mieux garanti dans {etat.garantie.restant} capsule{etat.garantie.restant > 1 ? "s" : ""} au plus</p> : null}
               </div>
             </div>
-            {/* collections */}
-            <div className="mb-3 grid gap-2 sm:grid-cols-2">
-              {collections.map((c) => {
-                const figs = etat.figurines.filter((f) => f.collection === c.id);
+            {/* collections : une rangée de pastilles (qui défile sur mobile), « Toutes » en premier */}
+            <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-2 sm:flex-wrap sm:overflow-visible" role="tablist" aria-label="Collections">
+              {[{ id: "toutes", emoji: "🗂️", nom: "Toutes les figurines", terminee: false }, ...collections].map((c) => {
+                const figs = c.id === "toutes" ? etat.figurines : etat.figurines.filter((f) => f.collection === c.id);
                 const n = figs.filter((f) => etat.album[f.id]).length;
+                const actif = collection === c.id;
                 return (
-                  <button key={c.id} type="button" onClick={() => setCollection(collection === c.id ? "toutes" : c.id)} className={`rounded-2xl border p-3 text-left transition-colors ${collection === c.id ? "border-violet bg-violet/15" : "border-violet/20 bg-white/[.03] hover:border-violet/50"}`}>
-                    <p className="text-sm font-semibold text-ink">{c.emoji} {c.nom} <span className="text-ink-soft">· {n}/{figs.length}</span>{c.terminee ? " ✅" : ""}</p>
-                    <p className="text-xs text-ink-soft">{c.description}</p>
-                    <p className="mt-1 text-[11px] text-ink-soft/70">Collection complète : +{c.bonus}</p>
+                  <button key={c.id} type="button" role="tab" aria-selected={actif} onClick={() => setCollection(c.id)}
+                    className={`shrink-0 whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-semibold transition-colors ${actif ? "border-transparent bg-violet text-ink shadow-glow-sm" : "border-violet/25 bg-white/[.03] text-ink-soft hover:border-violet/50 hover:text-ink"}`}>
+                    {c.emoji} {c.nom} <span className={actif ? "text-ink/80" : "text-ink-soft/70"}>{n}/{figs.length}</span>{c.terminee ? " ✅" : ""}
                   </button>
                 );
               })}
             </div>
+            {(() => {
+              const c = collections.find((x) => x.id === collection);
+              return (
+                <p className="mb-3 text-xs text-ink-soft">
+                  {c ? <>{c.description} <span className="text-ink-soft/70">· Collection complète : +{c.bonus}</span></> : "Complète une collection pour gagner son gros bonus (une seule fois). Choisis-en une pour voir son bonus."}
+                </p>
+              );
+            })()}
             <div className="mb-3 flex flex-wrap gap-1.5">
               {(["toutes", ...RARETES] as const).map((r) => (
                 <button key={r} type="button" onClick={() => setFiltre(r)} className={`rounded-full border px-3 py-1 text-xs font-semibold ${filtre === r ? "border-transparent bg-violet text-ink" : "border-violet/25 text-ink-soft hover:text-ink"}`}>

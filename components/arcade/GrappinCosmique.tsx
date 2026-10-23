@@ -3,20 +3,22 @@
 // ============================================================
 // LE GRAPPIN COSMIQUE — 3 tirages par jour, récompense Discord
 // ============================================================
-// Une machine à pinces néon des années 80, remplie de Gloups (les petits
-// habitants de la galaxie Cycylive) et de lots. CycyBot
-// (bot.cycylive.fr/api/grappin) remplit la vitrine du jour et décide de
-// chaque prise : le site ne fait qu'afficher. Jamais de tirage à vide :
-// si l'objet glisse, un petit Gloup s'accroche au grappin. À la fin des
-// 3 tirages, le total est ajouté directement au compte Discord.
+// Une vraie borne à pinces (illustrations de Cycylive) remplie de peluches
+// cosmiques. CycyBot (bot.cycylive.fr/api/grappin) remplit la vitrine du jour
+// et décide de chaque prise : le site ne fait qu'afficher. Chaque peluche
+// cache un lot mystère, sans lien avec son apparence. Jamais de tirage à vide :
+// si l'objet glisse, une étoile porte-bonheur s'accroche à la pince. À la fin
+// des tirages, le total est ajouté directement au compte Discord.
+//
+// La machine (public/grappin/machine-pres.webp) sert de décor : toutes les
+// positions sont en fractions de sa largeur (W) et de sa hauteur (H).
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 
-// Apparence d'un objet : tirée au hasard par CycyBot, sans lien avec le lot caché dedans.
-type Look = "gloup" | "reine" | "etoile" | "lune" | "planete" | "fusee" | "soucoupe" | "robot" | "nibi" | "chat" | "comete" | "cristal" | "orbe" | "capsule" | "fragment" | "manette" | "casque" | "micro" | "cible" | "badge" | "coeur" | "de";
+type Look = string;
 type Objet = { id: number; look: Look; couche: number; x: number; a: number };
 type Lot = { look: Look; nom: string; rarete: string; rareteLabel: string; label: string };
 type Prise = Lot & { glisse: { look: Look; nom: string } | null; x: number };
@@ -24,6 +26,7 @@ type Resultat = { cible: number | null; look: Look; attrape: Lot; glisse: { look
 type Partie = {
   restants: number;
   tirages: number;
+  bonus?: number;
   objets: Objet[];
   prises: Prise[];
   fini: boolean;
@@ -33,20 +36,42 @@ type Partie = {
   resultat?: Resultat | null;
 };
 
-// Géométrie de la vitrine (px) : hauteur fixe, largeur fluide
-const H = 470;
-const RAIL = 34; // haut du chariot
-const TETE = 58; // hauteur de la tête du grappin (pinces comprises)
-const SOL = 18;
-const BAS_COUCHE = [104, 60, 16]; // bas des objets selon la couche (0 = dessus du tas)
-const PIT_G = 0.15, PIT_L = 0.83; // le tas occupe 15 % → 98 % de la largeur ; à gauche, la sortie
-const SORTIE = 0.07;
-const PORTEE = 0.06, GENE = 0.025; // mêmes règles que CycyBot
-const taille = (t: Look) => (t === "soucoupe" || t === "reine" ? 74 : t === "manette" || t === "casque" || t === "planete" ? 64 : 58);
-const versVitrine = (x: number) => PIT_G + x * PIT_L;
-const versTas = (gx: number) => (gx - PIT_G) / PIT_L;
+// ── Les peluches (planche découpée dans public/grappin/peluches) ──
+const PELUCHES = [
+  "chat-nuit", "lapin", "dragon", "astronaute", "chat-clin", "nuage", "lune", "planete-bleue", "etoile", "planete-lilas",
+  "chat-dodo", "planete-rose", "sorcier", "etoile-creme", "soucoupe", "poulpe", "etoile-or", "planete-cristal", "sac", "fusee",
+  "orbe-violet", "orbe-or", "bulle-etoiles", "boule-velours", "etoile-cristal", "coeur", "nuage-rose", "comete",
+];
+const PETITES = new Set(["orbe-violet", "orbe-or", "bulle-etoiles", "boule-velours", "etoile-or", "etoile-cristal"]);
+const MOYENNES = new Set(["etoile-creme", "fusee", "coeur", "porte-bonheur"]);
+const fichier = (look: Look) => {
+  if (look === "porte-bonheur") return "etoile-or";
+  if (PELUCHES.includes(look)) return look;
+  // ancienne apparence : une peluche choisie d'après son nom (toujours la même)
+  let h = 0;
+  for (const c of String(look)) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return PELUCHES[h % PELUCHES.length];
+};
+const src = (look: Look) => `/grappin/peluches/${fichier(look)}.webp`;
+const echelle = (look: Look) => (PETITES.has(fichier(look)) && look !== "porte-bonheur" ? 0.72 : MOYENNES.has(look) || MOYENNES.has(fichier(look)) ? 0.86 : 1);
 
-const COULEUR_RARETE: Record<string, string> = { commune: "#c9c3e6", peu: "#7ee2a8", rare: "#5fd4ff", epique: "#ff5cf0", legendaire: "#ffb627", mythique: "#ff4f9a" };
+// ── Géométrie de la borne (fractions de la largeur W / hauteur H de l'image) ──
+const RATIO = 1087 / 1447; // H / W
+const PINCE_L = 0.2; // largeur de la pince (× W)
+const PINCE_RATIO = 940 / 760; // hauteur / largeur de l'image de la pince
+const BOUT_OUVERT = 0.97; // bout des doigts (fraction de la hauteur de la pince), ouverte
+const TENU_Y = 0.79; // centre de l'objet tenu, pince fermée
+const CABLE_X = -0.17, CABLE_Y = 0.16, CABLE_L = 0.12; // câble spiralé (× largeur de la pince)
+const TAS_G = 0.34, TAS_D = 0.83; // le tas occupe 34 % → 83 % de la largeur ; à gauche, la sortie
+const SORTIE = 0.19;
+const BAS_COUCHE = [0.68, 0.74, 0.795]; // bas des objets selon la couche (0 = dessus du tas) × H
+const TAILLE = 0.138; // taille d'une grosse peluche × W
+const PORTEE = 0.06, GENE = 0.025; // mêmes règles que CycyBot
+const MIN_X = 0.17, MAX_X = 0.84;
+const versVitrine = (x: number) => TAS_G + x * (TAS_D - TAS_G);
+const versTas = (gx: number) => (gx - TAS_G) / (TAS_D - TAS_G);
+
+const COULEUR_RARETE: Record<string, string> = { commune: "#e0d6ff", peu: "#7ee2a8", rare: "#5fd4ff", epique: "#ff5cf0", legendaire: "#ffb627", mythique: "#ff4f9a" };
 
 class ConnexionRequise extends Error {}
 async function appel(corps: Record<string, unknown>): Promise<Partie> {
@@ -63,260 +88,17 @@ function sousLaPince(objets: Objet[], x: number): Objet | null {
   return l[0] || null;
 }
 
-// ─────────────── Les dessins (SVG originaux) ───────────────
-const TEINTES_GLOUP = ["#9dff3d", "#3df5ff", "#ff6bd6", "#b98cff"];
+// Billes et petites peluches décoratives sous le tas (toujours les mêmes, ne s'attrapent pas)
+const DECOR = Array.from({ length: 24 }, (_, i) => {
+  const r = (n: number) => ((Math.sin(i * 97.13 + n * 13.7) + 1) / 2);
+  return { look: ["orbe-violet", "bulle-etoiles", "orbe-or", "boule-velours", "nuage", "etoile-creme"][i % 6], x: TAS_G - 0.03 + r(1) * (TAS_D - TAS_G + 0.06), bas: 0.805 - r(2) * 0.06, t: 0.065 + r(3) * 0.04, a: (r(4) - 0.5) * 50 };
+});
 
-function Gloup({ teinte, couronne = false }: { teinte: string; couronne?: boolean }) {
-  return (
-    <g>
-      {/* antennes à pompon étoilé */}
-      <path d="M-9 -16 Q-14 -27 -18 -29 M9 -16 Q14 -27 18 -29" stroke={teinte} strokeWidth="2.6" fill="none" strokeLinecap="round" />
-      <circle cx="-18" cy="-29" r="3.6" fill="#ffe066" />
-      <circle cx="18" cy="-29" r="3.6" fill="#ffe066" />
-      {/* corps en goutte */}
-      <path d="M0 -20 C15 -20 22 -6 22 8 C22 20 12 24 0 24 C-12 24 -22 20 -22 8 C-22 -6 -15 -20 0 -20 Z" fill={teinte} />
-      <path d="M-14 -6 C-12 -13 -6 -16 -1 -16" stroke="#fff" strokeOpacity=".55" strokeWidth="3" fill="none" strokeLinecap="round" />
-      {/* petits bras */}
-      <path d="M-21 8 Q-28 4 -27 -2 M21 8 Q28 4 27 -2" stroke={teinte} strokeWidth="4" fill="none" strokeLinecap="round" />
-      {/* deux grands yeux */}
-      <ellipse cx="-7.5" cy="2" rx="6" ry="7" fill="#fff" />
-      <ellipse cx="7.5" cy="2" rx="6" ry="7" fill="#fff" />
-      <circle cx="-6.5" cy="3.5" r="3.4" fill="#1a0b2e" />
-      <circle cx="8.5" cy="3.5" r="3.4" fill="#1a0b2e" />
-      <circle cx="-5.3" cy="2" r="1.2" fill="#fff" />
-      <circle cx="9.7" cy="2" r="1.2" fill="#fff" />
-      <path d="M-5 14 Q0 18 5 14" stroke="#1a0b2e" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <ellipse cx="-15" cy="12" rx="3" ry="2" fill="#ff7ab8" opacity=".6" />
-      <ellipse cx="15" cy="12" rx="3" ry="2" fill="#ff7ab8" opacity=".6" />
-      {couronne && (
-        <g transform="translate(0 -22)">
-          <path d="M-12 0 L-12 -11 L-6 -5 L0 -14 L6 -5 L12 -11 L12 0 Z" fill="#ffd23f" stroke="#fff6c8" strokeWidth="1.2" />
-          <circle cx="0" cy="-5" r="2" fill="#ff4f9a" />
-        </g>
-      )}
-    </g>
-  );
+function Peluche({ look, taille, className = "", style }: { look: Look; taille: number; className?: string; style?: React.CSSProperties }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src(look)} alt="" draggable={false} width={taille} height={taille} className={`pointer-events-none select-none object-contain object-bottom ${className}`} style={{ width: taille, height: taille, ...style }} />;
 }
 
-function DessinObjet({ type, id = 0 }: { type: Look; id?: number }) {
-  switch (type) {
-    case "gloup":
-      return <Gloup teinte={TEINTES_GLOUP[id % TEINTES_GLOUP.length]} />;
-    case "reine":
-      return <g transform="scale(1.05)"><Gloup teinte="#c56bff" couronne /></g>;
-    case "cristal":
-      return (
-        <g>
-          <path d="M0 -26 L14 -10 L10 20 L-10 20 L-14 -10 Z" fill="#3df5ff" fillOpacity=".35" stroke="#3df5ff" strokeWidth="2.4" strokeLinejoin="round" />
-          <path d="M0 -26 L4 -8 L0 20 M-14 -10 L4 -8 L14 -10" stroke="#bffcff" strokeWidth="1.4" fill="none" opacity=".8" />
-          <circle cx="-5" cy="-6" r="2" fill="#fff" />
-        </g>
-      );
-    case "etoile":
-      return (
-        <g>
-          <path d="M0 -25 L7 -8 L25 -7 L11 5 L16 23 L0 13 L-16 23 L-11 5 L-25 -7 L-7 -8 Z" fill="#ffe066" stroke="#fff3b0" strokeWidth="2" strokeLinejoin="round" />
-          <path d="M0 -25 L7 -8 L25 -7 L11 5 L16 23 L0 13 L-16 23 L-11 5 L-25 -7 L-7 -8 Z" fill="none" stroke="#b8860b" strokeWidth="1" strokeDasharray="2 2.5" transform="scale(.82)" />
-          <circle cx="-4.5" cy="0" r="2" fill="#2b1640" />
-          <circle cx="4.5" cy="0" r="2" fill="#2b1640" />
-          <path d="M-3 5 Q0 8 3 5" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    case "orbe":
-      return (
-        <g>
-          <circle r="18" fill="#ff5cf0" fillOpacity=".3" stroke="#ff5cf0" strokeWidth="2.4" />
-          <circle r="9" fill="#ffb3f7" />
-          <ellipse rx="27" ry="7" fill="none" stroke="#3df5ff" strokeWidth="2.2" transform="rotate(-18)" />
-          <circle cx="-7" cy="-8" r="3" fill="#fff" opacity=".8" />
-        </g>
-      );
-    case "fusee":
-      return (
-        <g transform="rotate(-20)">
-          <path d="M0 -26 C9 -16 10 0 7 14 L-7 14 C-10 0 -9 -16 0 -26 Z" fill="#f3ecff" stroke="#ff5cf0" strokeWidth="2" />
-          <circle cy="-6" r="4.5" fill="#3df5ff" stroke="#1a0b2e" strokeWidth="1.5" />
-          <path d="M-7 6 L-15 18 L-7 15 Z M7 6 L15 18 L7 15 Z" fill="#ff5cf0" />
-          <path d="M-4 15 L0 26 L4 15 Z" fill="#ffb627" />
-        </g>
-      );
-    case "capsule": {
-      const or = id % 3 === 0;
-      return (
-        <g>
-          <path d="M-22 0 A22 22 0 0 1 22 0 Z" fill={or ? "#ffd23f" : "#9146ff"} opacity=".95" />
-          <path d="M-22 0 A22 22 0 0 0 22 0 Z" fill="#ffffff" fillOpacity=".18" stroke="#fff" strokeOpacity=".5" strokeWidth="1.5" />
-          <rect x="-8" y="-5" width="16" height="22" rx="3" fill={or ? "#fff6c8" : "#e0b3ff"} stroke={or ? "#b8860b" : "#5a2ab0"} strokeWidth="1.5" transform="rotate(-8)" />
-          <path d="M-3 4 L0 -1 L3 4 L0 9 Z" fill={or ? "#ff4f9a" : "#9146ff"} transform="rotate(-8)" />
-          {or && <rect x="1" y="-3" width="14" height="19" rx="3" fill="#fff6c8" stroke="#b8860b" strokeWidth="1.2" transform="rotate(14)" />}
-          <path d="M-22 0 H22" stroke="#fff" strokeOpacity=".7" strokeWidth="2" />
-          <path d="M-14 -12 Q-8 -17 -2 -18" stroke="#fff" strokeOpacity=".7" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    }
-    case "fragment":
-      return (
-        <g>
-          <path d="M-4 -24 L14 -12 L18 8 L4 24 L-16 14 L-18 -6 Z" fill="#ffb627" fillOpacity=".35" stroke="#ffd23f" strokeWidth="2.4" strokeLinejoin="round" />
-          <path d="M0 -10 L3 -3 L10 -2 L4 3 L6 10 L0 6 L-6 10 L-4 3 L-10 -2 L-3 -3 Z" fill="#fff6c8" />
-        </g>
-      );
-    case "lune":
-      return (
-        <g>
-          <path d="M8 -24 A24 24 0 1 0 22 14 A19 19 0 1 1 8 -24 Z" fill="#fff3b0" stroke="#ffd23f" strokeWidth="2" strokeLinejoin="round" />
-          <circle cx="-6" cy="2" r="2.2" fill="#2b1640" /><circle cx="4" cy="8" r="2.2" fill="#2b1640" />
-          <path d="M-4 12 Q0 15 3 12" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-          <ellipse cx="-11" cy="10" rx="3" ry="2" fill="#ff9ec7" opacity=".7" />
-        </g>
-      );
-    case "planete":
-      return (
-        <g>
-          <circle r="17" fill="#c56bff" stroke="#e8c8ff" strokeWidth="2" />
-          <path d="M-12 -8 Q-4 -14 6 -12" stroke="#fff" strokeOpacity=".6" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <ellipse rx="30" ry="8" fill="none" stroke="#ffd23f" strokeWidth="3" transform="rotate(-16)" />
-          <circle cx="-6" cy="2" r="2.2" fill="#2b1640" /><circle cx="6" cy="2" r="2.2" fill="#2b1640" />
-          <path d="M-3 8 Q0 11 3 8" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    case "robot":
-      return (
-        <g>
-          <line x1="0" y1="-24" x2="0" y2="-32" stroke="#c9a8ff" strokeWidth="2.5" /><circle cy="-33" r="3.5" fill="#ffd23f" />
-          <rect x="-20" y="-24" width="40" height="36" rx="14" fill="#f3ecff" stroke="#c9a8ff" strokeWidth="2.5" />
-          <rect x="-14" y="-15" width="28" height="16" rx="8" fill="#1a1033" />
-          <circle cx="-6" cy="-7" r="3" fill="#6bf0ff" /><circle cx="6" cy="-7" r="3" fill="#6bf0ff" />
-          <rect x="-15" y="12" width="10" height="10" rx="5" fill="#cbbdf0" /><rect x="5" y="12" width="10" height="10" rx="5" fill="#cbbdf0" />
-        </g>
-      );
-    case "nibi":
-      return (
-        <g>
-          <path d="M-8 -16 Q-12 -28 -18 -28 M8 -16 Q12 -28 18 -28" stroke="#b98cff" strokeWidth="2.6" fill="none" strokeLinecap="round" />
-          <circle cx="-18" cy="-28" r="4" fill="#ffe066" /><circle cx="18" cy="-28" r="4" fill="#ffe066" />
-          <ellipse cy="2" rx="21" ry="19" fill="#c9b3ff" />
-          <ellipse cx="-7" cy="0" rx="5.5" ry="6.5" fill="#2b1640" /><ellipse cx="7" cy="0" rx="5.5" ry="6.5" fill="#2b1640" />
-          <circle cx="-5.5" cy="-2" r="1.8" fill="#fff" /><circle cx="8.5" cy="-2" r="1.8" fill="#fff" />
-          <path d="M-3 9 Q0 12 3 9" stroke="#2b1640" strokeWidth="1.6" fill="none" strokeLinecap="round" />
-          <ellipse cx="-14" cy="9" rx="3" ry="2" fill="#ff9ec7" opacity=".7" /><ellipse cx="14" cy="9" rx="3" ry="2" fill="#ff9ec7" opacity=".7" />
-        </g>
-      );
-    case "chat":
-      return (
-        <g>
-          <path d="M-18 -6 L-15 -24 L-4 -14 Z M18 -6 L15 -24 L4 -14 Z" fill="#8f7bff" stroke="#c9b3ff" strokeWidth="1.5" strokeLinejoin="round" />
-          <ellipse cy="2" rx="20" ry="17" fill="#8f7bff" />
-          <path d="M14 14 Q30 10 26 -6" stroke="#8f7bff" strokeWidth="5" fill="none" strokeLinecap="round" />
-          <circle cx="26" cy="-7" r="3" fill="#ffd23f" />
-          <path d="M-9 0 q3 3 6 0 M3 0 q3 3 6 0" stroke="#1a0b2e" strokeWidth="2" fill="none" strokeLinecap="round" />
-          <path d="M-2 7 L0 9 L2 7" stroke="#1a0b2e" strokeWidth="1.5" fill="none" />
-          <circle cx="-8" cy="-8" r="1.5" fill="#fff" opacity=".8" /><circle cx="9" cy="-6" r="1" fill="#fff" opacity=".8" />
-        </g>
-      );
-    case "comete":
-      return (
-        <g>
-          <path d="M6 -6 Q-10 -30 -30 -26 Q-16 -18 -10 4 Z" fill="#ff8fe0" opacity=".55" />
-          <path d="M6 -6 Q-4 -20 -20 -22 Q-10 -12 -6 4 Z" fill="#ffd1f2" opacity=".8" />
-          <circle cx="8" cy="4" r="13" fill="#ffe066" stroke="#fff3b0" strokeWidth="2" />
-          <circle cx="4" cy="3" r="1.8" fill="#2b1640" /><circle cx="12" cy="3" r="1.8" fill="#2b1640" />
-          <path d="M6 8 Q8 10 10 8" stroke="#2b1640" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    case "manette":
-      return (
-        <g>
-          <path d="M-26 -4 Q-26 -14 -14 -14 L14 -14 Q26 -14 26 -4 L28 10 Q28 20 18 18 L10 10 L-10 10 L-18 18 Q-28 20 -28 10 Z" fill="#b26bff" stroke="#e0c8ff" strokeWidth="2" strokeLinejoin="round" />
-          <path d="M-17 -6 V2 M-21 -2 H-13" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
-          <circle cx="14" cy="-6" r="2.6" fill="#3df5ff" /><circle cx="19" cy="-1" r="2.6" fill="#ff6bd6" /><circle cx="9" cy="-1" r="2.6" fill="#ffe066" />
-          <circle cx="-4" cy="2" r="1.6" fill="#2b1640" /><circle cx="4" cy="2" r="1.6" fill="#2b1640" />
-          <path d="M-2 6 Q0 8 2 6" stroke="#2b1640" strokeWidth="1.4" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    case "casque":
-      return (
-        <g>
-          <path d="M-22 6 Q-22 -24 0 -24 Q22 -24 22 6" stroke="#c9a8ff" strokeWidth="5" fill="none" strokeLinecap="round" />
-          <rect x="-28" y="0" width="14" height="20" rx="6" fill="#9146ff" stroke="#e0c8ff" strokeWidth="2" />
-          <rect x="14" y="0" width="14" height="20" rx="6" fill="#9146ff" stroke="#e0c8ff" strokeWidth="2" />
-          <circle cx="-21" cy="10" r="3" fill="#3df5ff" /><circle cx="21" cy="10" r="3" fill="#ff6bd6" />
-          <path d="M-14 18 Q-6 24 2 22" stroke="#c9a8ff" strokeWidth="2.5" fill="none" strokeLinecap="round" /><circle cx="4" cy="22" r="3" fill="#ffe066" />
-        </g>
-      );
-    case "micro":
-      return (
-        <g>
-          <rect x="-10" y="-26" width="20" height="30" rx="10" fill="#e0c8ff" stroke="#fff" strokeWidth="2" />
-          <path d="M-10 -14 H10 M-10 -8 H10" stroke="#b26bff" strokeWidth="1.6" />
-          <path d="M-16 -2 Q-16 14 0 14 Q16 14 16 -2" stroke="#c9a8ff" strokeWidth="3" fill="none" strokeLinecap="round" />
-          <path d="M0 14 V24 M-9 24 H9" stroke="#c9a8ff" strokeWidth="3.5" strokeLinecap="round" />
-          <circle cx="15" cy="-22" r="4" fill="#ff4f6d" /><circle cx="15" cy="-22" r="7" fill="none" stroke="#ff4f6d" strokeOpacity=".4" strokeWidth="2" />
-        </g>
-      );
-    case "cible":
-      return (
-        <g>
-          <circle r="22" fill="#ff4f6d" stroke="#fff" strokeWidth="2" />
-          <circle r="15" fill="#fff" /><circle r="9" fill="#ff4f6d" /><circle r="3.5" fill="#fff" />
-          <path d="M-22 0 H-28 M22 0 H28 M0 -22 V-28 M0 22 V28" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
-        </g>
-      );
-    case "badge":
-      return (
-        <g>
-          <path d="M0 -26 L20 -10 L14 18 L0 26 L-14 18 L-20 -10 Z" fill="#7fd0ff" stroke="#e8f8ff" strokeWidth="2" strokeLinejoin="round" />
-          <path d="M0 -16 L11 -6 L8 12 L0 17 L-8 12 L-11 -6 Z" fill="#b26bff" />
-          <path d="M0 -8 L3 -2 L9 -1 L4 3 L6 9 L0 6 L-6 9 L-4 3 L-9 -1 L-3 -2 Z" fill="#ffe066" />
-        </g>
-      );
-    case "coeur":
-      return (
-        <g>
-          <path d="M0 22 C-34 0 -20 -26 0 -10 C20 -26 34 0 0 22 Z" fill="#ff6bd6" stroke="#ffd1f2" strokeWidth="2" strokeLinejoin="round" />
-          <rect x="-12" y="-12" width="5" height="5" fill="#fff" opacity=".7" /><rect x="-7" y="-15" width="5" height="5" fill="#fff" opacity=".5" />
-          <circle cx="-6" cy="2" r="2" fill="#2b1640" /><circle cx="6" cy="2" r="2" fill="#2b1640" />
-          <path d="M-3 7 Q0 10 3 7" stroke="#2b1640" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-        </g>
-      );
-    case "de":
-      return (
-        <g transform="rotate(12)">
-          <rect x="-18" y="-18" width="36" height="36" rx="9" fill="#f3ecff" stroke="#c9a8ff" strokeWidth="2.5" />
-          {[[-8, -8], [8, -8], [0, 0], [-8, 8], [8, 8]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="3.2" fill={i === 2 ? "#ffd23f" : "#9146ff"} />)}
-        </g>
-      );
-    case "soucoupe":
-      return (
-        <g>
-          <ellipse cy="10" rx="40" ry="14" fill="#ff4f9a" fillOpacity=".25" />
-          <path d="M-16 -2 A16 16 0 0 1 16 -2 Z" fill="#3df5ff" fillOpacity=".55" stroke="#bffcff" strokeWidth="2" />
-          <ellipse cy="2" rx="36" ry="10" fill="#c9c3e6" stroke="#fff" strokeWidth="2" />
-          <ellipse cy="2" rx="36" ry="10" fill="url(#gr-arcenciel)" opacity=".6" />
-          {[-24, -8, 8, 24].map((x) => <circle key={x} cx={x} cy="4" r="2.6" fill="#ffe066" />)}
-          <g transform="translate(0 -9) scale(.42)"><Gloup teinte="#9dff3d" /></g>
-        </g>
-      );
-  }
-}
-
-function Pince({ ouverture }: { ouverture: number }) {
-  const a = 8 + ouverture * 26; // angle des branches
-  return (
-    <svg width="64" height={TETE} viewBox="-32 0 64 58" className="overflow-visible drop-shadow-[0_0_6px_#3df5ff]">
-      <rect x="-14" y="0" width="28" height="16" rx="6" fill="#2a1a4a" stroke="#3df5ff" strokeWidth="2" />
-      <circle cx="0" cy="8" r="3.2" fill="#ff4f9a" />
-      {[-1, 1].map((s) => (
-        <g key={s} transform={`translate(${s * 8} 14) rotate(${s * (a - 14)})`}>
-          <path d={`M0 0 Q${s * 15} 17 ${s * 4} 36`} stroke="#d9d2f2" strokeWidth="4.5" fill="none" strokeLinecap="round" />
-          <circle cx={s * 4} cy="36" r="2.6" fill="#3df5ff" />
-        </g>
-      ))}
-    </svg>
-  );
-}
-
-// ─────────────── Le jeu ───────────────
 type Phase = "viser" | "descente" | "remontee" | "retour" | "lot";
 
 export default function GrappinCosmique() {
@@ -324,19 +106,35 @@ export default function GrappinCosmique() {
   const [partie, setPartie] = useState<Partie | null>(null);
   const [erreur, setErreur] = useState("");
   const [charge, setCharge] = useState(false);
-  const [gx, setGx] = useState(0.56); // position du grappin dans la vitrine (0-1)
-  const [cable, setCable] = useState(0); // longueur du câble (px)
-  const [ouverture, setOuverture] = useState(1);
+  const [W, setW] = useState(860);
+  const [gx, setGx] = useState(0.58); // position du grappin (× W)
+  const [haut, setHaut] = useState(0); // descente de la pince (px)
+  const [fermee, setFermee] = useState(false);
+  const [penche, setPenche] = useState(0); // balancement (degrés)
   const [phase, setPhase] = useState<Phase>("viser");
-  const [duree, setDuree] = useState(0); // durée des transitions (ms)
-  const [tenu, setTenu] = useState<{ look: Look; id: number; chute?: boolean } | null>(null);
-  const [cache, setCache] = useState<number | null>(null); // objet en train d'être soulevé (masqué du tas)
-  const [glisse, setGlisse] = useState<{ look: Look; id: number; o: Objet } | null>(null);
+  const [duree, setDuree] = useState(0);
+  const [tenu, setTenu] = useState<{ look: Look; chute?: boolean } | null>(null);
+  const [cache, setCache] = useState<number | null>(null);
+  const [glisse, setGlisse] = useState<Objet | null>(null);
   const [annonce, setAnnonce] = useState<Lot | null>(null);
+  const [eclat, setEclat] = useState(0); // nombre de gains (paillettes)
+  const [flash, setFlash] = useState(false); // flash des néons quand un lot sort
   const [chrono, setChrono] = useState(20);
   const dir = useRef(0);
   const zone = useRef<HTMLDivElement | null>(null);
   const occupe = phase !== "viser" || charge;
+  const H = W * RATIO;
+  const PL = W * PINCE_L, PH = PL * PINCE_RATIO;
+  const S = W * TAILLE;
+
+  // La borne s'adapte à la largeur disponible
+  useEffect(() => {
+    const el = zone.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.round(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const entrer = useCallback(async () => {
     setCharge(true);
@@ -351,14 +149,17 @@ export default function GrappinCosmique() {
     }
   }, [compte]);
 
-  // Déplacement continu (boutons maintenus ou flèches du clavier)
+  // Déplacement continu (boutons maintenus ou flèches du clavier) + balancement de la pince
   useEffect(() => {
     if (!partie || partie.fini) return;
-    let raf = 0, avant = performance.now();
+    let raf = 0, avant = performance.now(), dernier = 0;
     const pas = (t: number) => {
       const dt = Math.min(0.05, (t - avant) / 1000);
       avant = t;
-      if (dir.current && phase === "viser") setGx((x) => Math.max(versVitrine(0.02), Math.min(versVitrine(0.99), x + dir.current * 0.42 * dt)));
+      if (phase === "viser") {
+        if (dir.current) setGx((x) => Math.max(MIN_X, Math.min(MAX_X, x + dir.current * 0.3 * dt)));
+        if (dir.current !== dernier) { dernier = dir.current; setPenche(-dir.current * 4); }
+      }
       raf = requestAnimationFrame(pas);
     };
     raf = requestAnimationFrame(pas);
@@ -370,24 +171,26 @@ export default function GrappinCosmique() {
   const lacher = useCallback(async () => {
     if (!partie || partie.fini || phase !== "viser" || charge) return;
     dir.current = 0;
+    setPenche(0);
     const x = versTas(gx);
     const vise = sousLaPince(partie.objets, x);
-    const fond = vise ? H - BAS_COUCHE[vise.couche] - taille(vise.look) * 0.55 : H - SOL - 20;
-    const longueur = Math.max(40, fond - RAIL - TETE + 14);
+    // les doigts descendent autour de l'objet visé (ou jusqu'au fond)
+    const bas = vise ? BAS_COUCHE[vise.couche] * H - S * echelle(vise.look) * 0.3 : BAS_COUCHE[2] * H - S * 0.1;
+    const descente = Math.max(H * 0.08, bas - PH * BOUT_OUVERT);
     const requete = appel({ action: "tirer", x }).then((p) => ({ p }), (e: unknown) => ({ e }));
     // 1. descente
     setPhase("descente");
-    setDuree(1300);
-    setCable(longueur);
-    await attendre(1350);
+    setDuree(1500);
+    setHaut(descente);
+    await attendre(1550);
     // 2. la pince se referme
-    setDuree(300);
-    setOuverture(0.05);
-    await attendre(380);
+    setDuree(350);
+    setFermee(true);
+    await attendre(420);
     const rep = await requete;
     if ("e" in rep) {
-      setDuree(900); setCable(0); setOuverture(1);
-      await attendre(950);
+      setDuree(1000); setHaut(0); setFermee(false);
+      await attendre(1050);
       setPhase("viser");
       const e = rep.e;
       if (e instanceof ConnexionRequise) compte.oublier();
@@ -395,61 +198,71 @@ export default function GrappinCosmique() {
       return;
     }
     const p = rep.p, r = p.resultat;
-    if (!r) { setPartie(p); setPhase("viser"); setCable(0); setOuverture(1); return; }
+    if (!r) { setPartie(p); setPhase("viser"); setHaut(0); setFermee(false); return; }
     // 3. remontée, avec l'objet visé
     setPhase("remontee");
     const cibleObj = r.cible != null ? partie.objets.find((o) => o.id === r.cible) || null : null;
-    if (cibleObj) { setCache(cibleObj.id); setTenu({ look: cibleObj.look, id: cibleObj.id }); }
-    else setTenu({ look: "gloup", id: Math.floor(Math.random() * 4) });
-    setDuree(r.glisse ? 650 : 1200);
-    setCable(r.glisse ? longueur * 0.45 : 0);
-    await attendre(r.glisse ? 700 : 1250);
+    if (cibleObj) { setCache(cibleObj.id); setTenu({ look: cibleObj.look }); }
+    else setTenu({ look: "porte-bonheur" });
+    setDuree(r.glisse ? 750 : 1400);
+    setHaut(r.glisse ? descente * 0.5 : 0);
+    await attendre(r.glisse ? 800 : 1450);
     if (r.glisse && cibleObj) {
-      // l'objet glisse… et retombe dans le tas, un Gloup s'accroche à sa place
-      setGlisse({ look: cibleObj.look, id: cibleObj.id, o: cibleObj });
-      setTenu({ look: "gloup", id: cibleObj.id + 1 });
-      await attendre(150);
+      // l'objet glisse… et retombe dans le tas, une étoile porte-bonheur s'accroche à sa place
+      setPenche(5);
+      setGlisse(cibleObj);
+      setTenu({ look: "porte-bonheur" });
+      await attendre(160);
       setCache(null);
-      setDuree(650);
-      setCable(0);
-      await attendre(700);
+      setPenche(0);
+      setDuree(750);
+      setHaut(0);
+      await attendre(800);
       setGlisse(null);
     }
-    // 4. direction la sortie
+    // 4. direction la sortie (la pince penche un peu dans le virage)
     setPhase("retour");
-    setDuree(900);
+    setDuree(1100);
+    setPenche(5);
     setGx(SORTIE);
-    await attendre(950);
-    setDuree(250);
-    setOuverture(1);
+    await attendre(1150);
+    setPenche(-3);
+    await attendre(220);
+    setPenche(0);
+    setDuree(300);
+    setFermee(false);
     setTenu((t) => (t ? { ...t, chute: true } : t));
-    await attendre(450);
+    await attendre(520);
     setTenu(null);
     setCache(null);
     setPartie(p);
     setAnnonce(r.attrape);
+    setEclat((n) => n + 1);
+    setFlash(true);
+    setTimeout(() => setFlash(false), 1150);
     setPhase("lot");
-    await attendre(2300);
+    await attendre(2600);
     setAnnonce(null);
-    setDuree(700);
-    setGx(0.56);
+    setDuree(900);
+    setGx(0.58);
+    await attendre(300);
     setPhase("viser");
     setChrono(20);
-  }, [partie, phase, charge, gx, compte]);
+  }, [partie, phase, charge, gx, compte, H, S, PH]);
 
   // Clavier : ← → pour viser, Espace / Entrée pour lâcher
   useEffect(() => {
     if (!partie || partie.fini) return;
-    const bas = (e: KeyboardEvent) => {
+    const enBas = (e: KeyboardEvent) => {
       const tag = (document.activeElement?.tagName || "").toUpperCase();
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); setDuree(0); dir.current = e.key === "ArrowLeft" ? -1 : 1; }
       if (e.key === " " || e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); lacher(); }
     };
-    const haut = (e: KeyboardEvent) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") dir.current = 0; };
-    window.addEventListener("keydown", bas);
-    window.addEventListener("keyup", haut);
-    return () => { window.removeEventListener("keydown", bas); window.removeEventListener("keyup", haut); };
+    const enHaut = (e: KeyboardEvent) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") dir.current = 0; };
+    window.addEventListener("keydown", enBas);
+    window.addEventListener("keyup", enHaut);
+    return () => { window.removeEventListener("keydown", enBas); window.removeEventListener("keyup", enHaut); };
   }, [partie, lacher]);
 
   // Compte à rebours de l'arcade : le grappin tombe tout seul au bout de 20 s
@@ -465,112 +278,140 @@ export default function GrappinCosmique() {
   const viserIci = (ev: React.PointerEvent) => {
     if (!zone.current || phase !== "viser" || !partie || partie.fini) return;
     const r = zone.current.getBoundingClientRect();
-    setDuree(450);
-    setGx(Math.max(versVitrine(0.02), Math.min(versVitrine(0.99), (ev.clientX - r.left) / r.width)));
+    const y = (ev.clientY - r.top) / r.height;
+    if (y > 0.8) return; // le pupitre a ses propres boutons
+    const cible = Math.max(MIN_X, Math.min(MAX_X, (ev.clientX - r.left) / r.width));
+    setDuree(550);
+    setPenche(cible < gx ? 4 : -4);
+    setGx(cible);
+    setTimeout(() => setPenche(0), 320);
   };
   const maintenir = (d: number) => ({
-    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); setDuree(0); dir.current = d; },
+    onPointerDown: (e: React.PointerEvent) => { e.preventDefault(); e.stopPropagation(); setDuree(0); dir.current = d; },
     onPointerUp: () => { dir.current = 0; },
     onPointerLeave: () => { dir.current = 0; },
     onPointerCancel: () => { dir.current = 0; },
   });
 
   const objets = partie ? partie.objets : [];
-  const enCours = partie && !partie.fini;
-  const transition = `${duree}ms cubic-bezier(.45,.05,.35,1)`;
+  const enCours = Boolean(partie && !partie.fini);
+  const courbe = "cubic-bezier(.45,.05,.35,1)";
+  const transition = `${duree}ms ${courbe}`;
+  const vise = enCours && phase === "viser" ? sousLaPince(objets, versTas(gx)) : null;
+  // décor recadré de la machine (vitre avant, pupitre) posé PAR-DESSUS les peluches
+  const recadre = (x0: number, y0: number, x1: number, y1: number, opacite = 1): React.CSSProperties => ({
+    left: x0 * W, top: y0 * H, width: (x1 - x0) * W, height: (y1 - y0) * H, opacity: opacite,
+    backgroundImage: "url(/grappin/machine-pres.webp)", backgroundSize: `${W}px ${H}px`, backgroundPosition: `${-x0 * W}px ${-y0 * H}px`,
+  });
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_330px] gap-6 items-start">
       <div>
-        {/* ── La borne ── */}
-        <div className="gr-borne relative rounded-[28px] p-3 sm:p-4">
-          <div className="gr-fronton mb-3 flex items-center justify-center gap-3 rounded-2xl py-3">
+        {/* ── La salle d'arcade et la borne ── */}
+        <div className="gr-salle relative overflow-hidden rounded-[28px] p-2 sm:p-4">
+          <div className="gr-fronton relative z-10 mb-2 sm:mb-3 flex items-center justify-center gap-3 rounded-2xl py-2 sm:py-3">
             <span className="gr-ampoules" aria-hidden />
-            <h2 className="gr-neon text-center text-xl sm:text-3xl font-black uppercase tracking-[0.18em]">Grappin cosmique</h2>
+            <h2 className="gr-neon text-center text-lg sm:text-3xl font-black uppercase tracking-[0.18em]">Grappin cosmique</h2>
             <span className="gr-ampoules" aria-hidden />
           </div>
 
-          <div ref={zone} onPointerDown={viserIci} className="gr-vitre relative select-none overflow-hidden rounded-2xl touch-none" style={{ height: H }}>
-            {/* décor synthwave */}
-            <div className="gr-soleil" aria-hidden />
-            <div className="gr-grille" aria-hidden />
-            <svg width="0" height="0" className="absolute" aria-hidden>
-              <defs>
-                <linearGradient id="gr-arcenciel" x1="0" x2="1">
-                  <stop offset="0%" stopColor="#ff4f9a" /><stop offset="33%" stopColor="#ffe066" /><stop offset="66%" stopColor="#3df5ff" /><stop offset="100%" stopColor="#b98cff" />
-                </linearGradient>
-              </defs>
-            </svg>
+          <div
+            ref={zone}
+            onPointerDown={viserIci}
+            className={`gr-borne relative z-10 mx-auto select-none overflow-hidden rounded-2xl touch-none ${flash ? "gr-flash" : ""}`}
+            // toute la borne doit tenir à l'écran (pince comprise) : largeur limitée par la hauteur de la fenêtre
+            style={{ width: `min(100%, calc((100svh - 210px) / ${RATIO}))`, minWidth: "min(100%, 320px)", height: H, backgroundImage: "url(/grappin/machine-pres.webp)", backgroundSize: "100% 100%" }}
+          >
+            {/* néons qui respirent + lumière qui court le long du rail */}
+            <div className="gr-halo absolute" style={{ left: 0, top: 0, width: W * 0.05, height: H * 0.8 }} aria-hidden />
+            <div className="gr-halo gr-halo-d absolute" style={{ right: 0, top: 0, width: W * 0.05, height: H * 0.8 }} aria-hidden />
+            <div className="gr-halo-haut absolute" style={{ left: W * 0.1, top: H * 0.03, width: W * 0.8, height: H * 0.06 }} aria-hidden />
+            <span className="gr-coureur absolute" style={{ top: H * 0.05 }} aria-hidden />
 
-            {/* rail du chariot */}
-            <div className="absolute inset-x-3 h-2 rounded-full bg-[#3df5ff]/30 shadow-[0_0_12px_#3df5ff]" style={{ top: RAIL - 6 }} />
+            {/* rail et chariot */}
+            <div className="absolute rounded-full bg-gradient-to-b from-[#f5d6ff] via-[#9b6bb5] to-[#3a2048] shadow-[0_2px_10px_#0008]" style={{ left: W * 0.12, width: W * 0.76, top: H * 0.005, height: Math.max(4, H * 0.012) }} aria-hidden />
 
-            {/* la sortie */}
-            <div className="absolute bottom-0 left-0 flex flex-col items-center justify-end" style={{ width: `${PIT_G * 100 - 2}%`, height: 150 }}>
-              <span className="gr-neon-rose mb-1 text-[10px] sm:text-xs font-black tracking-widest">SORTIE</span>
-              <div className="h-[110px] w-[86%] rounded-t-xl border-2 border-b-0 border-[#ff4f9a] bg-black/50 shadow-[inset_0_0_18px_#ff4f9a66,0_0_14px_#ff4f9a66]" />
-            </div>
-            <div className="absolute bottom-0 h-[150px] w-1 rounded-full bg-[#ff4f9a]/70 shadow-[0_0_10px_#ff4f9a]" style={{ left: `${PIT_G * 100 - 1.5}%` }} />
-
-            {/* le monticule de billes néon sous les lots */}
-            <svg className="pointer-events-none absolute bottom-0" style={{ left: `${PIT_G * 100}%`, width: `${PIT_L * 100 + 1}%`, height: 120 }} viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden>
-              <defs>
-                <radialGradient id="gr-tas" cx="50%" cy="100%" r="80%"><stop offset="0%" stopColor="#ff4f9a" stopOpacity=".45" /><stop offset="100%" stopColor="#3df5ff" stopOpacity=".08" /></radialGradient>
-              </defs>
-              <path d="M0 120 L0 70 Q60 28 130 44 Q200 8 270 40 Q340 22 400 62 L400 120 Z" fill="url(#gr-tas)" />
-              {Array.from({ length: 46 }, (_, i) => {
-                const x = (i * 83) % 400, y = 64 + ((i * 37) % 52);
-                return <circle key={i} cx={x} cy={y} r={5 + (i % 4)} fill={["#ff4f9a", "#3df5ff", "#ffe066", "#b98cff"][i % 4]} opacity=".28" />;
-              })}
-            </svg>
-            {/* le tas de lots */}
+            {/* le tas : billes décoratives, puis les peluches (le dessus du tas devant) */}
+            {DECOR.map((d, i) => (
+              <Peluche key={`d${i}`} look={d.look} taille={W * d.t} className="absolute opacity-80 brightness-[.8]" style={{ left: d.x * W - (W * d.t) / 2, top: d.bas * H - W * d.t, transform: `rotate(${d.a}deg)`, zIndex: 1 }} />
+            ))}
             {[...objets].sort((a, b) => b.couche - a.couche).map((o) => {
               if (o.id === cache) return null;
-              const t = taille(o.look);
-              const vise = enCours && phase === "viser" && sousLaPince(objets, versTas(gx))?.id === o.id;
+              const t = S * echelle(o.look);
               return (
                 <div
                   key={o.id}
-                  className={`absolute transition-[filter] duration-200 ${vise ? "gr-vise" : ""}`}
-                  style={{ left: `calc(${versVitrine(o.x) * 100}% - ${t / 2}px)`, bottom: BAS_COUCHE[o.couche], width: t, height: t, zIndex: 10 - o.couche }}
-                  title="Un objet mystère : à toi de voir ce qu'il cache !"
+                  className={`absolute transition-[filter] duration-200 ${vise?.id === o.id ? "gr-vise" : ""}`}
+                  style={{ left: versVitrine(o.x) * W - t / 2, top: BAS_COUCHE[o.couche] * H - t, width: t, height: t, zIndex: 10 - o.couche }}
+                  title="Une peluche mystère : à toi de voir ce qu'elle cache !"
                 >
-                  <svg viewBox="-32 -34 64 64" width={t} height={t} className="overflow-visible" style={{ transform: `rotate(${o.a}deg)` }}>
-                    <DessinObjet type={o.look} id={o.id} />
-                  </svg>
+                  <Peluche look={o.look} taille={t} style={{ transform: `rotate(${o.a * 0.6}deg)` }} />
                 </div>
               );
             })}
-            {/* l'objet qui glisse retombe à sa place */}
+            {/* la peluche qui glisse retombe à sa place */}
             {glisse ? (
-              <div className="gr-retombe absolute" style={{ left: `calc(${versVitrine(glisse.o.x) * 100}% - ${taille(glisse.look) / 2}px)`, bottom: BAS_COUCHE[glisse.o.couche], width: taille(glisse.look), height: taille(glisse.look), zIndex: 9 }}>
-                <svg viewBox="-32 -34 64 64" width={taille(glisse.look)} height={taille(glisse.look)} className="overflow-visible"><DessinObjet type={glisse.look} id={glisse.id} /></svg>
+              <div className="gr-retombe absolute" style={{ left: versVitrine(glisse.x) * W - (S * echelle(glisse.look)) / 2, top: BAS_COUCHE[glisse.couche] * H - S * echelle(glisse.look), zIndex: 9 }}>
+                <Peluche look={glisse.look} taille={S * echelle(glisse.look)} />
               </div>
             ) : null}
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#ff4f9a]/25 to-transparent" style={{ height: SOL + 10 }} />
 
-            {/* le grappin */}
-            <div className="absolute z-20" style={{ left: `${gx * 100}%`, top: RAIL - 14, transition: `left ${transition}` }}>
-              <div className="absolute -left-6 -top-2 h-5 w-12 rounded-md border-2 border-[#3df5ff] bg-[#2a1a4a] shadow-[0_0_10px_#3df5ff]" />
-              <div className="absolute left-[-1px] top-3 w-[2px] bg-[#d9d2f2]" style={{ height: cable + 2, transition: `height ${transition}` }} />
-              <div className="absolute -translate-x-1/2" style={{ top: cable + 4, transition: `top ${transition}`, left: 0 }}>
-                <div style={{ transition: `transform ${transition}` }}>
-                  <Pince ouverture={ouverture} />
+            {/* repère de visée : un fin rayon sous la pince */}
+            {enCours && phase === "viser" ? (
+              <div className="gr-rayon pointer-events-none absolute" style={{ left: gx * W - 1, top: PH * 0.95, height: BAS_COUCHE[2] * H - PH * 0.95, zIndex: 12, transition: `left ${transition}` }} aria-hidden />
+            ) : null}
+
+            {/* le grappin : chariot, tige, câble spiralé, pince */}
+            <div className="absolute" style={{ left: gx * W, top: 0, zIndex: 20, transition: `left ${transition}` }}>
+              <div className="absolute rounded-md border border-white/30 bg-gradient-to-b from-[#e9c8ff] to-[#5b3473] shadow-[0_0_10px_#ffb46b88]" style={{ left: -PL * 0.18, width: PL * 0.36, top: 0, height: H * 0.03 }} />
+              <div className="absolute" style={{ left: 0, top: 0, transformOrigin: "0 0", transform: `rotate(${penche}deg)`, transition: `transform ${penche === 0 ? "700ms cubic-bezier(.3,1.7,.5,1)" : "350ms ease-out"}` }}>
+                {/* tige métallique */}
+                <div className="absolute bg-gradient-to-r from-[#5b3473] via-[#f3dcff] to-[#5b3473]" style={{ left: -PL * 0.022, width: PL * 0.044, top: 0, height: haut + PH * 0.03, transition: `height ${transition}` }} />
+                {/* câble spiralé */}
+                <div className="gr-spirale absolute rounded-full" style={{ left: PL * (CABLE_X - CABLE_L / 2), width: PL * CABLE_L, top: H * 0.01, height: haut + PH * CABLE_Y, transition: `height ${transition}` }} />
+                {/* tête de la pince : ouverte / fermée en fondu, l'objet tenu entre les doigts */}
+                <div className="absolute" style={{ left: -PL / 2, top: haut, width: PL, height: PH, transition: `top ${transition}` }}>
+                  {tenu ? (
+                    <div className={`absolute left-1/2 ${tenu.chute ? "gr-chute" : ""}`} style={{ top: PH * TENU_Y - (S * echelle(tenu.look) * 0.92) / 2, marginLeft: -(S * echelle(tenu.look) * 0.92) / 2 }}>
+                      <Peluche look={tenu.look} taille={S * echelle(tenu.look) * 0.92} />
+                    </div>
+                  ) : null}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/grappin/pince-ouverte.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full drop-shadow-[0_8px_10px_rgba(0,0,0,.45)]" style={{ opacity: fermee ? 0 : 1, transition: "opacity 260ms ease" }} />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/grappin/pince-fermee.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full drop-shadow-[0_8px_10px_rgba(0,0,0,.45)]" style={{ opacity: fermee ? 1 : 0, transition: "opacity 260ms ease" }} />
                 </div>
-                {tenu ? (
-                  <div className={`absolute left-1/2 -translate-x-1/2 ${tenu.chute ? "gr-chute" : ""}`} style={{ top: TETE - 18 }}>
-                    <svg viewBox="-32 -34 64 64" width={taille(tenu.look) * 0.9} height={taille(tenu.look) * 0.9} className="overflow-visible">
-                      <DessinObjet type={tenu.look} id={tenu.id} />
-                    </svg>
-                  </div>
-                ) : null}
               </div>
             </div>
 
+            {/* vitre avant (la petite barrière de la sortie) et pupitre, devant les peluches */}
+            <div className="pointer-events-none absolute" style={{ ...recadre(0.09, 0.685, 0.435, 0.81, 0.6), zIndex: 25 }} aria-hidden />
+            <div className="pointer-events-none absolute" style={{ ...recadre(0, 0.8, 1, 1), zIndex: 26 }} aria-hidden />
+            <span className="gr-neon-rose pointer-events-none absolute font-black tracking-[0.3em]" style={{ left: W * 0.125, top: H * 0.635, fontSize: Math.max(9, W * 0.018), zIndex: 27 }}>SORTIE</span>
+            <div className="gr-sortie pointer-events-none absolute" style={{ left: W * 0.1, top: H * 0.7, width: W * 0.2, height: H * 0.1, zIndex: 24 }} aria-hidden />
+
+            {/* le pupitre de l'image devient cliquable : joystick (◀ ▶) et gros bouton */}
+            {enCours ? (
+              <>
+                <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.205, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}>◀</button>
+                <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.355, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}>▶</button>
+                <button type="button" aria-label="Lâcher la pince" onClick={(e) => { e.stopPropagation(); lacher(); }} onPointerDown={(e) => e.stopPropagation()} disabled={occupe} className={`absolute rounded-full ${occupe ? "" : "gr-gros-bouton"}`} style={{ left: W * 0.62, top: H * 0.835, width: W * 0.155, height: H * 0.14, zIndex: 30 }} />
+              </>
+            ) : null}
+
+            {/* paillettes quand on gagne */}
+            {eclat && phase === "lot" ? (
+              <div className="pointer-events-none absolute" style={{ left: SORTIE * W, top: H * 0.66, zIndex: 31 }} aria-hidden>
+                {Array.from({ length: 14 }, (_, i) => (
+                  <span key={i} className="gr-paillette" style={{ ["--a" as string]: `${(i / 14) * 360}deg`, ["--d" as string]: `${40 + (i % 3) * 22}px`, background: ["#ffe066", "#ff6bd6", "#b98cff", "#7fd0ff"][i % 4], animationDelay: `${(i % 4) * 40}ms` }} />
+                ))}
+              </div>
+            ) : null}
+
             {/* annonce du lot */}
             {annonce ? (
-              <div className="gr-annonce absolute left-1/2 top-[22%] z-30 -translate-x-1/2 rounded-2xl border-2 bg-[#12062a]/90 px-6 py-4 text-center backdrop-blur" style={{ borderColor: COULEUR_RARETE[annonce.rarete], boxShadow: `0 0 30px ${COULEUR_RARETE[annonce.rarete]}88` }}>
-                <svg viewBox="-32 -34 64 64" width="70" height="70" className="mx-auto overflow-visible"><DessinObjet type={annonce.look} id={3} /></svg>
+              <div className="gr-annonce absolute left-1/2 top-[14%] z-40 w-[min(78%,300px)] -translate-x-1/2 rounded-2xl border-2 bg-[#12062a]/90 px-5 py-4 text-center backdrop-blur" style={{ borderColor: COULEUR_RARETE[annonce.rarete], boxShadow: `0 0 34px ${COULEUR_RARETE[annonce.rarete]}88` }}>
+                <Peluche look={annonce.look} taille={Math.min(110, W * 0.16)} className="mx-auto drop-shadow-[0_6px_14px_rgba(0,0,0,.5)]" />
                 <p className="mt-1 text-xs font-bold uppercase tracking-widest" style={{ color: COULEUR_RARETE[annonce.rarete] }}>{annonce.rareteLabel}</p>
                 <p className="text-lg font-bold text-ink">{annonce.nom}</p>
                 <p className="text-sm text-ink-soft">{annonce.label}</p>
@@ -579,72 +420,78 @@ export default function GrappinCosmique() {
 
             {/* écran d'accueil */}
             {!partie ? (
-              <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0b0418]/75 p-5 text-center backdrop-blur-[2px]">
-                <div className="max-w-md">
-                  <p className="gr-neon mb-2 text-2xl font-black uppercase tracking-widest">Insert coin</p>
-                  <p className="mb-5 text-sm text-ink-soft">Trois tirages par jour. Chaque peluche et chaque objet cache un <strong className="text-ink">lot mystère</strong> : impossible de savoir lequel avant de l&apos;avoir sorti… Les plus beaux lots se cachent souvent tout au fond !</p>
-                  {compte.joueur ? (
-                    <>
-                      <button type="button" onClick={entrer} disabled={charge} className="gr-bouton rounded-full px-8 py-3 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-60">
-                        {charge ? "CycyBot remplit la vitrine…" : "Jouer ▸"}
-                      </button>
-                      <div className="mt-4"><BandeauDiscord compte={compte} /></div>
-                    </>
-                  ) : compte.pret ? (
-                    <BoutonDiscord erreur={compte.erreur} texte="3 tirages par jour et par compte Discord : ta récompense arrive directement sur ton profil." />
-                  ) : null}
-                  {erreur ? <p className="mt-4 text-sm text-red-300">{erreur}</p> : null}
+              <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#0b0418]/70 p-4 text-center backdrop-blur-[3px]">
+                <div className="flex max-w-xl items-center gap-4 sm:gap-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/grappin/machine-pleine.webp" alt="La borne du Grappin cosmique remplie de peluches" className="gr-flotte hidden sm:block h-auto w-[34%] drop-shadow-[0_10px_30px_#c56bff88]" />
+                  <div className="text-left sm:text-left">
+                    <p className="gr-neon mb-2 text-xl sm:text-2xl font-black uppercase tracking-widest">Insert coin</p>
+                    <p className="mb-4 text-sm text-ink-soft">
+                      {`Trois tirages par jour. Chaque peluche cache un `}<strong className="text-ink">lot mystère</strong>{` : impossible de savoir lequel avant de l'avoir sortie… Les plus beaux lots se cachent souvent tout au fond !`}
+                    </p>
+                    {compte.joueur ? (
+                      <>
+                        <button type="button" onClick={entrer} disabled={charge} className="gr-bouton rounded-full px-8 py-3 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-60">
+                          {charge ? "CycyBot remplit la vitrine…" : "Jouer ▸"}
+                        </button>
+                        <div className="mt-3"><BandeauDiscord compte={compte} /></div>
+                      </>
+                    ) : compte.pret ? (
+                      <BoutonDiscord erreur={compte.erreur} texte="3 tirages par jour et par compte Discord : ta récompense arrive directement sur ton profil." />
+                    ) : null}
+                    {erreur ? <p className="mt-3 text-sm text-red-300">{erreur}</p> : null}
+                  </div>
                 </div>
               </div>
             ) : null}
           </div>
 
-          {/* ── Le pupitre ── */}
+          {/* ── Le pupitre (tirages, chrono, commandes) ── */}
           {partie ? (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-black/30 px-3 py-3">
+            <div className="relative z-10 mt-2 sm:mt-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-black/45 px-3 py-2.5 backdrop-blur-sm">
               <div className="flex items-center gap-2" aria-label={`${partie.restants} tirage(s) restant(s)`}>
                 {Array.from({ length: partie.tirages }, (_, i) => (
                   <span key={i} className={`h-7 w-7 rounded-full border-2 text-center text-xs font-black leading-6 ${i < partie.restants ? "border-[#ffe066] bg-[#ffe066]/25 text-[#ffe066] shadow-[0_0_10px_#ffe06688]" : "border-white/15 text-white/20"}`}>¢</span>
                 ))}
-                <span className="ml-1 text-sm text-ink-soft">{partie.fini ? "Plus de tirages aujourd'hui" : `${partie.restants} tirage${partie.restants > 1 ? "s" : ""}`}</span>
+                <span className="ml-1 text-sm text-ink-soft">
+                  {partie.fini ? "Plus de tirages aujourd'hui" : `${partie.restants} tirage${partie.restants > 1 ? "s" : ""}`}
+                  {partie.bonus ? <span className="ml-1.5 rounded-full bg-[#ffe066]/20 px-2 py-0.5 text-[11px] font-bold text-[#ffe066]">🎁 +{partie.bonus} bonus aujourd&apos;hui</span> : null}
+                </span>
               </div>
               {enCours ? (
                 <div className="flex items-center gap-2">
                   <span className={`w-10 text-right text-sm tabular-nums ${chrono <= 5 ? "text-[#ff4f9a]" : "text-ink-soft"}`}>{phase === "viser" ? `${chrono}s` : ""}</span>
-                  <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-fleche h-12 w-12 rounded-full text-xl font-black disabled:opacity-40">◀</button>
-                  <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-fleche h-12 w-12 rounded-full text-xl font-black disabled:opacity-40">▶</button>
-                  <button type="button" onClick={lacher} disabled={occupe} className="gr-bouton h-14 rounded-full px-6 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-50">
+                  <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-fleche h-11 w-11 rounded-full text-lg font-black disabled:opacity-40">◀</button>
+                  <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-fleche h-11 w-11 rounded-full text-lg font-black disabled:opacity-40">▶</button>
+                  <button type="button" onClick={lacher} disabled={occupe} className="gr-bouton h-12 rounded-full px-6 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-50">
                     Lâcher ⬇
                   </button>
                 </div>
               ) : null}
             </div>
           ) : null}
-          {partie && erreur ? <p className="mt-2 text-center text-sm text-red-300">{erreur}</p> : null}
+          {partie && erreur ? <p className="relative z-10 mt-2 text-center text-sm text-red-300">{erreur}</p> : null}
         </div>
 
         {/* ── Le butin du jour ── */}
         {partie && partie.prises.length ? (
           <div className="carte-holo mt-5 rounded-3xl border border-violet/20 p-5" aria-live="polite">
             <h3 className="mb-3 text-lg font-semibold text-ink">{partie.fini ? "🎁 Ta récompense du jour" : "Ton butin pour l'instant"}</h3>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {partie.prises.map((p, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-2xl border bg-black/20 p-3" style={{ borderColor: COULEUR_RARETE[p.rarete] + "66" }}>
-                  <svg viewBox="-32 -34 64 64" width="48" height="48" className="shrink-0 overflow-visible"><DessinObjet type={p.look} id={i} /></svg>
+                  <Peluche look={p.look} taille={52} className="shrink-0" />
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-ink">{p.nom}</p>
                     <p className="text-xs text-ink-soft">{p.label}</p>
-                    {p.glisse ? <p className="text-[11px] text-ink-soft/60">{p.glisse.nom} a glissé… un Gloup s&apos;est accroché !</p> : null}
+                    {p.glisse ? <p className="text-[11px] text-ink-soft/60">{p.glisse.nom} a glissé… une étoile porte-bonheur s&apos;est accrochée !</p> : null}
                   </div>
                 </div>
               ))}
             </div>
             {partie.fini && partie.total ? (
               <div className="mt-4 rounded-2xl bg-violet/10 p-4 text-center">
-                <p className="text-ink font-semibold">
-                  ✅{" "}
-                  {partie.recupere ? "Ajouté à ton compte Discord !" : "Ta récompense arrive sur ton compte Discord…"}
-                </p>
+                <p className="text-ink font-semibold">✅ {partie.recupere ? "Ajouté à ton compte Discord !" : "Ta récompense arrive sur ton compte Discord…"}</p>
                 <p className="mt-1 text-ink-soft">{partie.given ? partie.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : partie.total.label}</p>
                 <p className="mt-2 text-xs text-ink-soft/60">Une nouvelle vitrine t&apos;attend demain, dès minuit.</p>
               </div>
@@ -653,50 +500,70 @@ export default function GrappinCosmique() {
         ) : null}
       </div>
 
-      {/* ── Règles et lots ── */}
+      {/* ── Règles ── */}
       <aside className="carte-holo rounded-2xl border border-violet/12 p-5">
         <h2 className="mb-3 text-lg font-semibold text-ink">Comment jouer ?</h2>
         <ol className="mb-5 list-inside list-decimal space-y-2 text-sm text-ink-soft">
-          <li>Place le grappin avec ◀ ▶ (ou les flèches, ou en touchant la vitrine).</li>
-          <li>Appuie sur <strong className="text-ink">Lâcher</strong> (ou Espace) : 20 secondes par tirage !</li>
-          <li>La pince attrape l&apos;objet le plus centré sous elle. Ceux du dessus passent devant : vise juste pour atteindre le fond.</li>
-          <li>Les lots précieux glissent plus souvent… mais tu ne repars <strong className="text-ink">jamais les mains vides</strong> : un petit Gloup s&apos;accroche toujours.</li>
-          <li>Après 3 tirages, tout est ajouté à ton compte Discord.</li>
+          <li>Place la pince avec ◀ ▶ (le joystick de la borne, les flèches du clavier, ou en touchant la vitrine).</li>
+          <li>Appuie sur le <strong className="text-ink">gros bouton</strong> (ou Lâcher, ou Espace) : 20 secondes par tirage !</li>
+          <li>La pince attrape la peluche la plus centrée sous elle. Celles du dessus passent devant : vise juste pour atteindre le fond.</li>
+          <li>Les lots précieux glissent plus souvent… mais tu ne repars <strong className="text-ink">jamais les mains vides</strong> : une étoile porte-bonheur s&apos;accroche toujours.</li>
+          <li>Après tes tirages, tout est ajouté à ton compte Discord.</li>
         </ol>
         <h3 className="mb-2 text-sm font-semibold text-ink">Que cache la vitrine ?</h3>
-        <p className="text-sm text-ink-soft">Peluches, manettes, mini-fusées, soucoupes… <strong className="text-ink">chaque objet cache un lot mystère</strong>, et son apparence ne dit rien de ce qu&apos;il y a dedans ! Un petit lot d&apos;Éclats, un booster, un fragment… ou peut-être le <strong className="text-ink">JACKPOT</strong>. Tu le découvres en le sortant de la machine.</p>
-        <div className="mt-3 flex flex-wrap gap-1.5" aria-hidden>
-          {(["etoile", "manette", "robot", "nibi", "soucoupe", "casque", "lune", "cible", "chat", "micro", "planete", "coeur"] as Look[]).map((t) => (
-            <svg key={t} viewBox="-32 -34 64 64" width="34" height="34" className="overflow-visible opacity-90"><DessinObjet type={t} id={1} /></svg>
+        <p className="text-sm text-ink-soft">Chats de minuit, bébés dragons, planètes, soucoupes… <strong className="text-ink">chaque peluche cache un lot mystère</strong>, et son apparence ne dit rien de ce qu&apos;il y a dedans ! Des Éclats, un booster, un fragment… ou peut-être le <strong className="text-ink">JACKPOT</strong>.</p>
+        <div className="mt-3 grid grid-cols-6 gap-1.5" aria-hidden>
+          {["chat-nuit", "lapin", "dragon", "astronaute", "lune", "planete-rose", "soucoupe", "poulpe", "sac", "fusee", "coeur", "comete"].map((t) => (
+            <Peluche key={t} look={t} taille={40} className="mx-auto" />
           ))}
         </div>
         <p className="mt-4 text-xs text-ink-soft/60">La vitrine change chaque jour et est remplie par CycyBot. Il faut être membre du Discord Cycylive pour recevoir sa récompense.</p>
       </aside>
 
       <style>{`
-        .gr-borne{background:linear-gradient(160deg,#2a0f4a,#14072a 55%,#2a0a33);box-shadow:0 0 0 2px #ff4f9a55,0 0 0 6px #14072a,0 0 0 8px #3df5ff55,0 30px 80px -30px #ff4f9a88}
-        .gr-fronton{background:linear-gradient(90deg,#1b0835,#2b0d4d,#1b0835);border:2px solid #ff4f9a88;box-shadow:inset 0 0 20px #ff4f9a44}
-        .gr-neon{color:#fff;text-shadow:0 0 4px #fff,0 0 10px #ff4f9a,0 0 22px #ff4f9a,0 0 40px #ff4f9a;animation:gr-gresille 5s infinite}
-        .gr-neon-rose{color:#ffd1e6;text-shadow:0 0 6px #ff4f9a,0 0 14px #ff4f9a}
+        .gr-salle{background:#120822 url(/grappin/salle.webp) center/cover no-repeat;box-shadow:0 30px 80px -30px #c56bff88}
+        .gr-salle::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 80% 70% at 50% 45%,transparent 30%,#0b0418cc 100%),linear-gradient(#0b041855,#0b0418aa)}
+        .gr-fronton{background:linear-gradient(90deg,#1b0835e6,#2b0d4de6,#1b0835e6);border:2px solid #ffb46b88;box-shadow:inset 0 0 20px #c56bff55,0 0 24px #c56bff44}
+        .gr-neon{color:#fff;text-shadow:0 0 4px #fff,0 0 10px #c56bff,0 0 22px #c56bff,0 0 40px #ff6bd6;animation:gr-gresille 5s infinite}
+        .gr-neon-rose{color:#ffe7f3;text-shadow:0 0 6px #ff6bd6,0 0 14px #ff6bd6}
         @keyframes gr-gresille{0%,92%,100%{opacity:1}93%{opacity:.55}94%{opacity:1}96%{opacity:.7}}
-        .gr-ampoules{width:38px;height:10px;background:radial-gradient(circle,#ffe066 2.5px,transparent 3px) 0 0/10px 10px;animation:gr-chenille .6s steps(2) infinite;filter:drop-shadow(0 0 4px #ffe066)}
+        .gr-ampoules{width:38px;height:10px;background:radial-gradient(circle,#ffd08a 2.5px,transparent 3px) 0 0/10px 10px;animation:gr-chenille .6s steps(2) infinite;filter:drop-shadow(0 0 4px #ffb46b)}
         @keyframes gr-chenille{50%{background-position:5px 0;opacity:.6}}
-        .gr-vitre{background:linear-gradient(180deg,#12052b 0%,#2a0a4a 45%,#5a1260 72%,#12052b 73%);border:2px solid #3df5ff66;box-shadow:inset 0 0 40px #3df5ff22,inset 0 0 0 1px #ffffff10}
-        .gr-vitre::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:35;background:linear-gradient(115deg,transparent 30%,#ffffff12 38%,transparent 46%),repeating-linear-gradient(0deg,#ffffff05 0 2px,transparent 2px 4px)}
-        .gr-soleil{position:absolute;left:50%;top:29%;width:180px;height:180px;margin-left:-90px;border-radius:50%;background:linear-gradient(#ffe066,#ff4f9a 70%);-webkit-mask:linear-gradient(#000 0 52%,transparent 52% 57%,#000 57% 66%,transparent 66% 70%,#000 70% 77%,transparent 77% 80%,#000 80%);mask:linear-gradient(#000 0 52%,transparent 52% 57%,#000 57% 66%,transparent 66% 70%,#000 70% 77%,transparent 77% 80%,#000 80%);opacity:.55;filter:blur(.3px) drop-shadow(0 0 24px #ff4f9a)}
-        .gr-grille{position:absolute;left:-50%;right:-50%;bottom:0;height:27%;background:linear-gradient(#ff4f9a99 1.5px,transparent 1.5px) 0 0/100% 22px,linear-gradient(90deg,#3df5ff88 1.5px,transparent 1.5px) 0 0/44px 100%;transform:perspective(220px) rotateX(55deg);transform-origin:bottom;opacity:.55}
-        .gr-vise{filter:drop-shadow(0 0 8px #3df5ff) drop-shadow(0 0 2px #fff)}
+        .gr-borne{box-shadow:0 0 0 2px #ffb46b55,0 18px 50px -18px #000,0 0 50px -10px #c56bff88}
+        .gr-borne::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:28;background:linear-gradient(115deg,transparent 30%,#ffffff10 38%,transparent 46%);background-size:250% 100%;animation:gr-reflet 9s ease-in-out infinite}
+        @keyframes gr-reflet{0%,100%{background-position:120% 0}50%{background-position:-20% 0}}
+        .gr-halo{mix-blend-mode:screen;background:radial-gradient(ellipse 60% 50% at 40% 50%,#ffb46b66,transparent 70%);filter:blur(6px);animation:gr-respire 3.2s ease-in-out infinite;pointer-events:none;z-index:2}
+        .gr-halo-d{animation-delay:1.6s}
+        .gr-halo-haut{mix-blend-mode:screen;background:radial-gradient(ellipse 50% 60% at 50% 50%,#ffc58a55,transparent 70%);filter:blur(8px);animation:gr-respire 4s ease-in-out infinite;pointer-events:none;z-index:2}
+        @keyframes gr-respire{0%,100%{opacity:.35}50%{opacity:1}}
+        .gr-coureur{left:10%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:#fff3dc;box-shadow:0 0 12px 4px #ffb46b,0 0 30px 8px #ff6bd688;mix-blend-mode:screen;animation:gr-court 4.5s linear infinite;pointer-events:none;z-index:3}
+        @keyframes gr-court{0%{left:12%;opacity:0}8%{opacity:1}92%{opacity:1}100%{left:88%;opacity:0}}
+        .gr-spirale{background:repeating-linear-gradient(180deg,#24102e 0 2px,#6d4a7d 3px,#c79fd6 4px,#4a2a58 6px,#24102e 8px);box-shadow:inset 2px 0 3px #0008,inset -1px 0 2px #ffffff22}
+        .gr-rayon{width:2px;background:linear-gradient(#ff6bd600,#ff6bd6aa 30%,#ff6bd600);filter:drop-shadow(0 0 4px #ff6bd6)}
+        .gr-vise{filter:drop-shadow(0 0 10px #ff9ae0) drop-shadow(0 0 2px #fff)}
+        .gr-sortie{background:radial-gradient(ellipse 50% 60% at 50% 60%,#ff6bd655,transparent 70%);animation:gr-respire 2.4s ease-in-out infinite}
+        .gr-touche{background:#2a1a4acc;color:#f0d6ff;border:2px solid #c56bffaa;box-shadow:0 0 12px #c56bff77;font-size:clamp(10px,1.6vw,16px);touch-action:none}
+        .gr-touche:not(:disabled):active{background:#c56bff;color:#12062a}
+        .gr-gros-bouton{box-shadow:0 0 0 3px #ffd08a66,0 0 30px 6px #ffb46b88;animation:gr-pulse 1.6s ease-in-out infinite}
+        .gr-gros-bouton:active{transform:scale(.96);box-shadow:0 0 0 3px #ffd08a,0 0 40px 10px #ffb46b}
+        @keyframes gr-pulse{0%,100%{box-shadow:0 0 0 2px #ffd08a44,0 0 18px 2px #ffb46b55}50%{box-shadow:0 0 0 4px #ffd08aaa,0 0 34px 8px #ffb46baa}}
         .gr-bouton{background:linear-gradient(180deg,#ffe066,#ffb627);box-shadow:0 0 0 3px #12062a,0 0 0 5px #ffe06688,0 0 22px #ffb62788,inset 0 -4px 0 #c97f0a}
         .gr-bouton:not(:disabled):active{transform:translateY(2px);box-shadow:0 0 0 3px #12062a,0 0 0 5px #ffe06688,inset 0 -1px 0 #c97f0a}
-        .gr-fleche{background:#2a1a4a;color:#3df5ff;border:2px solid #3df5ff;box-shadow:0 0 12px #3df5ff66;touch-action:none}
-        .gr-fleche:not(:disabled):active{background:#3df5ff;color:#12062a}
-        .gr-chute{animation:gr-chute .45s ease-in forwards}
-        @keyframes gr-chute{to{transform:translate(-50%,160px) scale(.6);opacity:0}}
-        .gr-retombe{animation:gr-retombe .6s cubic-bezier(.5,0,.75,0) both}
-        @keyframes gr-retombe{from{transform:translateY(-140px) rotate(-12deg)}70%{transform:translateY(0) rotate(4deg)}85%{transform:translateY(-10px)}to{transform:translateY(0)}}
-        .gr-annonce{animation:gr-pop .4s cubic-bezier(.3,1.6,.5,1) both}
-        @keyframes gr-pop{from{transform:translate(-50%,0) scale(.4);opacity:0}}
-        @media (prefers-reduced-motion: reduce){.gr-neon,.gr-ampoules{animation:none}}
+        .gr-fleche{background:#2a1a4a;color:#e9c8ff;border:2px solid #c56bff;box-shadow:0 0 12px #c56bff66;touch-action:none}
+        .gr-fleche:not(:disabled):active{background:#c56bff;color:#12062a}
+        .gr-chute{animation:gr-chute .55s cubic-bezier(.5,0,.8,.4) forwards}
+        @keyframes gr-chute{to{transform:translateY(170%) scale(.75) rotate(14deg);opacity:0}}
+        .gr-retombe{animation:gr-retombe .7s cubic-bezier(.5,0,.75,0) both}
+        @keyframes gr-retombe{from{transform:translateY(-150%) rotate(-14deg)}70%{transform:translateY(0) rotate(5deg)}85%{transform:translateY(-9%)}to{transform:translateY(0)}}
+        .gr-flash{animation:gr-flash 1.1s ease-out}
+        @keyframes gr-flash{0%{filter:none}15%{filter:brightness(1.35) saturate(1.3)}35%{filter:brightness(1.05)}55%{filter:brightness(1.25) saturate(1.2)}100%{filter:none}}
+        .gr-paillette{position:absolute;width:8px;height:8px;border-radius:2px;transform:rotate(var(--a)) translateY(0);animation:gr-paillette .9s ease-out forwards}
+        @keyframes gr-paillette{from{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1}to{transform:rotate(var(--a)) translateY(calc(-1 * var(--d))) scale(.3);opacity:0}}
+        .gr-annonce{animation:gr-pop .45s cubic-bezier(.3,1.6,.5,1) both}
+        @keyframes gr-pop{from{transform:translate(-50%,10px) scale(.4);opacity:0}}
+        .gr-flotte{animation:gr-flotte 4s ease-in-out infinite}
+        @keyframes gr-flotte{50%{transform:translateY(-6px)}}
+        @media (prefers-reduced-motion: reduce){.gr-neon,.gr-ampoules,.gr-halo,.gr-halo-haut,.gr-coureur,.gr-borne::after,.gr-gros-bouton,.gr-flotte,.gr-sortie{animation:none}}
       `}</style>
     </div>
   );

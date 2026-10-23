@@ -60,7 +60,8 @@ const navItems: (LienNav | GroupeNav)[] = [
     ],
     colonnes: [
       { titre: "Récompenses du jour", items: jeuxQuotidiens().map(versLien), pied: { label: "Toutes les récompenses", href: "/jeux#quotidien" } },
-      { titre: "Salle d'arcade", items: jeuxArcade().map(versLien), pied: { label: "Tous les jeux", href: "/jeux" } },
+      // 5 jeux d'arcade, comme les 5 récompenses, pour que les colonnes s'alignent (les autres via « Tous les jeux »)
+      { titre: "Salle d'arcade", items: ["runner", "astrododge", "starcatcher", "cycyword", "reflexes"].map((id) => jeuxArcade().find((j) => j.id === id)).filter((j): j is NonNullable<typeof j> => Boolean(j)).map(versLien), pied: { label: `Tous les jeux (${jeuxArcade().length})`, href: "/jeux#arcade" } },
     ],
   },
   {

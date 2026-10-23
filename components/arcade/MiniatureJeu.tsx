@@ -375,34 +375,26 @@ function Coffres({ k, accent }: { k: string; accent: string }) {
 }
 
 function Grappin({ accent }: { accent: string }) {
-  // Une borne à pinces néon : rail, pince, et la vitrine pleine de petites bestioles
-  const bestioles: [number, number, string][] = [[118, 160, "#9dff3d"], [150, 166, "#3df5ff"], [186, 158, "#ff6bd6"], [218, 166, "#9dff3d"], [250, 160, "#b98cff"]];
+  // La vraie borne du Grappin cosmique, pleine de peluches, avec quelques peluches qui s'en échappent
+  const peluches: [string, number, number, number, number][] = [["chat-nuit", 280, 92, 56, -8], ["dragon", 292, 152, 48, 6], ["etoile", 36, 150, 42, -12], ["soucoupe", 34, 76, 44, 8]];
   return (
     <>
-      <rect x="70" y="18" width="210" height="172" rx="16" fill="#12052b" opacity="0.55" stroke={accent} strokeWidth="2.5" />
-      <rect x="82" y="30" width="186" height="6" rx="3" fill="#3df5ff" opacity="0.6" />
-      <circle cx="175" cy="120" r="34" fill="#ffe066" opacity="0.25" />
-      <line x1="200" y1="36" x2="200" y2="92" stroke="#d9d2f2" strokeWidth="2" />
-      <rect x="189" y="90" width="22" height="12" rx="4" fill="#2a1a4a" stroke="#3df5ff" strokeWidth="2" />
-      <path d="M192 102 L186 120 L192 126 M208 102 L214 120 L208 126" stroke="#d9d2f2" strokeWidth="3.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      {bestioles.map(([x, y, c], i) => (
-        <g key={i} transform={`translate(${x} ${y}) scale(0.8)`}>
-          <path d="M-7 -14 L-11 -22 M7 -14 L11 -22" stroke={c} strokeWidth="2.4" strokeLinecap="round" />
-          <circle cx="-11" cy="-22" r="2.6" fill="#ffe066" />
-          <circle cx="11" cy="-22" r="2.6" fill="#ffe066" />
-          <path d="M0 -16 C12 -16 17 -4 17 6 C17 15 9 18 0 18 C-9 18 -17 15 -17 6 C-17 -4 -12 -16 0 -16 Z" fill={c} />
-          <circle cx="-5.5" cy="1" r="4.5" fill="#fff" />
-          <circle cx="5.5" cy="1" r="4.5" fill="#fff" />
-          <circle cx="-5" cy="2" r="2.3" fill="#1a0b2e" />
-          <circle cx="6" cy="2" r="2.3" fill="#1a0b2e" />
-        </g>
+      <defs>
+        <radialGradient id="gp-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor={accent} stopOpacity="0.6" />
+          <stop offset="1" stopColor={accent} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <image href="/grappin/salle.webp" x="0" y="0" width="320" height="200" preserveAspectRatio="xMidYMid slice" opacity="0.45" />
+      <ellipse cx="160" cy="102" rx="96" ry="100" fill="url(#gp-halo)" />
+      <ellipse cx="160" cy="191" rx="84" ry="7" fill="#000" opacity="0.45" />
+      <image href="/grappin/machine-pleine.webp" x="62" y="6" width="196" height="186" preserveAspectRatio="xMidYMid meet" />
+      {peluches.map(([f, x, y, t, r]) => (
+        <image key={f} href={`/grappin/peluches/${f}.webp`} x={x - t / 2} y={y - t / 2} width={t} height={t} transform={`rotate(${r} ${x} ${y})`} preserveAspectRatio="xMidYMid meet" />
       ))}
-      <g transform="translate(232 128)">
-        <ellipse rx="20" ry="6" fill="#c9c3e6" stroke="#fff" strokeWidth="1.5" />
-        <path d="M-9 -2 A9 9 0 0 1 9 -2 Z" fill="#3df5ff" opacity="0.7" />
-      </g>
-      <rect x="20" y="132" width="38" height="58" rx="6" fill="#000" opacity="0.4" stroke={accent} strokeWidth="2" />
-      <text x="39" y="126" textAnchor="middle" fontSize="9" fontWeight="900" fill={accent} fontFamily="system-ui, sans-serif">SORTIE</text>
+      {[[90, 30, 1], [236, 30, 0.8], [292, 104, 0.7], [24, 118, 0.7]].map(([x, y, k], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${k})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+      ))}
     </>
   );
 }
