@@ -1,7 +1,6 @@
 // Miniatures illustrées des jeux (SVG, aucune image à charger).
 // Une petite scène par jeu, dans les couleurs de sa fiche (lib/jeux.ts).
 import { jeuParId } from "@/lib/jeux";
-import CoffreSvg, { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
 
 type Props = { id: string; className?: string; anime?: boolean };
 
@@ -303,30 +302,44 @@ function CycyWord({ accent }: { accent: string }) {
 }
 
 function Gratter({ k, accent }: { k: string; accent: string }) {
+  // Le vrai ticket galactique, à moitié gratté : on devine le gain sous la couche argentée
   return (
     <>
       <defs>
-        <linearGradient id={`${k}-or`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ffe9a8" />
-          <stop offset="55%" stopColor="#f2b94b" />
-          <stop offset="100%" stopColor="#b97a1f" />
+        <radialGradient id={`${k}-halo`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor={accent} stopOpacity="0.5" />
+          <stop offset="1" stopColor={accent} stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id={`${k}-argent`} x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stopColor="#cfc6ea" /><stop offset=".45" stopColor="#f4effc" /><stop offset=".6" stopColor="#dccff0" /><stop offset="1" stopColor="#b9addb" />
         </linearGradient>
+        <clipPath id={`${k}-zone`}><rect x="69" y="55" width="157" height="88" rx="6" /></clipPath>
       </defs>
-      <g transform="translate(46 38) rotate(-6 114 62)">
-        <path d="M0 0 H228 V46 a12 12 0 0 0 0 24 V124 H0 V70 a12 12 0 0 0 0 -24 Z" fill={`url(#${k}-or)`} />
-        <rect x="18" y="16" width="192" height="92" rx="12" fill="#1a130b" opacity="0.18" />
-        <text x="30" y="38" fontSize="12" fontWeight="800" fill="#5a3a0b" fontFamily="system-ui, sans-serif" letterSpacing="2">TICKET GALACTIQUE</text>
-        {/* zone grattée en partie */}
-        <rect x="30" y="50" width="168" height="46" rx="10" fill="#a8a2b8" />
-        <path d="M30 96 L30 60 C60 48 80 86 112 56 C128 44 136 76 150 62 L150 96 Z" fill="#fff8e6" />
-        <text x="58" y="86" fontSize="22" fontWeight="900" fill="#7b38ff" fontFamily="system-ui, sans-serif">✦ 50</text>
+      <ellipse cx="160" cy="100" rx="150" ry="95" fill={`url(#${k}-halo)`} />
+      <g transform="rotate(-6 160 100)">
+        <image href="/ticket/ticket.webp" x="44" y="26" width="232" height="148" preserveAspectRatio="xMidYMid meet" />
+        {/* le gain sous la couche */}
+        <g clipPath={`url(#${k}-zone)`}>
+          <rect x="69" y="55" width="157" height="88" fill="#fbf3ee" />
+          <path transform="translate(184 92) scale(1.25)" d="M0 -12 L3 -3 L12 0 L3 3 L0 12 L-3 3 L-12 0 L-3 -3 Z" fill="#f5c46b" stroke="#c98f2a" strokeWidth="1" />
+          <text x="184" y="124" textAnchor="middle" fontSize="14.5" fontWeight="900" fill="#4a2a6e" fontFamily="system-ui, sans-serif">+50 Éclats</text>
+          {/* couche argentée encore là à gauche, bord gratté irrégulier */}
+          <path d="M69 55 H132 L138 66 L128 76 L140 88 L126 100 L139 112 L127 124 L136 134 L130 143 H69 Z" fill={`url(#${k}-argent)`} />
+          {[[84, 70], [110, 128], [96, 98], [118, 64]].map(([x, y], i) => (
+            <path key={i} transform={`translate(${x} ${y}) scale(.6)`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#d6aa5a" opacity=".7" />
+          ))}
+          {/* copeaux de grattage */}
+          {[[146, 70, 20], [150, 112, -30], [143, 132, 50], [158, 60, -10]].map(([x, y, r], i) => (
+            <rect key={i} x={x} y={y} width="6" height="2.5" rx="1" fill="#d9cdf0" transform={`rotate(${r} ${x} ${y})`} />
+          ))}
+        </g>
       </g>
-      {/* pièce qui gratte */}
-      <g transform="translate(212 104)">
-        <circle r="20" fill={accent} stroke="#b97a1f" strokeWidth="3" />
-        <text y="7" textAnchor="middle" fontSize="18" fontWeight="900" fill="#7a4a10" fontFamily="system-ui, sans-serif">✦</text>
+      {/* une pièce qui gratte */}
+      <g transform="translate(250 146) rotate(18)">
+        <circle r="17" fill="#f5c46b" stroke="#fff3c8" strokeWidth="2.5" />
+        <circle r="11" fill="none" stroke="#c98f2a" strokeWidth="2" />
+        <path d="M0 -6 L1.6 -1.6 L6 0 L1.6 1.6 L0 6 L-1.6 1.6 L-6 0 L-1.6 -1.6 Z" fill="#c98f2a" />
       </g>
-      <path d="M186 100 l-10 -4 M190 90 l-8 -8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" opacity="0.7" />
     </>
   );
 }
@@ -359,16 +372,26 @@ function Compagnon({ accent }: { accent: string }) {
 }
 
 function Coffres({ k, accent }: { k: string; accent: string }) {
-  // Trois coffres : celui du milieu est ouvert et laisse échapper sa lumière
-  const places: [number, number, number, number][] = [[0, 92, 96, 0.56], [2, 176, 96, 0.56], [1, 122, 66, 0.76]];
+  // Les trois coffres illustrés : celui du milieu s'ouvre et laisse échapper la lumière
   return (
     <>
-      <ellipse cx="160" cy="178" rx="140" ry="16" fill={accent} opacity="0.12" />
-      {places.map(([i, x, y, s]) => (
-        <CoffreSvg key={i} id={`${k}-c${i}`} teinte={TEINTES_COFFRES[i]} ouvert={i === 1} cadre={{ x, y, width: 100 * s, height: 113 * s }} />
+      <defs>
+        <radialGradient id={`${k}-lueur`} cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#bcd8ff" stopOpacity="0.9" />
+          <stop offset=".5" stopColor="#8fb6ff" stopOpacity="0.3" />
+          <stop offset="1" stopColor={accent} stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="160" cy="176" rx="140" ry="14" fill="#000" opacity="0.4" />
+      <ellipse cx="160" cy="88" rx="78" ry="74" fill={`url(#${k}-lueur)`} />
+      {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+        <path key={i} d="M160 96 L154 6 L166 6 Z" fill="#dcebff" opacity=".22" transform={`rotate(${-70 + i * 20} 160 96)`} />
       ))}
-      {[[160, 44, 1.3], [134, 34, 0.8], [188, 36, 0.9]].map(([x, y, r], i) => (
-        <path key={i} transform={`translate(${x} ${y}) scale(${r})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+      <image href="/coffres/comete-ferme.webp" x="6" y="74" width="118" height="113" />
+      <image href="/coffres/nebuleuse-ferme.webp" x="196" y="74" width="118" height="113" />
+      <image href="/coffres/lune-ouvert.webp" x="88" y="34" width="150" height="144" />
+      {[[110, 40, 0.9], [216, 46, 0.7], [148, 18, 0.6], [196, 22, 0.8]].map(([x, y, s2], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${s2})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#fff3d0" />
       ))}
     </>
   );

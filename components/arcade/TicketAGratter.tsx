@@ -7,7 +7,7 @@ import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Sti
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
 // ============================================================
-// TICKET À GRATTER — un ticket gratuit par jour
+// TICKET À GRATTER — un ticket gratuit par jour (illustration : public/ticket/ticket.webp)
 // ============================================================
 // Le gain est tiré par CycyBot (bot.cycylive.fr/api/scratch), qui
 // donne aussi un code. On gratte ici, puis on tape /gratter sur Discord et on colle le code
@@ -18,7 +18,7 @@ const DISCORD = "https://discord.gg/sER6tztDSz";
 const CLE_GRATTE = "cycylive-ticket-gratte"; // code du dernier ticket déjà gratté
 
 type Gain = { key: string; emoji: string; label: string; rarity: string; rarityLabel: string };
-type Ticket = { code: string; prize: Gain; again: boolean; redeemed: boolean; credited?: boolean; given?: string[]; note?: string };
+type Ticket = { code: string; prize: Gain; again: boolean; redeemed: boolean; credited?: boolean; given?: string[]; note?: string; bonus?: number; encore?: boolean };
 
 const COULEURS: Record<string, { fond: string; texte: string; halo: string }> = {
   commune: { fond: "#2a2440", texte: "#d6d0ea", halo: "rgba(214,208,234,0.25)" },
@@ -71,24 +71,43 @@ function CoucheAGratter({ onFini }: { onFini: () => void }) {
     c.width = Math.round(l * ratio);
     c.height = Math.round(h * ratio);
     ctx.scale(ratio, ratio);
+    // argent holographique, aux couleurs du ticket (lilas, rose, doré)
     const g = ctx.createLinearGradient(0, 0, l, h);
-    g.addColorStop(0, "#b9b4c9");
-    g.addColorStop(0.45, "#e9e6f2");
-    g.addColorStop(0.55, "#cfc9de");
-    g.addColorStop(1, "#9d97b3");
+    g.addColorStop(0, "#c9c1e6");
+    g.addColorStop(0.3, "#f1ecfb");
+    g.addColorStop(0.5, "#d9cdf0");
+    g.addColorStop(0.68, "#f6e7f3");
+    g.addColorStop(1, "#b7acd9");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, l, h);
-    // petites étoiles et paillettes
-    for (let i = 0; i < 90; i++) {
-      ctx.fillStyle = `rgba(255,255,255,${0.25 + Math.random() * 0.5})`;
-      ctx.fillRect(Math.random() * l, Math.random() * h, 2, 2);
+    const reflet = ctx.createLinearGradient(0, 0, l, 0);
+    reflet.addColorStop(0.2, "rgba(255,255,255,0)");
+    reflet.addColorStop(0.42, "rgba(255,255,255,.55)");
+    reflet.addColorStop(0.5, "rgba(255,215,160,.35)");
+    reflet.addColorStop(0.62, "rgba(255,255,255,0)");
+    ctx.fillStyle = reflet;
+    ctx.fillRect(0, 0, l, h);
+    // paillettes et petites étoiles dorées
+    for (let i = 0; i < 140; i++) {
+      ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.random() * 0.6})`;
+      ctx.fillRect(Math.random() * l, Math.random() * h, 1.6, 1.6);
     }
-    ctx.fillStyle = "rgba(60,40,110,0.75)";
-    ctx.font = "700 22px system-ui, sans-serif";
+    const etoile = (x: number, y: number, r: number, c: string) => {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.moveTo(x, y - r); ctx.quadraticCurveTo(x, y, x + r, y); ctx.quadraticCurveTo(x, y, x, y + r);
+      ctx.quadraticCurveTo(x, y, x - r, y); ctx.quadraticCurveTo(x, y, x, y - r);
+      ctx.fill();
+    };
+    for (let i = 0; i < 16; i++) etoile(Math.random() * l, Math.random() * h, 3 + Math.random() * 6, i % 3 ? "rgba(214,170,90,.55)" : "rgba(150,110,210,.45)");
+    const t = Math.max(15, Math.min(30, l / 15));
     ctx.textAlign = "center";
-    ctx.fillText("✦ GRATTE ICI ✦", l / 2, h / 2 + 2);
-    ctx.font = "500 13px system-ui, sans-serif";
-    ctx.fillText("avec ta souris ou ton doigt", l / 2, h / 2 + 24);
+    ctx.fillStyle = "rgba(70,40,120,0.82)";
+    ctx.font = `800 ${t}px system-ui, sans-serif`;
+    ctx.fillText("✦ GRATTE ICI ✦", l / 2, h / 2 + t * 0.2);
+    ctx.font = `500 ${Math.round(t * 0.55)}px system-ui, sans-serif`;
+    ctx.fillStyle = "rgba(70,40,120,0.6)";
+    ctx.fillText("avec ta souris ou ton doigt", l / 2, h / 2 + t * 1.15);
   }, []);
 
   const gratter = (x: number, y: number) => {
@@ -98,7 +117,7 @@ function CoucheAGratter({ onFini }: { onFini: () => void }) {
     const r = c.getBoundingClientRect();
     const px = x - r.left, py = y - r.top;
     ctx.globalCompositeOperation = "destination-out";
-    ctx.lineWidth = 46;
+    ctx.lineWidth = Math.max(30, r.width / 12);
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
@@ -127,7 +146,7 @@ function CoucheAGratter({ onFini }: { onFini: () => void }) {
     <canvas
       ref={ref}
       aria-label="Zone à gratter"
-      className="absolute inset-0 w-full h-full rounded-2xl touch-none cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 w-full h-full touch-none cursor-grab active:cursor-grabbing"
       style={{ width: "100%", height: "100%" }}
       onPointerDown={(e) => {
         (e.target as HTMLCanvasElement).setPointerCapture(e.pointerId);
@@ -153,6 +172,7 @@ export default function TicketAGratter() {
   const [etat, setEtat] = useState<"attente" | "chargement" | "erreur">("attente");
   const [erreur, setErreur] = useState("");
   const [revele, setRevele] = useState(false);
+  const [couche, setCouche] = useState(true); // la couche à gratter reste un instant pour s'effacer en fondu
   const [copie, setCopie] = useState(false);
 
   const obtenir = useCallback(async () => {
@@ -164,7 +184,9 @@ export default function TicketAGratter() {
       if (d.connexion) compte.oublier();
       if (!r.ok || !d.ok) throw new Error(d.error || "Ticket indisponible pour le moment.");
       setTicket(d);
-      setRevele(Boolean(d.again && lire(CLE_GRATTE) === d.code));
+      const deja = Boolean(d.again && lire(CLE_GRATTE) === d.code);
+      setRevele(deja);
+      setCouche(!deja);
       setEtat("attente");
     } catch (e) {
       setErreur(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Impossible de joindre CycyBot pour le moment. Réessaie dans un instant.");
@@ -174,6 +196,7 @@ export default function TicketAGratter() {
 
   const finir = useCallback(() => {
     setRevele(true);
+    setTimeout(() => setCouche(false), 750);
     if (ticket) ecrire(CLE_GRATTE, ticket.code);
   }, [ticket]);
 
@@ -214,35 +237,54 @@ export default function TicketAGratter() {
           </div>
         ) : (
           <div>
-            {/* Le ticket */}
-            <div
-              className="relative mx-auto max-w-xl rounded-3xl p-5 md:p-6 border border-white/10"
-              style={{ background: "linear-gradient(135deg, #1d1438 0%, #2a1857 55%, #1a0f38 100%)" }}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <p className="font-display text-sm tracking-[0.25em] text-lilac uppercase">Ticket galactique</p>
-                <p className="text-xs text-ink-soft/60 font-mono">{revele ? ticket.code : "CYCY-••••-••••"}</p>
-              </div>
-              <div className="relative h-48 md:h-56 rounded-2xl overflow-hidden">
+            {/* Le ticket (illustration de Cycylive) : la zone à gratter est calée sur le cadre crème,
+                le numéro dans la pastille « N° ». Les positions sont en % de l'image (1349 × 864). */}
+            <div className="tk-ticket relative mx-auto w-full max-w-2xl" style={{ aspectRatio: "1349 / 864", containerType: "inline-size" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/ticket/ticket.webp" alt="Ticket galactique" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none drop-shadow-[0_18px_30px_rgba(10,4,30,.55)]" />
+              {/* numéro du ticket, dans la pastille */}
+              <p
+                className="absolute flex items-center overflow-hidden whitespace-nowrap font-mono font-bold text-[#4a2a6e]"
+                style={{ left: "79.2%", top: "6.4%", width: "14.6%", height: "5.3%", fontSize: "2.35cqw", letterSpacing: "0.06em" }}
+                aria-label={`Ticket numéro ${revele ? code : "caché"}`}
+              >
+                {revele ? code.replace(/^CYCY-/, "") : "••••-••••"}
+              </p>
+              {/* zone à gratter */}
+              <div className="absolute overflow-hidden" style={{ left: "10.9%", top: "19.4%", width: "78.3%", height: "59.4%", borderRadius: "2.2cqw" }}>
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 transition-all"
-                  style={{ background: `radial-gradient(circle at 50% 40%, ${couleur.halo}, ${couleur.fond} 70%)` }}
+                  className="absolute inset-0 flex flex-col items-center justify-center text-center px-4"
+                  style={{ background: `radial-gradient(ellipse 60% 70% at 50% 45%, ${couleur.halo}, transparent 72%)` }}
                 >
-                  <div className="mb-2 drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]" aria-hidden>
-                    <Sticker nom={stickerDuGain(ticket.prize.key, ticket.prize.label)} taille={96} />
+                  <div className={`drop-shadow-[0_6px_14px_rgba(60,20,90,0.35)] ${revele ? "tk-pop" : ""}`} aria-hidden style={{ width: "17cqw" }}>
+                    <Sticker nom={stickerDuGain(ticket.prize.key, ticket.prize.label)} taille={120} className="h-auto w-full" />
                   </div>
-                  <p className="text-lg md:text-xl font-semibold text-ink">{ticket.prize.label}</p>
-                  <p className="mt-1 text-xs uppercase tracking-widest" style={{ color: couleur.texte }}>
+                  <p className="mt-[1cqw] font-semibold leading-tight text-[#2b1640]" style={{ fontSize: "3.4cqw" }}>{ticket.prize.label}</p>
+                  <p className="mt-[0.8cqw] rounded-full px-[1.8cqw] py-[0.4cqw] font-bold uppercase tracking-widest text-white" style={{ fontSize: "1.6cqw", background: couleur.fond, boxShadow: `0 0 14px ${couleur.halo}` }}>
                     {ticket.prize.rarityLabel}
                   </p>
                 </div>
-                {!revele && <CoucheAGratter onFini={finir} />}
-              </div>
-              <div className="mt-4 border-t border-dashed border-white/15 pt-3 text-xs text-ink-soft/60 flex justify-between">
-                <span>1 ticket par jour · valable 48 h</span>
-                <span>Cycylive</span>
+                {revele ? (
+                  <div className="pointer-events-none absolute inset-0" aria-hidden>
+                    {Array.from({ length: 16 }, (_, i) => (
+                      <span key={i} className="tk-paillette" style={{ ["--a" as string]: `${(i / 16) * 360}deg`, ["--d" as string]: `${14 + (i % 3) * 6}cqw`, background: ["#f5c46b", "#c9a8ff", "#ff9ad5", "#ffffff"][i % 4], animationDelay: `${(i % 4) * 50}ms` }} />
+                    ))}
+                  </div>
+                ) : null}
+                {couche && (
+                  <div className="absolute inset-0 transition-opacity duration-700" style={{ opacity: revele ? 0 : 1 }}>
+                    <CoucheAGratter onFini={finir} />
+                  </div>
+                )}
               </div>
             </div>
+            <style>{`
+              .tk-pop{animation:tk-pop .6s cubic-bezier(.3,1.7,.5,1) both}
+              @keyframes tk-pop{from{transform:scale(.4) rotate(-10deg);opacity:0}}
+              .tk-paillette{position:absolute;left:50%;top:42%;width:1.1cqw;height:1.1cqw;border-radius:2px;opacity:0;animation:tk-paillette 1s ease-out forwards}
+              @keyframes tk-paillette{0%{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1}100%{transform:rotate(var(--a)) translateY(calc(-1 * var(--d))) scale(.2);opacity:0}}
+              @media (prefers-reduced-motion: reduce){.tk-pop,.tk-paillette{animation:none}}
+            `}</style>
 
             {revele ? (
               <div className="mt-6 text-center" aria-live="polite">
@@ -253,7 +295,13 @@ export default function TicketAGratter() {
                       {ticket.given ? "Ajouté à ton compte Discord !" : "Ton gain du jour est déjà sur ton compte Discord."}
                     </p>
                     {ticket.given && <p className="text-ink-soft">{ticket.given.map(sansMarkdown).join(" · ")}</p>}
-                    <p className="text-xs text-ink-soft/60 mt-3">Un nouveau ticket t&apos;attend demain, dès minuit.</p>
+                    {ticket.encore ? (
+                      <button type="button" onClick={obtenir} disabled={etat === "chargement"} className="mt-4 rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f5b84a] px-6 py-2.5 font-semibold text-[#3a2048] shadow-[0_0_20px_rgba(245,184,74,.45)] hover:brightness-110 disabled:opacity-60">
+                        🎁 {etat === "chargement" ? "Impression du ticket bonus…" : "Gratter mon ticket bonus du jour"}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-ink-soft/60 mt-3">Un nouveau ticket t&apos;attend demain, dès minuit.</p>
+                    )}
                   </div>
                 ) : ticket.redeemed ? (
                   <p className="text-ink-soft">Ce ticket a déjà été récupéré sur Discord. Reviens demain pour un nouveau ticket !</p>

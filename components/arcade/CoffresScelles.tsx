@@ -5,7 +5,39 @@ import Icone, { Pastille } from "@/components/icones/Icone";
 import { idAppareil } from "@/components/arcade/appareil";
 import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
-import CoffreSvg, { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
+import { TEINTES_COFFRES } from "@/components/arcade/CoffreSvg";
+
+// Les coffres illustrés (public/coffres/<couleur>-ferme|ouvert.webp, même cadrage 500 × 480)
+const IMAGES = ["comete", "lune", "nebuleuse"];
+
+function Coffre({ i, ouvert, terne, suspense, lueur, survol }: { i: number; ouvert: boolean; terne: boolean; suspense: boolean; lueur: string; survol: boolean }) {
+  const n = IMAGES[i] || IMAGES[0];
+  return (
+    <div className={`relative w-full ${suspense && !ouvert ? "cf-tremble" : ""}`} style={{ aspectRatio: "500 / 480" }}>
+      {/* lueur et rayons qui sortent du coffre ouvert */}
+      {ouvert && !terne ? (
+        <>
+          <span className="cf-rayons pointer-events-none absolute left-1/2 top-[38%] aspect-square w-[130%]" style={{ ["--c" as string]: lueur }} aria-hidden />
+          <span className="cf-eclat pointer-events-none absolute inset-[8%] rounded-full" style={{ background: `radial-gradient(circle at 50% 55%, ${lueur}cc, ${lueur}33 45%, transparent 70%)` }} aria-hidden />
+        </>
+      ) : null}
+      {/* halo au survol / pendant le suspense */}
+      <span className={`pointer-events-none absolute inset-[14%] rounded-full blur-2xl transition-opacity duration-300 ${survol || suspense ? "opacity-70" : "opacity-0"}`} style={{ background: lueur }} aria-hidden />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/coffres/${n}-ferme.webp`} alt="" draggable={false} className="pointer-events-none absolute inset-0 h-full w-full select-none drop-shadow-[0_10px_16px_rgba(0,0,0,.55)] transition-opacity duration-200" style={{ opacity: ouvert ? 0 : 1 }} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/coffres/${n}-ouvert.webp`} alt="" draggable={false} className={`pointer-events-none absolute inset-0 h-full w-full select-none drop-shadow-[0_10px_16px_rgba(0,0,0,.55)] ${ouvert ? "cf-ouvre" : ""}`} style={{ opacity: ouvert ? 1 : 0, filter: terne ? "grayscale(.65) brightness(.7)" : undefined }} />
+      {/* paillettes à l'ouverture */}
+      {ouvert && !terne ? (
+        <span className="pointer-events-none absolute left-1/2 top-[45%]" aria-hidden>
+          {Array.from({ length: 12 }, (_, k) => (
+            <span key={k} className="cf-paillette" style={{ ["--a" as string]: `${-80 + (k / 11) * 160}deg`, ["--d" as string]: `${50 + (k % 3) * 18}%`, background: k % 3 ? lueur : "#fff", animationDelay: `${120 + (k % 4) * 40}ms` }} />
+          ))}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 // ============================================================
 // LES 3 COFFRES SCELLÉS — une partie par jour
@@ -34,6 +66,8 @@ type Partie = {
   credited?: boolean;
   given?: string[];
   note?: string;
+  bonus?: number;
+  encore?: boolean;
 };
 
 const COULEUR_TIER: Record<string, string> = { petit: "#d6d0ea", moyen: "#7ee2a8", gros: "#facc15" };
@@ -153,9 +187,9 @@ export default function CoffresScelles() {
                       onClick={() => choisir(i)}
                       disabled={!cliquable}
                       aria-label={`${t.nom}${choisi ? " (ton choix)" : ""}${contenu ? ` : ${contenu.label}` : ""}`}
-                      className={`group relative w-full rounded-2xl p-2 sm:p-3 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-light ${
-                        cliquable ? "cursor-pointer hover:-translate-y-1.5 hover:bg-white/5" : "cursor-default"
-                      } ${choisi ? "bg-white/[0.06] ring-2" : ""} ${enSuspense ? "animate-pulse" : ""}`}
+                      className={`group relative w-full rounded-2xl p-1 sm:p-2 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-light ${
+                        cliquable ? "cursor-pointer hover:-translate-y-1.5 hover:bg-white/5 hover:drop-shadow-[0_0_22px_rgba(255,210,122,0.35)]" : "cursor-default"
+                      } ${choisi ? "bg-white/[0.06] ring-2" : ""}`}
                       style={choisi ? { ["--tw-ring-color" as string]: t.lueur } : undefined}
                     >
                       {choisi && (
@@ -164,13 +198,14 @@ export default function CoffresScelles() {
                         </span>
                       )}
                       <div className="relative">
-                        <CoffreSvg id={`coffre-${i}`} teinte={t} ouvert={ouvert} terne={fin && !choisi} className={`w-full h-auto ${cliquable ? "group-hover:drop-shadow-[0_0_18px_rgba(255,210,122,0.35)]" : ""}`} />
+                        <Coffre i={i} ouvert={ouvert} terne={fin && !choisi} suspense={enSuspense} lueur={t.lueur} survol={false} />
+                        {/* la récompense sort du coffre et flotte au-dessus */}
                         {contenu && (
                           <span
-                            className={`absolute left-1/2 top-[16%] -translate-x-1/2 w-[42%] drop-shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-all duration-500 ${fin && !choisi ? "opacity-60 scale-90" : "coffre-flotte"}`}
+                            className={`absolute left-1/2 top-[6%] w-[40%] drop-shadow-[0_6px_14px_rgba(0,0,0,0.55)] ${fin && !choisi ? "cf-sort-terne" : "cf-sort"}`}
                             aria-hidden
                           >
-                            <Sticker nom={stickerDuGain(contenu.key, contenu.label)} taille={64} className="w-full h-auto" />
+                            <Sticker nom={stickerDuGain(contenu.key, contenu.label)} taille={80} className="w-full h-auto" />
                           </span>
                         )}
                       </div>
@@ -208,7 +243,7 @@ export default function CoffresScelles() {
               </div>
             )}
 
-            {partie.etape === "fin" && partie.gain && <Resultat partie={partie} copie={copie} setCopie={setCopie} />}
+            {partie.etape === "fin" && partie.gain && <Resultat partie={partie} copie={copie} setCopie={setCopie} rejouer={() => agir({ action: "etat" })} charge={charge} />}
             {erreur && <p className="text-sm text-red-300 mt-4 text-center">{erreur}</p>}
           </div>
         )}
@@ -243,7 +278,25 @@ export default function CoffresScelles() {
           membre du Discord Cycylive pour récupérer son trésor.
         </p>
       </aside>
-      <style>{`@keyframes coffre-flotte{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-6px)}}.coffre-flotte{animation:coffre-flotte 2.4s ease-in-out infinite}@media (prefers-reduced-motion: reduce){.coffre-flotte{animation:none}}`}</style>
+      <style>{`
+        .cf-tremble{animation:cf-tremble .5s ease-in-out infinite}
+        @keyframes cf-tremble{0%,100%{transform:rotate(0)}20%{transform:rotate(-3deg) translateY(-2px)}40%{transform:rotate(3deg)}60%{transform:rotate(-2deg) translateY(-1px)}80%{transform:rotate(2deg)}}
+        .cf-ouvre{animation:cf-ouvre .7s cubic-bezier(.3,1.6,.5,1) both;transform-origin:50% 90%}
+        @keyframes cf-ouvre{0%{transform:scale(.92,.96)}40%{transform:scale(1.06,1.04) translateY(-3%)}100%{transform:scale(1)}}
+        .cf-eclat{animation:cf-eclat 1.2s ease-out both,cf-respire 2.6s ease-in-out 1.2s infinite;mix-blend-mode:screen}
+        @keyframes cf-eclat{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:.75}}
+        @keyframes cf-respire{0%,100%{opacity:.6}50%{opacity:.95}}
+        .cf-rayons{margin-left:-65%;margin-top:-65%;background:repeating-conic-gradient(from 0deg,var(--c) 0deg 6deg,transparent 6deg 24deg);-webkit-mask:radial-gradient(circle,#000 10%,transparent 62%);mask:radial-gradient(circle,#000 10%,transparent 62%);opacity:.45;mix-blend-mode:screen;animation:cf-tourne 14s linear infinite,cf-apparait .8s ease-out both}
+        @keyframes cf-tourne{to{transform:rotate(360deg)}}
+        @keyframes cf-apparait{from{opacity:0;transform:scale(.4)}}
+        .cf-paillette{position:absolute;width:7px;height:7px;border-radius:2px;opacity:0;animation:cf-paillette 1.1s ease-out forwards}
+        @keyframes cf-paillette{0%{transform:rotate(var(--a)) translateY(0) scale(1);opacity:1}100%{transform:rotate(var(--a)) translateY(calc(-1 * var(--d) * 3)) scale(.2);opacity:0}}
+        .cf-sort{animation:cf-sort .9s cubic-bezier(.3,1.4,.5,1) .15s both,cf-flotte 2.4s ease-in-out 1.1s infinite}
+        @keyframes cf-sort{from{transform:translate(-50%,70%) scale(.3);opacity:0}to{transform:translate(-50%,0) scale(1);opacity:1}}
+        @keyframes cf-flotte{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-6px)}}
+        .cf-sort-terne{transform:translate(-50%,8%) scale(.85);opacity:.6;filter:grayscale(.4)}
+        @media (prefers-reduced-motion: reduce){.cf-tremble,.cf-ouvre,.cf-eclat,.cf-rayons,.cf-paillette,.cf-sort{animation:none}}
+      `}</style>
     </div>
   );
 }
@@ -270,7 +323,7 @@ function sousTexte(p: Partie, suspense: number | null): string {
   return gros >= 0 ? `Le gros lot était dans le ${TEINTES_COFFRES[gros].nom.toLowerCase()}. Retente ta chance demain !` : "";
 }
 
-function Resultat({ partie, copie, setCopie }: { partie: Partie; copie: boolean; setCopie: (v: boolean) => void }) {
+function Resultat({ partie, copie, setCopie, rejouer, charge }: { partie: Partie; copie: boolean; setCopie: (v: boolean) => void; rejouer: () => void; charge: boolean }) {
   const code = partie.code || "";
   const gain = partie.gain!;
   return (
@@ -293,7 +346,13 @@ function Resultat({ partie, copie, setCopie }: { partie: Partie; copie: boolean;
             {partie.given ? "Trésor ajouté à ton compte Discord !" : "Ton trésor du jour est déjà sur ton compte Discord."}
           </p>
           {partie.given && <p className="text-ink-soft">{partie.given.map((g) => g.replace(/\*\*/g, "")).join(" · ")}</p>}
-          <p className="text-xs text-ink-soft/60 mt-3">Trois nouveaux coffres t&apos;attendent demain, dès minuit.</p>
+          {partie.encore ? (
+            <button type="button" onClick={rejouer} disabled={charge} className="mt-4 rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f5b84a] px-6 py-2.5 font-semibold text-[#3a2048] shadow-[0_0_20px_rgba(245,184,74,.45)] hover:brightness-110 disabled:opacity-60">
+              🎁 {charge ? "CycyBot remplit les coffres…" : "Ouvrir mes coffres bonus du jour"}
+            </button>
+          ) : (
+            <p className="text-xs text-ink-soft/60 mt-3">Trois nouveaux coffres t&apos;attendent demain, dès minuit.</p>
+          )}
         </div>
       ) : partie.recupere ? (
         <p className="text-ink-soft">Ce trésor a déjà été récupéré sur Discord. Trois nouveaux coffres t&apos;attendent demain !</p>
