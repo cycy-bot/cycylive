@@ -63,15 +63,15 @@ const POSE: Record<string, { w: number; ay: number; ax?: number; dy?: number }> 
   sorciere: { w: 2.25, ay: 0.82 },
   couronne: { w: 1.45, ay: 0.85 },
   aureole: { w: 1.55, ay: 1.2 },
-  monocle: { w: 0.66, ay: 0.3 },
+  monocle: { w: 0.9, ay: 0.32, ax: 0.6 },
   soleil: { w: 2.1, ay: 0.5 },
   coeurs: { w: 2.2, ay: 0.5 },
   papillon: { w: 1.0, ay: 0.45 },
-  echarpe: { w: 1.75, ay: 0.3 },
+  echarpe: { w: 1.6, ay: 0.3 },
   collier: { w: 1.6, ay: 0.12 },
 };
 // proportions (hauteur / largeur) des images portées
-const RATIO: Record<string, number> = { fleur: 350 / 328, noeud: 313 / 378, casquette: 502 / 728, bonnet: 383 / 321, hautdeforme: 312 / 375, sorciere: 342 / 374, couronne: 250 / 364, aureole: 450 / 640, monocle: 346 / 273, soleil: 201 / 555, coeurs: 206 / 577, papillon: 234 / 439, echarpe: 379 / 435, collier: 331 / 479 };
+const RATIO: Record<string, number> = { fleur: 350 / 328, noeud: 313 / 378, casquette: 502 / 728, bonnet: 383 / 321, hautdeforme: 312 / 375, sorciere: 342 / 374, couronne: 250 / 364, aureole: 450 / 640, monocle: 370 / 306, soleil: 192 / 517, coeurs: 197 / 505, papillon: 241 / 433, echarpe: 396 / 404, collier: 333 / 445 };
 const DOSSIER: Record<Emplacement, string> = { tete: "tetes", yeux: "yeux", cou: "yeux" };
 
 // Les têtes n'ont pas toutes la même largeur par rapport à l'écart des yeux (bulle du chat, casque du robot…)
@@ -122,6 +122,8 @@ type Props = {
   stade?: 0 | 1 | 2; // bébé, enfant, adulte
   taille?: number;
   tenue?: Tenue;
+  /** Lumière éteinte : le corps s'assombrit, ses parties lumineuses (étoiles, néons…) restent allumées */
+  nuit?: boolean;
   /** Sans animation (vignettes) */
   fixe?: boolean;
 };
@@ -140,16 +142,19 @@ export const CSS_CREATURE = `
   @keyframes cr-larme{0%{opacity:0;transform:translateY(0) scale(.5)}15%{opacity:.95;transform:translateY(0) scale(1)}100%{opacity:0;transform:translateY(380%) scale(.8)}}
   .cr-aureole{animation:cr-aureole 3s ease-in-out infinite}
   @keyframes cr-aureole{50%{transform:translateY(-4%)}}
+  .cr-veille{filter:drop-shadow(0 0 3px rgba(255,236,170,.55));animation:cr-veille 4s ease-in-out infinite,cr-allume 1.4s ease-out both}
+  @keyframes cr-veille{50%{opacity:.78}}@keyframes cr-allume{from{opacity:0}}
   .cr-mouche{animation:cr-mouche 2.4s linear infinite}
   @keyframes cr-mouche{0%{transform:rotate(0deg) translateX(18px) rotate(0deg)}100%{transform:rotate(360deg) translateX(18px) rotate(-360deg)}}
-  @media (prefers-reduced-motion: reduce){.cr-respire,.cr-respire-lent,.cr-scint,.cr-zzz,.cr-colere,.cr-larme,.cr-aureole,.cr-mouche{animation:none}}
+  @media (prefers-reduced-motion: reduce){.cr-respire,.cr-respire-lent,.cr-scint,.cr-zzz,.cr-colere,.cr-larme,.cr-aureole,.cr-mouche,.cr-veille{animation:none}}
 `;
 
-export default function Creature({ espece, humeur = "normal", dort = false, sale = false, stade = 2, taille = 220, tenue = {}, fixe = false }: Props) {
+export default function Creature({ espece, humeur = "normal", dort = false, sale = false, stade = 2, taille = 220, tenue = {}, fixe = false, nuit = false }: Props) {
   const c = especeInfo(espece);
   const age = stade === 2 ? "a" : "b";
   const etat = dort ? "dort" : humeur;
   const rep = R[`${espece}-${age}`]?.[etat] || R[`${espece}-${age}`]?.normal;
+  const sombre = nuit && dort;
   const echelle = stade === 0 ? 0.86 : 1;
   const largeur = taille * 1.25;
   const anim = (f: Fx, i: number): string => {
@@ -165,11 +170,16 @@ export default function Creature({ espece, humeur = "normal", dort = false, sale
       <span aria-hidden style={{ position: "absolute", left: "20%", right: "20%", top: "90%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(20,8,40,.5), rgba(20,8,40,0))", pointerEvents: "none" }} />
       <div className={fixe ? "" : dort ? "cr-respire-lent" : "cr-respire"} style={{ position: "absolute", inset: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={`/compagnon/${espece}-${age}-${etat}.webp`} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", filter: sale ? "saturate(.75) brightness(.92)" : undefined }} />
+        <img src={`/compagnon/${espece}-${age}-${etat}.webp`} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", filter: sombre ? `brightness(${sale ? 0.46 : 0.5}) saturate(.8)` : sale ? "saturate(.75) brightness(.92)" : undefined, transition: "filter 1.2s ease" }} />
+        {/* la nuit : étoiles, lunes et néons du corps restent doucement éclairés */}
+        {sombre && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={`/compagnon/${espece}-${age}-dort-lueur.webp`} alt="" draggable={false} className={fixe ? "" : "cr-veille"} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }} />
+        )}
         {/* effets d'humeur collés au corps (reflets de la bulle…) */}
         {rep?.fx.filter((f) => f.fixe).map((f) => (
           // eslint-disable-next-line @next/next/no-img-element
-          <img key={f.f} src={`/compagnon/${f.f}.webp`} alt="" draggable={false} style={{ position: "absolute", left: `${f.x}%`, top: `${f.y}%`, width: `${f.l}%`, height: `${f.h}%`, pointerEvents: "none" }} />
+          <img key={f.f} src={`/compagnon/${f.f}.webp`} alt="" draggable={false} style={{ opacity: sombre ? 0.45 : 1, position: "absolute", left: `${f.x}%`, top: `${f.y}%`, width: `${f.l}%`, height: `${f.h}%`, pointerEvents: "none" }} />
         ))}
         {/* larmes qui coulent */}
         {!fixe && etat === "triste" && rep?.larmes.slice(0, 2).map(([x, y], i) => (

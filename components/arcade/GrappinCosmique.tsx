@@ -89,7 +89,12 @@ function sousLaPince(objets: Objet[], x: number): Objet | null {
 }
 
 // Billes et petites peluches décoratives sous le tas (toujours les mêmes, ne s'attrapent pas)
-const DECOR = Array.from({ length: 24 }, (_, i) => {
+// Au fond du tas, une rangée de peluches un peu dans l'ombre : la vitrine paraît bien remplie
+const FOND = ["lapin", "planete-lilas", "chat-dodo", "nuage-rose", "lune", "poulpe", "etoile-creme", "planete-rose", "comete", "coeur", "chat-clin", "planete-bleue"].map((look, i) => {
+  const r = (n: number) => ((Math.sin(i * 61.7 + n * 29.3) + 1) / 2);
+  return { look, x: TAS_G + 0.01 + ((i + 0.5) / 12) * (TAS_D - TAS_G - 0.02) + (r(1) - 0.5) * 0.02, bas: 0.655 + r(2) * 0.02, t: 0.1 + r(3) * 0.03, a: (r(4) - 0.5) * 30 };
+});
+const DECOR = Array.from({ length: 34 }, (_, i) => {
   const r = (n: number) => ((Math.sin(i * 97.13 + n * 13.7) + 1) / 2);
   return { look: ["orbe-violet", "bulle-etoiles", "orbe-or", "boule-velours", "nuage", "etoile-creme"][i % 6], x: TAS_G - 0.03 + r(1) * (TAS_D - TAS_G + 0.06), bas: 0.805 - r(2) * 0.06, t: 0.065 + r(3) * 0.04, a: (r(4) - 0.5) * 50 };
 });
@@ -332,6 +337,9 @@ export default function GrappinCosmique() {
             <div className="absolute rounded-full bg-gradient-to-b from-[#f5d6ff] via-[#9b6bb5] to-[#3a2048] shadow-[0_2px_10px_#0008]" style={{ left: W * 0.12, width: W * 0.76, top: H * 0.005, height: Math.max(4, H * 0.012) }} aria-hidden />
 
             {/* le tas : billes décoratives, puis les peluches (le dessus du tas devant) */}
+            {FOND.map((d, i) => (
+              <Peluche key={`f${i}`} look={d.look} taille={W * d.t} className="absolute brightness-[.62] saturate-[.85]" style={{ left: d.x * W - (W * d.t) / 2, top: d.bas * H - W * d.t, transform: `rotate(${d.a}deg)`, zIndex: 0 }} />
+            ))}
             {DECOR.map((d, i) => (
               <Peluche key={`d${i}`} look={d.look} taille={W * d.t} className="absolute opacity-80 brightness-[.8]" style={{ left: d.x * W - (W * d.t) / 2, top: d.bas * H - W * d.t, transform: `rotate(${d.a}deg)`, zIndex: 1 }} />
             ))}

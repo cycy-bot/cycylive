@@ -652,7 +652,7 @@ export default function Compagnon() {
           {/* la créature : caresse-la ! */}
           <div className={`absolute left-1/2 -translate-x-1/2 cursor-pointer ${etat.habitat?.fond ? "bottom-[6%]" : "bottom-[30px]"}`} onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
             <div key={saut} className={saut ? "cp-saut" : ""}>
-              <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
+              <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} nuit={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
             </div>
           </div>
 
