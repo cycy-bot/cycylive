@@ -4,7 +4,7 @@
 // Toutes les cases ont la même taille, qu'il y ait 1, 2 ou 3 jeux dans la soirée.
 import { useState } from "react";
 import Icone from "@/components/icones/Icone";
-import { IconCrystal, IconValorant } from "@/components/Icons";
+import { IconCrystal } from "@/components/Icons";
 
 export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; note?: string; modifie?: boolean };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
@@ -73,7 +73,11 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                 </>
               ) : (
                 <>
-                  {valo ? <IconValorant className="w-6 h-6 text-rose-300 shrink-0" /> : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}
+                  {valo ? (
+                    // même logo violet que le planning du Discord (image du bot)
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src="/images/jeux/valorant.png" alt="Valorant" width={30} height={24} className="h-6 w-auto shrink-0 drop-shadow-[0_0_10px_rgba(181,124,255,.7)]" />
+                  ) : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}
                   <div className="flex-1 md:flex-none md:w-full min-w-0"><Jeux jeux={jour.jeux} /></div>
                   <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
                     {jour.heure}

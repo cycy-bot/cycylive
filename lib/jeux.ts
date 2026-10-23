@@ -161,7 +161,7 @@ export const JEUX: FicheJeu[] = [
     description: "Gratte ton ticket galactique du jour : points stellaires, Éclats, boosters de Cartes Astrales… Connecte-toi avec Discord : le gain arrive directement sur ton profil.",
     duree: "1 ticket / jour",
     controles: "Souris · tactile",
-    teinte: { de: "#7a5a1d", a: "#1a130b", accent: "#ffd76b" },
+    teinte: { de: "#4b2a8f", a: "#140b2a", accent: "#c9a8ff" },
     badge: "Récompense Discord",
   },
   {
@@ -218,7 +218,7 @@ export const JEUX: FicheJeu[] = [
     duree: "1 partie / jour",
     controles: "Souris · tactile · clavier",
     teinte: { de: "#7a3a1d", a: "#1a0e0b", accent: "#ffb86b" },
-    badge: "Nouveau",
+    badge: "Récompense Discord",
   },
 ];
 

@@ -208,7 +208,7 @@ export default function TicketAGratter() {
       <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8 shadow-glow-sm">
         {!ticket ? (
           <div className="text-center py-10 md:py-16">
-            <Pastille nom="ticket" teinte="or" taille="lg" className="mb-4" />
+            <Pastille nom="ticket" taille="lg" className="mb-4" />
             <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-2">Ton ticket galactique du jour</h2>
             <p className="text-ink-soft max-w-lg mx-auto mb-6">
               Un ticket gratuit chaque jour. Gratte-le pour découvrir ton gain : points stellaires, Éclats, booster de Cartes Astrales,

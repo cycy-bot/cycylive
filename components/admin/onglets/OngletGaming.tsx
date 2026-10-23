@@ -182,7 +182,7 @@ export default function OngletGaming() {
             {enregistrement ? "Enregistrement..." : "Enregistrer les autres jeux"}
           </button>
 
-          <h2 id="adm-jeux-moment" className="scroll-mt-32 text-ink font-medium mb-3">Jeux du moment</h2>
+          <h2 id="adm-jeux-moment" className="scroll-mt-32 text-ink font-medium mb-3">Mes jeux du moment</h2>
           <p className="text-ink-soft mb-4 text-sm">
             Section facultative : laisse-la vide pour qu'elle n'apparaisse pas du tout sur le site.
           </p>
@@ -190,13 +190,20 @@ export default function OngletGaming() {
             {gaming.jeuxDuMoment.map((jeu, index) => (
               <div
                 key={jeu.id}
-                className="carte-holo rounded-2xl p-4 flex gap-2 items-center border border-violet/12"
+                className="carte-holo rounded-2xl p-4 flex flex-wrap gap-2 items-center border border-violet/12"
               >
                 <input
                   type="text"
                   placeholder="Nom du jeu"
                   value={jeu.nom}
                   onChange={(e) => modifierJeuDuMoment(index, { nom: e.target.value })}
+                  className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
+                />
+                <input
+                  type="url"
+                  placeholder="Lien vers le jeu (facultatif)"
+                  value={jeu.lien || ""}
+                  onChange={(e) => modifierJeuDuMoment(index, { lien: e.target.value })}
                   className="flex-1 min-w-0 rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60"
                 />
                 <select

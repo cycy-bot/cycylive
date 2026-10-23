@@ -23,6 +23,8 @@ export type JeuDuMoment = {
   id: string;
   nom: string;
   statut: "En ce moment" | "En pause" | "À venir";
+  /** Lien facultatif vers le jeu (site officiel, page Steam…) */
+  lien?: string;
 };
 
 export const introGamingParDefaut =

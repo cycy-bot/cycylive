@@ -10,6 +10,7 @@ import LecteurMoment from "@/components/LecteurMoment";
 import { liensEtape } from "@/lib/videoMoment";
 import { categorieDe } from "@/lib/timelineDesign";
 import { lireNewsValorant, lireClipsValorant, lireProfilValorant } from "@/lib/valorantStore";
+import { apercusLiens } from "@/lib/apercuLien";
 import { ajouterMiniatures } from "@/lib/miniatures";
 import { rangActuel, lireRang, positionRang, PALIERS } from "@/lib/rangValorant";
 import { derniersClipsTwitch, type ClipTwitch } from "@/lib/clipsTwitch";
@@ -104,6 +105,7 @@ export default async function GamingPage() {
   const skins = liste(profil.skinsArmes);
   const moments = timeline.filter((e) => !e.masque && (categorieDe(e) === "valorant" || `${e.titre} ${e.description ?? ""}`.toLowerCase().includes("valorant")));
 
+  const apercus = await apercusLiens(news.map((n) => n.url).filter(Boolean));
   const rang = await rangActuel(profil.riotName, profil.riotTag, profil.riotRegion, profil.rankActuel);
   const objectif = lireRang(profil.objectifRank);
   const ecart = rang && objectif ? positionRang(objectif) - positionRang(rang) : null;
@@ -270,14 +272,28 @@ export default async function GamingPage() {
               {news.length > 0 && (
                 <div>
                   <p className="text-xs uppercase tracking-wide text-ink-soft/60 mb-3 flex items-center gap-2"><Icone nom="journal" className="w-4 h-4 text-rose-300" /> News Valorant</p>
-                  <div className="space-y-2">
-                    {news.map((n) => (
-                      <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/20 p-3 text-sm text-ink hover:border-rose-300/40 transition-all">
-                        <IconValorant className="w-3.5 h-3.5 text-rose-300 shrink-0" />
-                        <span className="min-w-0 flex-1">{n.titre}</span>
-                        <Icone nom="externe" className="w-4 h-4 text-ink-soft/60" />
-                      </a>
-                    ))}
+                  <div className="space-y-3">
+                    {news.map((n) => {
+                      const a = apercus[n.url];
+                      return (
+                        <a key={n.id} href={n.url} target="_blank" rel="noopener noreferrer" className="group flex overflow-hidden rounded-xl border border-white/10 bg-black/25 text-sm text-ink transition-all hover:border-rose-300/40 hover:bg-black/35">
+                          <span className="relative w-28 sm:w-36 shrink-0 overflow-hidden bg-gradient-to-br from-rose-500/25 to-violet/25" style={{ aspectRatio: "16 / 10" }}>
+                            {a?.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={a.image} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                            ) : (
+                              <IconValorant className="absolute left-1/2 top-1/2 w-8 h-8 -translate-x-1/2 -translate-y-1/2 text-rose-300/80" />
+                            )}
+                          </span>
+                          <span className="flex min-w-0 flex-1 flex-col justify-center gap-0.5 px-3 py-2">
+                            <span className="text-[11px] uppercase tracking-wide text-ink-soft/60">{a?.site || "Valorant"}</span>
+                            <span className="font-semibold leading-snug line-clamp-2">{n.titre || a?.titre || n.url}</span>
+                            {a?.resume ? <span className="hidden sm:block text-xs text-ink-soft line-clamp-2">{a.resume}</span> : null}
+                          </span>
+                          <Icone nom="externe" className="m-3 w-4 h-4 shrink-0 self-start text-ink-soft/60" />
+                        </a>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -382,16 +398,33 @@ export default async function GamingPage() {
         </section>
       )}
 
-      {gaming.jeuxDuMoment.length > 0 && (
+      {gaming.jeuxDuMoment.filter((j) => j.nom.trim()).length > 0 && (
         <section aria-labelledby="moment-titre">
-          <h2 id="moment-titre" className="text-xl font-semibold text-ink mb-4">En ce moment sur le live</h2>
-          <div className="flex flex-wrap gap-2">
-            {gaming.jeuxDuMoment.map((jeu) => (
-              <span key={jeu.id} className="inline-flex items-center gap-2 rounded-full border border-violet/15 bg-white/[0.03] px-4 py-2 text-sm text-ink-soft">
-                {jeu.nom}
-                <span className="text-violet-light/80">· {jeu.statut}</span>
-              </span>
-            ))}
+          <h2 id="moment-titre" className="text-xl font-semibold text-ink mb-1">
+            {gaming.jeuxDuMoment.filter((j) => j.nom.trim()).length > 1 ? "Mes jeux du moment" : "Mon jeu du moment"}
+          </h2>
+          <p className="text-sm text-ink-soft mb-4">Ce à quoi je joue en ce moment, en live ou hors stream.</p>
+          <div className="flex flex-wrap gap-3">
+            {gaming.jeuxDuMoment.filter((j) => j.nom.trim()).map((jeu) => {
+              const statut = jeu.statut === "En ce moment" ? "J'y joue en ce moment" : jeu.statut === "En pause" ? "En pause" : "Bientôt en live";
+              const pastille = jeu.statut === "En ce moment" ? "bg-emerald-400 shadow-[0_0_8px_#34d399]" : jeu.statut === "En pause" ? "bg-amber-300" : "bg-violet-light";
+              const contenu = (
+                <>
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${pastille}`} aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block font-semibold text-ink">{jeu.nom}</span>
+                    <span className="block text-xs text-ink-soft">{statut}</span>
+                  </span>
+                  {jeu.lien ? <Icone nom="externe" className="w-4 h-4 shrink-0 text-lilac" /> : null}
+                </>
+              );
+              const classe = "inline-flex items-center gap-3 rounded-2xl border border-violet/20 bg-white/[0.04] px-4 py-3 transition-colors";
+              return jeu.lien ? (
+                <a key={jeu.id} href={jeu.lien} target="_blank" rel="noopener noreferrer" className={`${classe} hover:border-violet/50 hover:bg-violet/10`}>{contenu}</a>
+              ) : (
+                <span key={jeu.id} className={classe}>{contenu}</span>
+              );
+            })}
           </div>
         </section>
       )}

@@ -58,11 +58,11 @@ const POSE: Record<string, { w: number; ay: number; ax?: number; dy?: number }> 
   fleur: { w: 0.95, ay: 0.5 },
   noeud: { w: 1.35, ay: 0.72 },
   casquette: { w: 2.25, ay: 0.68 },
-  bonnet: { w: 2.15, ay: 0.68 },
+  bonnet: { w: 1.95, ay: 0.7 },
   hautdeforme: { w: 1.6, ay: 0.86 },
   sorciere: { w: 2.25, ay: 0.82 },
   couronne: { w: 1.45, ay: 0.85 },
-  aureole: { w: 1.6, ay: 1.0 },
+  aureole: { w: 1.45, ay: 0.78 },
   monocle: { w: 0.66, ay: 0.3 },
   soleil: { w: 2.1, ay: 0.5 },
   coeurs: { w: 2.2, ay: 0.5 },
@@ -71,7 +71,7 @@ const POSE: Record<string, { w: number; ay: number; ax?: number; dy?: number }> 
   collier: { w: 1.6, ay: 0.12 },
 };
 // proportions (hauteur / largeur) des images portées
-const RATIO: Record<string, number> = { fleur: 351 / 341, noeud: 312 / 406, casquette: 296 / 380, bonnet: 363 / 361, hautdeforme: 301 / 371, sorciere: 349 / 400, couronne: 250 / 346, aureole: 281 / 354, monocle: 346 / 273, soleil: 201 / 555, coeurs: 206 / 577, papillon: 234 / 439, echarpe: 379 / 435, collier: 331 / 479 };
+const RATIO: Record<string, number> = { fleur: 350 / 328, noeud: 313 / 378, casquette: 321 / 362, bonnet: 383 / 321, hautdeforme: 312 / 375, sorciere: 342 / 374, couronne: 250 / 364, aureole: 316 / 336, monocle: 346 / 273, soleil: 201 / 555, coeurs: 206 / 577, papillon: 234 / 439, echarpe: 379 / 435, collier: 331 / 479 };
 const DOSSIER: Record<Emplacement, string> = { tete: "tetes", yeux: "yeux", cou: "yeux" };
 
 // Les têtes n'ont pas toutes la même largeur par rapport à l'écart des yeux (bulle du chat, casque du robot…)
@@ -161,6 +161,8 @@ export default function Creature({ espece, humeur = "normal", dort = false, sale
   return (
     <div role="img" aria-label={c.nom} style={{ position: "relative", width: largeur, height: (largeur * 440) / 460, transform: `scale(${echelle})`, transformOrigin: "50% 95%" }}>
       <style>{CSS_CREATURE}</style>
+      {/* ombre douce au sol */}
+      <span aria-hidden style={{ position: "absolute", left: "20%", right: "20%", top: "90%", height: "7%", borderRadius: "50%", background: "radial-gradient(closest-side, rgba(20,8,40,.5), rgba(20,8,40,0))", pointerEvents: "none" }} />
       <div className={fixe ? "" : dort ? "cr-respire-lent" : "cr-respire"} style={{ position: "absolute", inset: 0 }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`/compagnon/${espece}-${age}-${etat}.webp`} alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", filter: sale ? "saturate(.75) brightness(.92)" : undefined }} />
@@ -173,8 +175,8 @@ export default function Creature({ espece, humeur = "normal", dort = false, sale
         {!fixe && etat === "triste" && rep?.larmes.slice(0, 2).map(([x, y], i) => (
           <span key={i} className="cr-larme" style={{ left: `${x - 1.1}%`, top: `${y - 1}%`, animationDelay: `${i * 0.85}s` }} />
         ))}
-        {/* accessoires : cou, puis yeux, puis tête */}
-        {rep && (["cou", "yeux", "tete"] as Emplacement[]).map((em) => (tenue[em] ? <Accessoire key={em} k={tenue[em]!} rep={rep} espece={espece} couche={etat === "dort"} /> : null))}
+        {/* accessoires : cou, puis yeux, puis tête (retirés pour dormir) */}
+        {rep && !dort && (["cou", "yeux", "tete"] as Emplacement[]).map((em) => (tenue[em] ? <Accessoire key={em} k={tenue[em]!} rep={rep} espece={espece} couche={etat === "dort"} /> : null))}
         {/* saleté : petites taches et mouches */}
         {sale && rep ? (
           <>
