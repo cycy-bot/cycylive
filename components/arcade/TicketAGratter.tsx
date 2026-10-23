@@ -251,7 +251,11 @@ export default function TicketAGratter() {
                 {revele ? code.replace(/^CYCY-/, "") : "••••-••••"}
               </p>
               {/* zone à gratter */}
-              <div className="absolute overflow-hidden" style={{ left: "10.9%", top: "19.4%", width: "78.3%", height: "59.4%", borderRadius: "2.2cqw" }}>
+              <div
+                className="absolute overflow-hidden"
+                // forme exacte du cadre crème (coins découpés compris) : la couche ne déborde jamais sur le cadre
+                style={{ left: "10.378%", top: "18.634%", width: "79.318%", height: "60.88%", WebkitMaskImage: "url(/ticket/zone.png)", maskImage: "url(/ticket/zone.png)", WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}
+              >
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center text-center px-4"
                   style={{ background: `radial-gradient(ellipse 60% 70% at 50% 45%, ${couleur.halo}, transparent 72%)` }}

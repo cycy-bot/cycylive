@@ -138,7 +138,9 @@ function stadeDe(e: Etat): 0 | 1 | 2 {
 function humeurDe(e: Etat): Humeur {
   const s = e.stats;
   const min = Math.min(s.faim, s.proprete, s.bonheur, s.energie);
-  if (min < 25 || e.cacas.length >= 3) return "triste";
+  // très sale ou affamé : il boude ; un peu délaissé : il est triste
+  if (e.cacas.length >= 3 || s.proprete < 15 || s.faim < 12) return "fache";
+  if (min < 25) return "triste";
   if (min >= 55 && e.cacas.length === 0) return "content";
   return "normal";
 }
@@ -619,7 +621,7 @@ export default function Compagnon() {
         {/* La scène */}
         <div
           ref={sceneRef}
-          className="relative h-[340px] md:h-[400px] rounded-2xl overflow-hidden select-none"
+          className="relative h-[360px] md:h-[440px] rounded-2xl overflow-hidden select-none"
           style={{
             background: etat.habitat?.fond && FONDS[etat.habitat.fond]
               ? FONDS[etat.habitat.fond][etat.dort ? "nuit" : "jour"]
@@ -628,13 +630,17 @@ export default function Compagnon() {
               : "radial-gradient(ellipse at 50% 120%, #4b2a8f 0%, #1a0f38 55%, #0b0817 100%)",
           }}
         >
-          {/* étoiles du décor */}
-          {Array.from({ length: 26 }).map((_, i) => (
+          {/* étoiles du décor (sans ambiance) */}
+          {!etat.habitat?.fond && Array.from({ length: 26 }).map((_, i) => (
             <span key={i} aria-hidden className="absolute rounded-full bg-white" style={{ left: `${(i * 37) % 100}%`, top: `${(i * 53) % 60}%`, width: 2, height: 2, opacity: 0.35 + ((i * 7) % 5) / 10 }} />
           ))}
-          <div aria-hidden className="absolute -right-10 -top-10 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle at 35% 35%, #ffe7b0, #ff9f5a 60%, transparent 70%)", opacity: etat.dort ? 0.15 : 0.5 }} />
-          {/* sol */}
-          <div aria-hidden className="absolute left-[-10%] right-[-10%] bottom-[-60px] h-[150px] rounded-[50%]" style={{ background: "linear-gradient(#5b3aa8, #2a1857)" }} />
+          {!etat.habitat?.fond && (
+            <>
+              <div aria-hidden className="absolute -right-10 -top-10 w-40 h-40 rounded-full" style={{ background: "radial-gradient(circle at 35% 35%, #ffe7b0, #ff9f5a 60%, transparent 70%)", opacity: etat.dort ? 0.15 : 0.5 }} />
+              {/* sol */}
+              <div aria-hidden className="absolute left-[-10%] right-[-10%] bottom-[-60px] h-[150px] rounded-[50%]" style={{ background: "linear-gradient(#5b3aa8, #2a1857)" }} />
+            </>
+          )}
           {/* habitat : décorations installées */}
           <DecorScene habitat={etat.habitat || {}} />
 
@@ -644,17 +650,10 @@ export default function Compagnon() {
           </div>
 
           {/* la créature : caresse-la ! */}
-          <div className="absolute left-1/2 bottom-[46px] -translate-x-1/2 cursor-pointer" onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
+          <div className={`absolute left-1/2 -translate-x-1/2 cursor-pointer ${etat.habitat?.fond ? "bottom-[6%]" : "bottom-[30px]"}`} onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
             <div key={saut} className={saut ? "cp-saut" : ""}>
-              <div className={etat.dort ? "" : "cp-flotte"}>
-                <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
-              </div>
+              <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
             </div>
-            {etat.dort && (
-              <span aria-hidden className="absolute right-6 top-6 text-2xl text-lilac cp-zzz">
-                Z
-              </span>
-            )}
           </div>
 
           {/* cacas */}
@@ -702,7 +701,7 @@ export default function Compagnon() {
               <Sticker nom={f.nom} taille={f.type === "bulle" ? 30 : 34} />
             </span>
           ))}
-          {etat.dort && <div aria-hidden className="absolute inset-0 bg-[#05020d]/40 pointer-events-none" />}
+          {etat.dort && !etat.habitat?.fond && <div aria-hidden className="absolute inset-0 bg-[#05020d]/40 pointer-events-none" />}
         </div>
 
         {/* jauges */}

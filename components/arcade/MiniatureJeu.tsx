@@ -345,27 +345,16 @@ function Gratter({ k, accent }: { k: string; accent: string }) {
 }
 
 function Compagnon({ accent }: { accent: string }) {
+  // Les nouveaux compagnons illustrés dans leur Cocon nébuleux
   return (
     <>
-      <ellipse cx="160" cy="170" rx="110" ry="20" fill={accent} opacity="0.15" />
-      {/* créature */}
-      <g transform="translate(160 112)">
-        <path d="M-46 40 C-56 -10 -30 -48 0 -48 C30 -48 56 -10 46 40 C30 52 -30 52 -46 40 Z" fill="#9dffb0" />
-        <path d="M-30 -40 C-40 -62 -24 -66 -18 -46" fill="#9dffb0" />
-        <path d="M30 -40 C40 -62 24 -66 18 -46" fill="#9dffb0" />
-        <ellipse cx="-16" cy="-6" rx="8" ry="10" fill="#10261a" />
-        <ellipse cx="16" cy="-6" rx="8" ry="10" fill="#10261a" />
-        <circle cx="-13" cy="-10" r="3" fill="#fff" />
-        <circle cx="19" cy="-10" r="3" fill="#fff" />
-        <ellipse cx="-30" cy="10" rx="7" ry="4" fill="#ff9ad5" opacity="0.7" />
-        <ellipse cx="30" cy="10" rx="7" ry="4" fill="#ff9ad5" opacity="0.7" />
-        <path d="M-8 14 Q0 22 8 14" stroke="#10261a" strokeWidth="3" fill="none" strokeLinecap="round" />
-      </g>
-      {/* coquille d'œuf */}
-      <path d="M92 168 l10 -14 8 10 8 -12 8 16 Z" fill="#f3ecff" opacity="0.85" />
-      {/* cœurs */}
-      {[[232, 60, 1], [252, 92, 0.7], [84, 72, 0.8]].map(([x, y, s], i) => (
-        <path key={i} transform={`translate(${x} ${y}) scale(${s})`} d="M0 6 C-10 -4 -18 4 -10 12 L0 20 L10 12 C18 4 10 -4 0 6 Z" fill="#ff7ad9" />
+      <image href="/compagnon/habitats/nebuleuse.webp" x="0" y="-20" width="320" height="213" preserveAspectRatio="xMidYMid slice" opacity="0.9" />
+      <image href="/compagnon/decos/nuage.webp" x="104" y="140" width="112" height="52" />
+      <image href="/compagnon/alien-b-content.webp" x="100" y="40" width="125" height="120" />
+      <image href="/compagnon/chat-b-normal.webp" x="10" y="78" width="100" height="96" />
+      <image href="/compagnon/dragon-b-content.webp" x="208" y="76" width="104" height="100" />
+      {[[232, 40, 1], [86, 46, 0.8], [160, 24, 0.7]].map(([x, y, s2], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${s2})`} d="M0 6 C-10 -4 -18 4 -10 12 L0 20 L10 12 C18 4 10 -4 0 6 Z" fill={i ? accent : "#ff7ad9"} />
       ))}
     </>
   );

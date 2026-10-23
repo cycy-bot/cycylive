@@ -170,3 +170,60 @@ export function trouNoir(ctx: C, x: number, y: number, t: number, r = 22) {
   ctx.restore();
   ctx.fillStyle = "#000"; ctx.beginPath(); ctx.arc(x, y, r * 0.42, 0, Math.PI * 2); ctx.fill();
 }
+
+// ── Armes d'Astro Dodge ──
+export function iconeLaser(ctx: C, s: number) {
+  ctx.lineWidth = s * 0.22;
+  ctx.beginPath(); ctx.moveTo(0, s); ctx.lineTo(0, -s); ctx.stroke();
+  ctx.lineWidth = s * 0.1;
+  ctx.beginPath(); ctx.moveTo(-s * 0.5, -s * 0.3); ctx.lineTo(0, -s); ctx.lineTo(s * 0.5, -s * 0.3); ctx.stroke();
+  ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.ellipse(0, 0, s * 0.45, s, 0, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+}
+export function iconeRafale(ctx: C, s: number) {
+  ctx.lineWidth = s * 0.18;
+  for (const [dx, dy] of [[-s * 0.45, s * 0.2], [s * 0.45, s * 0.2], [0, -s * 0.35]] as [number, number][]) {
+    ctx.beginPath(); ctx.moveTo(dx, dy + s * 0.55); ctx.lineTo(dx, dy - s * 0.55); ctx.stroke();
+    ctx.beginPath(); ctx.arc(dx, dy - s * 0.55, s * 0.12, 0, Math.PI * 2); ctx.fill();
+  }
+}
+export function iconeEventail(ctx: C, s: number) {
+  ctx.lineWidth = s * 0.16;
+  for (const a of [-0.7, -0.35, 0, 0.35, 0.7]) {
+    ctx.beginPath(); ctx.moveTo(0, s * 0.8); ctx.lineTo(Math.sin(a) * s * 1.05, s * 0.8 - Math.cos(a) * s * 1.6); ctx.stroke();
+  }
+  ctx.beginPath(); ctx.arc(0, s * 0.8, s * 0.22, 0, Math.PI * 2); ctx.fill();
+}
+export function iconeChercheur(ctx: C, s: number) {
+  ctx.lineWidth = s * 0.16;
+  ctx.beginPath(); ctx.arc(0, 0, s * 0.85, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, s * 0.4, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -s); ctx.lineTo(0, -s * 0.55); ctx.moveTo(0, s); ctx.lineTo(0, s * 0.55); ctx.moveTo(-s, 0); ctx.lineTo(-s * 0.55, 0); ctx.moveTo(s, 0); ctx.lineTo(s * 0.55, 0); ctx.stroke();
+}
+
+/** Soucoupe extraterrestre ennemie (dôme, disque, hublots qui clignotent). */
+export function soucoupe(ctx: C, x: number, y: number, r: number, t: number, touche: number, teinte = "#6bffc8") {
+  ctx.save(); ctx.translate(x, y);
+  // faisceau de lueur sous la soucoupe
+  const g = ctx.createRadialGradient(0, r * 0.3, 0, 0, r * 0.3, r * 1.6);
+  g.addColorStop(0, teinte + "44"); g.addColorStop(1, teinte + "00");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, r * 0.3, r * 1.6, 0, Math.PI * 2); ctx.fill();
+  // dôme
+  const d = ctx.createLinearGradient(0, -r * 0.9, 0, 0);
+  d.addColorStop(0, "#d8fbff"); d.addColorStop(1, "#5fd4ff88");
+  ctx.fillStyle = d; ctx.beginPath(); ctx.ellipse(0, -r * 0.15, r * 0.52, r * 0.6, 0, Math.PI, 0); ctx.fill();
+  // petit alien dans le dôme
+  ctx.fillStyle = teinte; ctx.beginPath(); ctx.ellipse(0, -r * 0.28, r * 0.22, r * 0.24, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#140b24"; ctx.beginPath(); ctx.ellipse(-r * 0.09, -r * 0.3, r * 0.06, r * 0.09, 0, 0, Math.PI * 2); ctx.ellipse(r * 0.09, -r * 0.3, r * 0.06, r * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+  // disque
+  const c = ctx.createLinearGradient(0, -r * 0.2, 0, r * 0.35);
+  c.addColorStop(0, touche > 0 ? "#ffffff" : "#c9c3e6"); c.addColorStop(0.5, touche > 0 ? "#ffd1d1" : "#8a7fb3"); c.addColorStop(1, "#3c2f66");
+  ctx.fillStyle = c; ctx.beginPath(); ctx.ellipse(0, 0, r, r * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.lineWidth = 1.5; ctx.strokeStyle = "#ffffff66"; ctx.stroke();
+  // hublots qui clignotent
+  for (let i = 0; i < 5; i++) {
+    const on = Math.floor(t * 6 + i) % 5 < 2;
+    ctx.fillStyle = on ? "#ffe27a" : "#ff6bd6";
+    ctx.beginPath(); ctx.arc(-r * 0.66 + i * r * 0.33, r * 0.06, r * 0.08, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
