@@ -70,7 +70,7 @@ export function verifierPseudo(brut: unknown): { ok: true; pseudo: string; cle: 
 // score plus haut que ce qui est possible pour le temps écoulé depuis
 // le début de la partie (dureeMin = durée minimale d'une vraie partie).
 
-export type JeuSalle = "reflexes" | "memory" | "quiz" | "constellations" | "rythme" | "astrododge" | "starcatcher" | "cycyword";
+export type JeuSalle = "reflexes" | "memory" | "quiz" | "constellations" | "rythme" | "astrododge" | "starcatcher" | "cycyword" | "flipper";
 export type JeuArcade = "runner" | JeuSalle;
 
 export const JEUX_SALLE: Record<JeuSalle, { nom: string; emoji: string; dureeMin: number; scoreMax: (t: number) => number }> = {
@@ -90,9 +90,11 @@ export const JEUX_SALLE: Record<JeuSalle, { nom: string; emoji: string; dureeMin
   starcatcher: { nom: "Star Catcher", emoji: "⭐", dureeMin: 3, scoreMax: (t) => t * 3 * 50 * 5 * 1.6 + 500 },
   // mot du jour : 100 × (7 − essais) + bonus de rapidité (≤ 150)
   cycyword: { nom: "CycyWord", emoji: "🔤", dureeMin: 4, scoreMax: () => 750 },
+  // planètes 100 pts (≈ 6/s au mieux), cibles, trou noir 2 000, missions jusqu'à 25 000, multiplicateur ×5
+  flipper: { nom: "Flipper cosmique", emoji: "🪐", dureeMin: 8, scoreMax: (t) => t * 9000 + 150000 },
 };
 
-export const JEUX_ARCADE: JeuArcade[] = ["runner", "reflexes", "memory", "quiz", "constellations", "rythme", "astrododge", "starcatcher", "cycyword"];
+export const JEUX_ARCADE: JeuArcade[] = ["runner", "reflexes", "memory", "quiz", "constellations", "rythme", "astrododge", "starcatcher", "cycyword", "flipper"];
 export const estJeuArcade = (j: unknown): j is JeuArcade => JEUX_ARCADE.includes(j as JeuArcade);
 export const nomJeu = (j: JeuArcade) => (j === "runner" ? ARCADE.nom : JEUX_SALLE[j].nom);
 

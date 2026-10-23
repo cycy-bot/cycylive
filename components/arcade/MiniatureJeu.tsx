@@ -462,6 +462,67 @@ function Coffres({ k, accent }: { k: string; accent: string }) {
   );
 }
 
+function Flipper({ k, accent }: { k: string; accent: string }) {
+  // Une table de flipper vue en perspective : voûte néon, planètes-bumpers, trou noir, flippers dorés
+  // et la bille chromée lancée avec sa traînée.
+  const T = (x: number, y: number) => { const f = 0.62 + (y / 200) * 0.38; return `${160 + (x - 160) * f},${y}`; };
+  const contour = [[82, 196], [82, 72], [100, 32], [160, 12], [220, 32], [238, 72], [238, 196]].map(([x, y]) => T(x, y)).join(" ");
+  return (
+    <>
+      <defs>
+        <linearGradient id={`${k}-table`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#2a1660" />
+          <stop offset="1" stopColor="#0d0820" />
+        </linearGradient>
+        <radialGradient id={`${k}-bille`} cx="35%" cy="30%" r="70%">
+          <stop offset="0" stopColor="#fff" />
+          <stop offset=".6" stopColor="#b9bfdc" />
+          <stop offset="1" stopColor="#4a4f74" />
+        </radialGradient>
+        <linearGradient id={`${k}-trainee`} x1="0" y1="1" x2="1" y2="0">
+          <stop offset="0" stopColor="#fff" stopOpacity="0" />
+          <stop offset="1" stopColor="#fff" stopOpacity=".7" />
+        </linearGradient>
+        <filter id={`${k}-neon`} x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="f" /><feMerge><feMergeNode in="f" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+      </defs>
+      <ellipse cx="160" cy="196" rx="96" ry="8" fill="#000" opacity=".5" />
+      <polygon points={contour} fill={`url(#${k}-table)`} stroke="#6a45a8" strokeWidth="5" />
+      <polygon points={contour} fill="none" stroke="#c9a8ff" strokeWidth="1.6" filter={`url(#${k}-neon)`} />
+      {/* couloirs du haut */}
+      {[134, 150, 166, 182].map((x) => <line key={x} x1={160 + (x - 160) * 0.72} y1="36" x2={160 + (x - 160) * 0.73} y2="48" stroke="#c9a8ff" strokeWidth="1.4" />)}
+      {/* planètes-bumpers */}
+      {[[142, 70, "#ff7fd6"], [178, 66, "#6bc4ff"], [160, 92, "#ffd27a"]].map(([x, y, c], i) => (
+        <g key={i} filter={`url(#${k}-neon)`}>
+          <circle cx={x as number} cy={y as number} r="8.5" fill={c as string} />
+          <circle cx={(x as number) - 2.5} cy={(y as number) - 2.5} r="2.6" fill="#fff" opacity=".8" />
+          <ellipse cx={x as number} cy={y as number} rx="13" ry="4" fill="none" stroke={c as string} strokeWidth="1.2" transform={`rotate(-18 ${x} ${y})`} />
+        </g>
+      ))}
+      {/* trou noir */}
+      <circle cx="196" cy="104" r="9" fill="#000" stroke="#c9a8ff" strokeWidth="1.5" strokeDasharray="6 4" filter={`url(#${k}-neon)`} />
+      {/* cibles-étoiles */}
+      {[110, 122, 134].map((y) => <path key={y} transform={`translate(${160 + (112 - 160) * (0.62 + (y / 200) * 0.38)} ${y}) scale(.55)`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe066" />)}
+      {/* lance-pierres */}
+      <polyline points={[[112, 140], [112, 160], [126, 168]].map(([x, y]) => T(x, y)).join(" ")} fill="none" stroke={accent} strokeWidth="2.4" filter={`url(#${k}-neon)`} />
+      <polyline points={[[208, 140], [208, 160], [194, 168]].map(([x, y]) => T(x, y)).join(" ")} fill="none" stroke={accent} strokeWidth="2.4" filter={`url(#${k}-neon)`} />
+      {/* flippers */}
+      <line x1={160 - 34} y1="180" x2={160 - 8} y2="186" stroke="#ffd27a" strokeWidth="6" strokeLinecap="round" filter={`url(#${k}-neon)`} />
+      <line x1={160 + 34} y1="180" x2={160 + 10} y2="172" stroke="#ffd27a" strokeWidth="6" strokeLinecap="round" filter={`url(#${k}-neon)`} />
+      {/* la bille et sa traînée */}
+      {[[184, 150, 0.15], [180, 138, 0.25], [176, 128, 0.4], [172, 121, 0.6]].map(([x, y, o], i) => <circle key={i} cx={x} cy={y} r={3 + i * 0.7} fill="#dfe4ff" opacity={o} />)}
+      <circle cx="169" cy="116" r="6" fill={`url(#${k}-bille)`} />
+      {/* étincelles et décor autour */}
+      {[[52, 40, 1], [272, 52, 0.85], [262, 150, 0.7], [56, 148, 0.7], [148, 58, 0.5]].map(([x, y, s2], i) => (
+        <path key={i} transform={`translate(${x} ${y}) scale(${s2})`} d="M0 -7 L1.8 -1.8 L7 0 L1.8 1.8 L0 7 L-1.8 1.8 L-7 0 L-1.8 -1.8 Z" fill="#ffe7a8" />
+      ))}
+      <circle cx="44" cy="96" r="20" fill="#ff7fd6" opacity=".85" />
+      <ellipse cx="44" cy="96" rx="32" ry="8" fill="none" stroke="#ffd27a" strokeWidth="2" transform="rotate(-16 44 96)" />
+      <circle cx="282" cy="104" r="14" fill="#6bc4ff" opacity=".8" />
+      <text x="276" y="30" textAnchor="middle" fontSize="13" fontWeight="900" fill="#ffe9a3" fontFamily="monospace">88 800</text>
+    </>
+  );
+}
+
 function Grappin({ accent }: { accent: string }) {
   // La vraie borne du Grappin cosmique, pleine de peluches, avec quelques peluches qui s'en échappent
   const peluches: [string, number, number, number, number][] = [["chat-nuit", 280, 92, 56, -8], ["dragon", 292, 152, 48, 6], ["etoile", 36, 150, 42, -12], ["soucoupe", 34, 76, 44, 8]];
@@ -538,6 +599,7 @@ export default function MiniatureJeu({ id, className = "", anime = false }: Prop
         {id === "compagnon" && <Compagnon accent={accent} />}
         {id === "coffres" && <Coffres k={k} accent={accent} />}
         {id === "grappin" && <Grappin accent={accent} />}
+        {id === "flipper" && <Flipper k={k} accent={accent} />}
         {id === "capsules" && <Capsules accent={accent} />}
       </g>
     </svg>

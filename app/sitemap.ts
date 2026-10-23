@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/jeux/arcade/memory",
     "/jeux/arcade/quiz",
     "/jeux/arcade/astrododge",
+    "/jeux/arcade/flipper",
     "/jeux/arcade/starcatcher",
     "/jeux/arcade/cycyword",
     "/jeux/gratter",

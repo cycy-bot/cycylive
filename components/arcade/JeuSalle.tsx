@@ -11,6 +11,7 @@ import Rythme from "@/components/arcade/salle/Rythme";
 import AstroDodge from "@/components/arcade/salle/AstroDodge";
 import StarCatcher from "@/components/arcade/salle/StarCatcher";
 import CycyWord from "@/components/arcade/salle/CycyWord";
+import Flipper from "@/components/arcade/salle/Flipper";
 import type { JeuSalle as IdJeu } from "@/lib/arcadeRegles";
 
 export default function JeuSalle({ jeu }: { jeu: IdJeu }) {
@@ -43,6 +44,7 @@ export default function JeuSalle({ jeu }: { jeu: IdJeu }) {
       {jeu === "astrododge" ? <AstroDodge key={`a${partie}`} {...props} /> : null}
       {jeu === "starcatcher" ? <StarCatcher key={`s${partie}`} {...props} /> : null}
       {jeu === "cycyword" ? <CycyWord key={`w${partie}`} {...props} /> : null}
+      {jeu === "flipper" ? <Flipper key={`p${partie}`} {...props} /> : null}
       {fin ? <FinDePartie key={`f${partie}`} jeu={jeu} score={fin.score} resume={fin.resume} jeton={jetonFin} onRejouer={rejouer} /> : null}
     </div>
   );
