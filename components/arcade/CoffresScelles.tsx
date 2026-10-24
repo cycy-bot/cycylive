@@ -74,7 +74,7 @@ const COULEUR_TIER: Record<string, string> = { petit: "#d6d0ea", moyen: "#7ee2a8
 
 const LOTS: [NomSticker, string, string][] = [
   ["eclats", "Éclats ou quelques points stellaires", "Petit lot"],
-  ["fragment", "Éclats + points, ou 1 fragment d'étoile", "Lot moyen"],
+  ["fragment", "Éclats + points, 1 fragment d'étoile ou 1 booster", "Lot moyen"],
   ["booster", "Booster de Cartes Astrales, 70 Éclats, fragments…", "Gros lot"],
   ["tresor", "Trésor de Cycy : 3 boosters + 2 fragments + 150 Éclats", "Très rare"],
 ];
