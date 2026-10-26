@@ -85,7 +85,6 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                   </span>
                 </>
               )}
-              {jour.modifie && <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200" title="Horaire ou jeu différent du planning habituel">Modifié</span>}
               {jour.note ? <span className="w-full md:w-auto text-[11px] leading-tight text-ink-soft line-clamp-2">{jour.note}</span> : null}
             </div>
           );
