@@ -30,13 +30,12 @@ const COULEURS: Record<string, { fond: string; texte: string; halo: string }> = 
 };
 
 const GAINS_POSSIBLES: [NomSticker, string, string][] = [
-  ["points", "Points stellaires", "Commun à peu commun"],
-  ["eclats", "Éclats", "Commun à peu commun"],
-  ["booster", "Booster de Cartes Astrales", "Rare"],
-  ["fragment", "Fragment d'étoile", "Rare"],
-  ["combo", "Points + Éclats", "Épique"],
-  ["pack", "2 boosters + 1 fragment", "Légendaire"],
-  ["tresor", "Jackpot : 3 boosters + 3 fragments + 250 Éclats", "Mythique"],
+  ["eclats", "15 à 50 Éclats", "Commun à peu commun"],
+  ["fragment", "Fragments d'étoile", "Peu commun à rare"],
+  ["booster", "1 booster", "Rare"],
+  ["combo", "2 boosters + 40 Éclats", "Épique"],
+  ["pack", "3 boosters + 2 fragments", "Légendaire"],
+  ["tresor", "Jackpot : 5 boosters + 3 fragments + 250 Éclats", "Mythique"],
 ];
 
 function lire(cle: string): string {
@@ -211,8 +210,8 @@ export default function TicketAGratter() {
             <Pastille nom="ticket" taille="lg" className="mb-4" />
             <h2 className="text-2xl md:text-3xl font-semibold text-ink mb-2">Ton ticket galactique du jour</h2>
             <p className="text-ink-soft max-w-lg mx-auto mb-6">
-              Un ticket gratuit chaque jour. Gratte-le pour découvrir ton gain : points stellaires, Éclats, booster de Cartes Astrales,
-              fragment d&apos;étoile… et peut-être le jackpot !
+              Un ticket gratuit chaque jour. Gratte-le pour découvrir ton gain : Éclats, fragments d&apos;étoile, boosters…
+              et peut-être le jackpot !
             </p>
             {compte.joueur ? (
               <>

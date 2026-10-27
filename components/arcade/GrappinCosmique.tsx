@@ -508,7 +508,7 @@ export default function GrappinCosmique() {
                   <div className="text-left sm:text-left">
                     <p className="gr-neon mb-2 text-xl sm:text-2xl font-black uppercase tracking-widest">Insert coin</p>
                     <p className="mb-4 text-sm text-ink-soft">
-                      {`Trois tirages par jour. Chaque peluche cache un `}<strong className="text-ink">lot mystère</strong>{` : impossible de savoir lequel avant de l'avoir sortie… Les plus beaux lots se cachent souvent tout au fond !`}
+                      {`Trois tirages par jour. Chaque peluche cache un `}<strong className="text-ink">lot mystère</strong>{` : impossible de savoir lequel avant de l'avoir sortie… Les plus beaux lots se cachent souvent tout au fond ! Et au moins 1 booster est garanti chaque jour.`}
                     </p>
                     {compte.joueur ? (
                       <>
