@@ -185,8 +185,8 @@ export default function CosmoCapsules() {
   const grandeVisible = resultat && (anim === "tombe" || anim === "posee" || anim === "ouvre");
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
-      <div>
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+      <div className="min-w-0">
         {/* ── La machine ── */}
         <div className="cc-scene relative overflow-hidden rounded-[28px] px-4 pb-6 pt-5">
           <div className="cc-etoiles" aria-hidden />

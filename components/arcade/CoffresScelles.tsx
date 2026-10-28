@@ -73,9 +73,9 @@ type Partie = {
 const COULEUR_TIER: Record<string, string> = { petit: "#d6d0ea", moyen: "#7ee2a8", gros: "#facc15" };
 
 const LOTS: [NomSticker, string, string][] = [
-  ["eclats", "Éclats ou 1 fragment d'étoile", "Petit lot"],
-  ["fragment", "Éclats, fragment d'étoile ou 1 booster", "Lot moyen"],
-  ["booster", "Booster, 70 Éclats, fragments…", "Gros lot"],
+  ["eclats", "10 à 15 Éclats ou 1 fragment d'étoile", "Petit lot"],
+  ["fragment", "35 Éclats, ou 1 à 2 fragments d'étoile + Éclats", "Lot moyen"],
+  ["booster", "Toujours au moins 1 booster : + Éclats, + fragments, ou 2 boosters", "Gros lot"],
   ["tresor", "Trésor de Cycy : 3 boosters + 2 fragments + 150 Éclats", "Très rare"],
 ];
 
@@ -93,7 +93,9 @@ async function appel(corps: Record<string, unknown>): Promise<Partie> {
 // marbre, un rayon de lumière et des paillettes qui flottent (dans la même ambiance que les autres jeux).
 function DecorSalle() {
   return (
-    <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMid slice" aria-hidden>
+    <>
+    {/* la salle : hauteur limitée et ancrée en haut, pour que l'arche reste toujours au-dessus du texte */}
+    <svg className="pointer-events-none absolute inset-x-0 top-0 w-full h-[min(100%,520px)] md:h-[min(100%,600px)]" viewBox="0 0 1200 460" preserveAspectRatio="xMidYMin slice" aria-hidden>
       <defs>
         <linearGradient id="cs-salle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#2a1450" /><stop offset="1" stopColor="#0d071c" /></linearGradient>
         <radialGradient id="cs-ciel" cx="50%" cy="30%" r="75%"><stop offset="0" stopColor="#4d2788" /><stop offset=".55" stopColor="#221250" /><stop offset="1" stopColor="#0f0826" /></radialGradient>
@@ -131,19 +133,26 @@ function DecorSalle() {
           <rect x={x - 10} y="390" width="94" height="16" rx="4" fill="url(#cs-or)" />
         </g>
       ))}
-      <path d="M0 410 Q600 368 1200 410 L1200 460 L0 460 Z" fill="url(#cs-marbre)" />
-      <path d="M0 410 Q600 368 1200 410" fill="none" stroke="url(#cs-or)" strokeWidth="3" />
-      <path d="M160 444 Q600 410 1040 444" fill="none" stroke="#e9b65a" strokeOpacity=".25" strokeWidth="2" />
       {[[410, 140, 9], [800, 160, 8], [440, 300, 6], [770, 300, 7], [520, 80, 5], [690, 88, 6], [150, 250, 6], [1050, 240, 7]].map(([x, y, r], i) => (
         <g key={i} className="cs-flotte" style={{ animationDelay: `${i * 0.5}s` }}>
           <ellipse cx={x} cy={y} rx={r} ry={r * 0.82} fill="url(#cs-or)" opacity=".85" />
         </g>
       ))}
       <rect width="1200" height="460" fill="url(#cs-voile)" />
+      {/* fondu vers le bas de la salle : la suite (texte, sol) se pose dans la pénombre */}
+      <linearGradient id="cs-fondu" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#0d071c" stopOpacity="0" /><stop offset="1" stopColor="#0d071c" /></linearGradient>
+      <rect y="330" width="1200" height="131" fill="url(#cs-fondu)" />
       <style>{`.cs-scint{animation:cs-scint 3s ease-in-out infinite}@keyframes cs-scint{50%{opacity:.1}}
         .cs-flotte{animation:cs-flotte 4s ease-in-out infinite}@keyframes cs-flotte{50%{transform:translateY(-8px)}}
         @media (prefers-reduced-motion: reduce){.cs-scint,.cs-flotte{animation:none}}`}</style>
     </svg>
+    {/* le sol de marbre : toujours la même hauteur, collé en bas de la salle (le texte reste au-dessus) */}
+    <svg className="pointer-events-none absolute inset-x-0 bottom-0 h-14 w-full md:h-16" viewBox="0 360 1200 100" preserveAspectRatio="none" aria-hidden>
+      <path d="M0 410 Q600 368 1200 410 L1200 460 L0 460 Z" fill="url(#cs-marbre)" />
+      <path d="M0 410 Q600 368 1200 410" fill="none" stroke="url(#cs-or)" strokeWidth="3" vectorEffect="non-scaling-stroke" />
+      <path d="M160 444 Q600 410 1040 444" fill="none" stroke="#e9b65a" strokeOpacity=".25" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+    </>
   );
 }
 
@@ -191,8 +200,8 @@ export default function CoffresScelles() {
   };
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-      <div className="relative overflow-hidden rounded-3xl border border-[#e9b65a]/25 p-5 pb-10 md:p-8 md:pb-14 shadow-glow-sm bg-[#120a24]">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+      <div className="relative overflow-hidden rounded-3xl border border-[#e9b65a]/25 px-5 pt-20 pb-20 md:px-8 md:pt-24 md:pb-24 shadow-glow-sm bg-[#0d071c]">
         <DecorSalle />
         <div className="relative">
         {!partie ? (

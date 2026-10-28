@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
-import { DECOS, EMPLACEMENTS_DECO, FONDS, DecorScene, DecoApercu, type EmplacementDeco, type Habitat } from "@/components/arcade/Habitat";
+import { DECOS, RAYONS_DECO, FONDS, DecorScene, DecoApercu, migrerHabitat, placesDe, placeDe, type EmplacementDeco, type RayonDeco, type Habitat } from "@/components/arcade/Habitat";
 import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, type Emplacement, type Espece, type Humeur, type Tenue } from "@/components/arcade/Creature";
 import { idAppareil } from "@/components/arcade/appareil";
 import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
@@ -96,7 +96,7 @@ function lireEtat(): Etat {
     e.possedes = Array.isArray(e.possedes) ? e.possedes.filter((k) => ACCESSOIRES.some((a) => a.key === k)) : [];
     e.tenue = e.tenue && typeof e.tenue === "object" ? e.tenue : {};
     e.decos = Array.isArray(e.decos) ? e.decos.filter((k) => DECOS.some((d) => d.key === k)) : [];
-    e.habitat = e.habitat && typeof e.habitat === "object" ? Object.fromEntries(Object.entries(e.habitat).filter(([, k]) => e.decos.includes(String(k)))) : {};
+    e.habitat = e.habitat && typeof e.habitat === "object" ? migrerHabitat(e.habitat as Record<string, unknown>, e.decos) : {};
     e.gains = e.gains && typeof e.gains === "object" ? e.gains : { jour: "", calins: 0, visite: false };
     e.bonbons = Number(e.bonbons) || 0;
     if (!ESPECES.some((x) => x.key === e.espece)) e.espece = null;
@@ -204,6 +204,17 @@ export default function Compagnon() {
   const minuteurMessage = useRef(0);
   const partieGagnee = useRef(false);
   const sceneRef = useRef<HTMLDivElement | null>(null);
+  // Largeur de la scène : sur téléphone, la créature rapetisse pour laisser la place aux décorations des côtés
+  const [largeurScene, setLargeurScene] = useState(700);
+  const sceneVisible = Boolean(etat?.espece);
+  useEffect(() => {
+    const n = sceneRef.current;
+    if (!n || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([e]) => setLargeurScene(e.contentRect.width));
+    ro.observe(n);
+    return () => ro.disconnect();
+  }, [sceneVisible]);
+  const tailleCreature = Math.round(Math.max(140, Math.min(210, largeurScene * 0.42)));
 
   const setEtat = useCallback((f: (e: Etat) => Etat) => {
     setEtatBrut((cur) => {
@@ -415,23 +426,33 @@ export default function Compagnon() {
     dire(`Trop stylé ! Merci pour ${a.nom.toLowerCase()} 💜`);
   };
   const [boutique, setBoutique] = useState<"accessoires" | "habitat">("accessoires");
-  const [rayonDeco, setRayonDeco] = useState<EmplacementDeco>("fond");
+  const [rayonDeco, setRayonDeco] = useState<RayonDeco>("fond");
+  /** La place libre pour un objet (son côté préféré d'abord), sinon la première place. */
+  const placeLibre = (h: Habitat, k: string): EmplacementDeco | null => {
+    const places = placesDe(k);
+    if (!places.length) return null;
+    const d = DECOS.find((x) => x.key === k);
+    const ordre = d?.cote === "droite" ? [...places].reverse() : places;
+    return ordre.find((em) => !h[em]) || ordre[0];
+  };
   const acheterDeco = (k: string) => {
     const d = DECOS.find((x) => x.key === k);
     if (!d || !etat || etat.decos.includes(k)) return;
     if ((etat.bonbons || 0) < d.prix) return dire(`Il te manque ${d.prix - (etat.bonbons || 0)} 🍬 pour ${d.nom.toLowerCase()}…`);
-    setEtat((x) => (x.decos.includes(k) || (x.bonbons || 0) < d.prix ? x : { ...x, bonbons: x.bonbons - d.prix, decos: [...x.decos, k], habitat: { ...x.habitat, [d.emplacement]: k } }));
+    setEtat((x) => (x.decos.includes(k) || (x.bonbons || 0) < d.prix ? x : { ...x, bonbons: x.bonbons - d.prix, decos: [...x.decos, k], habitat: (() => { const h: Habitat = { ...x.habitat }; const em = placeLibre(h, k); if (em) h[em] = k; return h; })() }));
     effet("maison", "coeur");
     sauter();
     dire(`Ouaaah, ${d.nom.toLowerCase()} ! Ma chambre est trop belle 💜`);
   };
-  const installerDeco = (k: string) => {
-    const d = DECOS.find((x) => x.key === k);
-    if (!d) return;
+  /** Installe un objet à un emplacement (gauche / droite…), le range s'il y est déjà. L'objet déjà posé à cet
+   *  endroit est rangé ; un objet ne peut être qu'à un seul endroit à la fois. */
+  const installerDeco = (k: string, em?: EmplacementDeco) => {
     setEtat((x) => {
       const h: Habitat = { ...x.habitat };
-      if (h[d.emplacement] === k) delete h[d.emplacement];
-      else h[d.emplacement] = k;
+      const ici = placeDe(h, k);
+      const cible = em || (ici ? null : placeLibre(h, k));
+      if (ici) delete h[ici];
+      if (cible && cible !== ici) h[cible] = k;
       return { ...x, habitat: h };
     });
   };
@@ -535,7 +556,7 @@ export default function Compagnon() {
               style={{ ["--vitesse" as string]: `${Math.max(0.15, 1.2 - eclosion * 1.1)}s` } as React.CSSProperties}
             >
               <span className={eclosion > 0.02 ? "inline-block cp-oeuf" : "inline-block"}>
-                <Oeuf espece={etat.espece} progres={eclosion} taille={210} />
+                <Oeuf espece={etat.espece} progres={eclosion} taille={tailleCreature} />
               </span>
             </button>
             <div className="max-w-sm mx-auto mt-5">
@@ -604,7 +625,7 @@ export default function Compagnon() {
   );
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
       <div className="carte-holo rounded-3xl border border-violet/20 p-4 md:p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3">
           <h2 className="text-xl md:text-2xl font-semibold text-ink">
@@ -623,6 +644,7 @@ export default function Compagnon() {
           ref={sceneRef}
           className="relative h-[360px] md:h-[440px] rounded-2xl overflow-hidden select-none"
           style={{
+            containerType: "size",
             background: etat.habitat?.fond && FONDS[etat.habitat.fond]
               ? FONDS[etat.habitat.fond][etat.dort ? "nuit" : "jour"]
               : etat.dort
@@ -652,7 +674,7 @@ export default function Compagnon() {
           {/* la créature : caresse-la ! */}
           <div className={`absolute left-1/2 -translate-x-1/2 cursor-pointer ${etat.habitat?.fond ? "bottom-[6%]" : "bottom-[30px]"}`} onPointerDown={caresser} onPointerMove={(e) => e.buttons && caresser(e)}>
             <div key={saut} className={saut ? "cp-saut" : ""}>
-              <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} nuit={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={210} tenue={etat.tenue} />
+              <Creature espece={etat.espece} humeur={humeur} dort={etat.dort} nuit={etat.dort} sale={etat.stats.proprete < 35} stade={stade} taille={tailleCreature} tenue={etat.tenue} />
             </div>
           </div>
 
@@ -748,7 +770,7 @@ export default function Compagnon() {
             </div>
             {boutique === "habitat" ? (
               <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Emplacements">
-                {EMPLACEMENTS_DECO.map((e) => (
+                {RAYONS_DECO.map((e) => (
                   <button
                     key={e.key}
                     type="button"
@@ -784,11 +806,16 @@ export default function Compagnon() {
             </div>
             )}
           </div>
+          {boutique === "habitat" && (rayonDeco === "mur" || rayonDeco === "sol") ? (
+            <p className="mb-2 text-xs text-ink-soft">Pose un objet à gauche et un autre à droite de la pièce : touche le côté de ton choix (le même côté une 2ᵉ fois pour le ranger).</p>
+          ) : null}
           {boutique === "habitat" ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {DECOS.filter((d) => d.emplacement === rayonDeco).map((d) => {
+              {DECOS.filter((d) => d.rayon === rayonDeco).map((d) => {
                 const possede = etat.decos.includes(d.key);
-                const installe = etat.habitat?.[d.emplacement] === d.key;
+                const ou = placeDe(etat.habitat || {}, d.key);
+                const installe = Boolean(ou);
+                const cotes = placesDe(d.key).length > 1 ? placesDe(d.key) : null;
                 const assez = (etat.bonbons || 0) >= d.prix;
                 return (
                   <div key={d.key} className={`flex flex-col items-center rounded-2xl border px-2 pt-3 pb-2 text-center transition-all ${installe ? "border-violet bg-violet/15" : "border-violet/15 bg-white/[0.04]"}`}>
@@ -796,7 +823,19 @@ export default function Compagnon() {
                       <DecoApercu k={d.key} />
                     </div>
                     <p className="text-xs font-semibold text-ink mt-1 leading-tight min-h-[2rem] flex items-center">{d.nom}</p>
-                    {possede ? (
+                    {possede && cotes ? (
+                      <div className="mt-1 grid w-full grid-cols-2 gap-1" role="group" aria-label={`Placer ${d.nom.toLowerCase()}`}>
+                        {cotes.map((em) => {
+                          const actif = ou === em;
+                          const occupe = !actif && etat.habitat?.[em] ? DECOS.find((x) => x.key === etat.habitat?.[em])?.nom : "";
+                          return (
+                            <button key={em} type="button" onClick={() => installerDeco(d.key, em)} aria-pressed={actif} title={actif ? "Ranger" : occupe ? `Remplace ${occupe.toLowerCase()}` : "Installer ici"} className={`whitespace-nowrap rounded-full px-1 py-1.5 text-[11px] font-semibold ${actif ? "bg-violet text-ink ring-1 ring-violet-light" : "border border-violet/30 text-ink-soft hover:bg-violet/15"}`}>
+                              {em.endsWith("gauche") ? "◀ Gauche" : "Droite ▶"}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : possede ? (
                       <button type="button" onClick={() => installerDeco(d.key)} className={`mt-1 w-full rounded-full px-2 py-1.5 text-xs font-semibold ${installe ? "border border-violet/40 text-ink-soft hover:bg-violet/10" : "bg-violet text-ink hover:bg-violet-light"}`}>
                         {installe ? "Ranger" : "Installer"}
                       </button>

@@ -203,7 +203,7 @@ export default function TicketAGratter() {
   const code = ticket ? ticket.code : "";
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
       <div className="carte-holo rounded-3xl border border-violet/20 p-5 md:p-8 shadow-glow-sm">
         {!ticket ? (
           <div className="text-center py-10 md:py-16">

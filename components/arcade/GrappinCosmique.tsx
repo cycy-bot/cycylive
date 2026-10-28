@@ -32,6 +32,9 @@ type Partie = {
   prises: Prise[];
   fini: boolean;
   total: { xp: number; eclats: number; boosters: number; fragments: number; label: string } | null;
+  prisesTotal?: { xp: number; eclats: number; boosters: number; fragments: number; label: string };
+  garanti?: number;
+  boosterAttrape?: boolean;
   recupere: boolean;
   given: string[] | null;
   resultat?: Resultat | null;
@@ -376,7 +379,7 @@ export default function GrappinCosmique() {
   });
 
   return (
-    <div className="grid lg:grid-cols-[minmax(0,1fr)_330px] gap-6 items-start">
+    <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_330px] gap-6 items-start">
       <div>
         {/* ── La salle d'arcade et la borne ── */}
         <div className="gr-salle relative overflow-hidden rounded-[28px] p-2 sm:p-4">
@@ -508,7 +511,7 @@ export default function GrappinCosmique() {
                   <div className="text-left sm:text-left">
                     <p className="gr-neon mb-2 text-xl sm:text-2xl font-black uppercase tracking-widest">Insert coin</p>
                     <p className="mb-4 text-sm text-ink-soft">
-                      {`Trois tirages par jour. Chaque peluche cache un `}<strong className="text-ink">lot mystère</strong>{` : impossible de savoir lequel avant de l'avoir sortie… Les plus beaux lots se cachent souvent tout au fond ! Et au moins 1 booster est garanti chaque jour.`}
+                      {`Trois tirages par jour. Chaque peluche cache un `}<strong className="text-ink">lot mystère</strong>{` : impossible de savoir lequel avant de l'avoir sortie… Tu gagnes exactement ce que tu attrapes, et si aucune de tes prises ne contient de booster, CycyBot t'en offre 1 à la fin.`}
                     </p>
                     {compte.joueur ? (
                       <>
@@ -557,14 +560,22 @@ export default function GrappinCosmique() {
         {/* ── Le butin du jour ── */}
         {partie && partie.prises.length ? (
           <div className="carte-holo mt-5 rounded-3xl border border-violet/20 p-5" aria-live="polite">
-            <h3 className="mb-3 text-lg font-semibold text-ink">{partie.fini ? "🎁 Ta récompense du jour" : "Ton butin pour l'instant"}</h3>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-lg font-semibold text-ink">{partie.fini ? "🎁 Ta récompense du jour" : "Ton butin pour l'instant"}</h3>
+              {partie.garanti && !partie.fini ? (
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${partie.boosterAttrape ? "bg-emerald-400/15 text-emerald-300" : "bg-[#ffe066]/15 text-[#ffe066]"}`}>
+                  {partie.boosterAttrape ? "🎴 Booster du jour attrapé ✅" : `🎴 Pas encore de booster : si tu n'en attrapes pas, ${partie.garanti} booster t'est offert à la fin`}
+                </span>
+              ) : null}
+            </div>
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {partie.prises.map((p, i) => (
                 <div key={i} className="flex items-center gap-3 rounded-2xl border bg-black/20 p-3" style={{ borderColor: COULEUR_RARETE[p.rarete] + "66" }}>
                   <Peluche look={p.look} taille={52} className="shrink-0" />
                   <div className="min-w-0">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-ink-soft/70">Prise {i + 1}</p>
                     <p className="text-sm font-semibold text-ink">{p.nom}</p>
-                    <p className="text-xs text-ink-soft">{p.label}</p>
+                    <p className="text-sm font-bold" style={{ color: COULEUR_RARETE[p.rarete] }}>{p.label}</p>
                     {p.glisse ? <p className="text-[11px] text-ink-soft/60">{p.glisse.nom} a glissé… une étoile porte-bonheur s&apos;est accrochée !</p> : null}
                   </div>
                 </div>
@@ -573,7 +584,15 @@ export default function GrappinCosmique() {
             {partie.fini && partie.total ? (
               <div className="mt-4 rounded-2xl bg-violet/10 p-4 text-center">
                 <p className="text-ink font-semibold">✅ {partie.recupere ? "Ajouté à ton compte Discord !" : "Ta récompense arrive sur ton compte Discord…"}</p>
-                <p className="mt-1 text-ink-soft">{partie.given ? partie.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : partie.total.label}</p>
+                <div className="mx-auto mt-3 max-w-md space-y-1.5 text-left text-sm">
+                  {partie.prises.map((p, i) => (
+                    <div key={i} className="flex justify-between gap-3 text-ink-soft"><span>Prise {i + 1} · {p.nom}</span><span className="shrink-0 font-semibold text-ink">{p.label}</span></div>
+                  ))}
+                  {partie.prisesTotal && partie.total.boosters > partie.prisesTotal.boosters ? (
+                    <div className="flex justify-between gap-3 text-[#ffe066]"><span>🎁 Booster garanti du jour (aucune prise n&apos;en contenait)</span><span className="shrink-0 font-semibold">+ {partie.total.boosters - partie.prisesTotal.boosters} booster</span></div>
+                  ) : null}
+                  <div className="flex justify-between gap-3 border-t border-white/10 pt-2 text-base font-bold text-ink"><span>Total</span><span className="text-right">{partie.total.label}</span></div>
+                </div>
                 <p className="mt-2 text-xs text-ink-soft/60">Une nouvelle vitrine t&apos;attend demain, dès minuit.</p>
               </div>
             ) : null}
@@ -589,7 +608,7 @@ export default function GrappinCosmique() {
           <li>Appuie sur le <strong className="text-ink">gros bouton</strong> (ou Lâcher, ou Espace) : 20 secondes par tirage !</li>
           <li>La pince attrape la peluche la plus centrée sous elle. Celles du dessus passent devant : vise juste pour atteindre le fond.</li>
           <li>Les lots précieux glissent plus souvent… mais tu ne repars <strong className="text-ink">jamais les mains vides</strong> : une étoile porte-bonheur s&apos;accroche toujours.</li>
-          <li>Après tes tirages, tout est ajouté à ton compte Discord.</li>
+          <li>Tu gagnes <strong className="text-ink">la somme des lots que tu as attrapés</strong>, écrite sous chaque peluche. Si aucune ne contenait de booster, <strong className="text-ink">1 booster garanti</strong> s&apos;ajoute (c&apos;est indiqué dans le calcul). Tout arrive sur ton compte Discord.</li>
         </ol>
         <h3 className="mb-2 text-sm font-semibold text-ink">Que cache la vitrine ?</h3>
         <p className="text-sm text-ink-soft">Chats de minuit, bébés dragons, planètes, soucoupes… <strong className="text-ink">chaque peluche cache un lot mystère</strong>, et son apparence ne dit rien de ce qu&apos;il y a dedans ! Des Éclats, un booster, un fragment… ou peut-être le <strong className="text-ink">JACKPOT</strong>.</p>
