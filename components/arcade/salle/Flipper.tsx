@@ -125,7 +125,7 @@ export default function Flipper({ onDebut, onFin }: PropsJeu) {
     let score = 0, billes = 3, mult = 1, rang = 0, mi = 0, avance = 0, missions = 0;
     let lettres = [false, false, false, false];
     let cibles = [true, true, true];
-    let charge = 0, sauvetage = 0, billeBonus = false, fini = false, tFin = -1;
+    let immobile = 0, charge = 0, sauvetage = 0, billeBonus = false, fini = false, tFin = -1;
     const flash: Record<string, number> = {};
     let textes: { x: number; y: number; t: string; v: number; c: string }[] = [];
     let eclats: { x: number; y: number; vx: number; vy: number; v: number; c: string }[] = [];
@@ -211,8 +211,14 @@ export default function Flipper({ onDebut, onFin }: PropsJeu) {
       bille.y += bille.vy * dt;
 
       for (const s of MURS) choc(s);
-      if (bille.enJeu && bille.vy > 0) choc(PORTE);
+      // porte à sens unique : une fois sortie du couloir, la bille ne peut plus y rentrer
+      if (bille.enJeu) choc(PORTE);
       if (!bille.enJeu && bille.x < 345 && bille.y < 260) bille.enJeu = true;
+      // si elle y retombe quand même, elle revient sur le lanceur et on peut la relancer
+      if (bille.enJeu && bille.x > 352 && bille.y > 260) { bille.enJeu = false; dire("Relance la bille !"); }
+      // bille immobile trop longtemps (coincée quelque part) : petite secousse
+      if (Math.hypot(bille.vx, bille.vy) < 12 && !(bille.x > 352 && bille.y > 600) && !entree.current.g && !entree.current.d) immobile += dt; else immobile = 0;
+      if (immobile > 2) { immobile = 0; bille.vx = (bille.x > 185 ? -1 : 1) * (120 + Math.random() * 80); bille.vy = -220; dire("Secousse !"); }
       for (const s of FRONDES) if (choc(s)) { flash[s.id!] = 0.15; gagner(50, bille.x, bille.y - 10, "#ff9ae0"); }
       // cibles-étoiles
       CIBLES.forEach((c, i) => {
