@@ -21,7 +21,9 @@ const nextConfig = {
     ];
     return [
       // Partout sauf l'admin : la page ne peut pas être affichée dans un cadre
-      { source: "/((?!admin).*)", headers: securite },
+      { source: "/((?!admin|jeux/avent).*)", headers: securite },
+      // Calendrier de l'avent : prévisualisé dans l'interface CycyBot (aperçu privé de Cycy), jamais indexé
+      { source: "/jeux/avent", headers: [...securite.filter((h) => h.key !== "X-Frame-Options"), { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://bot.cycylive.fr" }, { key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       // L'admin s'affiche dans l'interface CycyBot (bot.cycylive.fr/admin), nulle part ailleurs
       { source: "/admin", headers: [...securite.filter((h) => h.key !== "X-Frame-Options"), { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://bot.cycylive.fr" }] },
       // Images du site : gardées en cache une semaine par le navigateur (revalidées en arrière-plan)

@@ -19,9 +19,9 @@ const RARETES: Rarete[] = ["commune", "peu", "rare", "epique", "legendaire", "my
 const CHANCES_DEFAUT: Record<Rarete, number> = { commune: 52, peu: 27, rare: 13, epique: 5.5, legendaire: 2, mythique: 0.5 };
 const NIVEAU: Record<Rarete, number> = { commune: 0, peu: 1, rare: 2, epique: 3, legendaire: 4, mythique: 5 };
 
-type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number; numero?: number };
+type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number; numero?: number; numerotee?: boolean; edition?: string };
 type Collection = { id: string; nom: string; emoji: string; description: string; bonus: string; terminee: boolean };
-type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; description?: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null };
+type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; description?: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null; special?: boolean; numerotee?: boolean; edition?: string; evenement?: string };
 type Etat = {
   disponible: boolean;
   derniere: Resultat | null;
@@ -36,10 +36,11 @@ type Etat = {
   chances?: Record<Rarete, number>;
   gains?: Record<Rarete, string[]>;
   resultat?: Resultat;
+  special?: { cle: string; nom: string; emoji: string; couleur: string; disponible: boolean } | null;
 };
 
 class ConnexionRequise extends Error {}
-async function appel(action: "etat" | "tourner"): Promise<Etat> {
+async function appel(action: "etat" | "tourner" | "evenement"): Promise<Etat> {
   const r = await fetch(`${BOT}/api/capsules`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ session: sessionDiscord(), action }) });
   const d = await r.json().catch(() => ({}));
   if (d.connexion) throw new ConnexionRequise(d.error);
@@ -135,13 +136,13 @@ export default function CosmoCapsules() {
     if (compte.joueur && !etat && !charge) charger();
   }, [compte.joueur, etat, charge, charger]);
 
-  async function tourner() {
-    if (!etat?.disponible || anim !== "repos") return;
+  async function tourner(speciale = false) {
+    if ((speciale ? !etat?.special?.disponible : !etat?.disponible) || (anim !== "repos" && anim !== "ouverte")) return;
     setErreur("");
     setAnim("tourne");
     const attente = new Promise((r) => setTimeout(r, 1700));
     try {
-      const [e] = await Promise.all([appel("tourner"), attente]);
+      const [e] = await Promise.all([appel(speciale ? "evenement" : "tourner"), attente]);
       setResultat(e.resultat || null);
       setEtat(e);
       setAnim("tombe");
@@ -246,10 +247,17 @@ export default function CosmoCapsules() {
                       <p className="mt-1 inline-block rounded-full bg-[#2a1640] px-3 py-0.5 text-xs font-black text-[#ffd23f]">
                         {resultat.stock === 1 ? "👑 EXEMPLAIRE UNIQUE" : `✨ Exemplaire n°${resultat.numero} / ${resultat.stock}`}
                       </p>
+                    ) : resultat.numerotee && resultat.numero ? (
+                      <p className="mt-1 inline-block rounded-full bg-[#2a1640] px-3 py-0.5 text-xs font-black text-[#ffd23f]">✨ Exemplaire n°{resultat.numero}</p>
                     ) : null}
-                    <p className="cc-gain mt-2 rounded-2xl bg-[#f6efff] px-3 py-2 text-sm font-semibold text-[#5a3a8a]">🎁 {resultat.given ? resultat.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : resultat.label}</p>
+                    {resultat.edition ? <p className="mt-1 text-[11px] font-black uppercase tracking-wider text-[#c2410c]">{resultat.edition}</p> : null}
+                    {resultat.special ? (
+                      <p className="cc-gain mt-2 rounded-2xl bg-[#fff1e6] px-3 py-2 text-sm font-semibold text-[#9a3412]">🎃 Capsule spéciale {resultat.evenement} : cette figurine rejoint ta collection « Événements »</p>
+                    ) : (
+                      <p className="cc-gain mt-2 rounded-2xl bg-[#f6efff] px-3 py-2 text-sm font-semibold text-[#5a3a8a]">🎁 {resultat.given ? resultat.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : resultat.label}</p>
+                    )}
                     {resultat.bonus.filter((b) => b.type !== "doublon").map((b) => <p key={b.label} className="mt-2 text-sm font-black text-[#b26bff]">🏆 {b.label}</p>)}
-                    <p className="mt-2 text-xs text-[#7a5aa8]">{resultat.given ? "Ajouté à ton compte Discord ✅" : "Ton cadeau arrive sur ton compte Discord…"}</p>
+                    {resultat.special ? null : <p className="mt-2 text-xs text-[#7a5aa8]">{resultat.given ? "Ajouté à ton compte Discord ✅" : "Ton cadeau arrive sur ton compte Discord…"}</p>}
                     <button type="button" onClick={() => setAnim("repos")} className="mt-3 rounded-full border border-[#c9a8ff] px-4 py-1 text-xs font-semibold text-[#7a3a8a] hover:bg-[#f6efff]">Revoir la machine</button>
                   </div>
                 </div>
@@ -264,7 +272,7 @@ export default function CosmoCapsules() {
             ) : !etat ? (
               <p className="text-sm text-[#7a5aa8]">{charge ? "CycyBot remplit la machine…" : ""}</p>
             ) : etat.disponible ? (
-              <button type="button" onClick={tourner} disabled={anim !== "repos"} className="cc-bouton rounded-full px-9 py-3.5 text-lg font-black text-white disabled:opacity-60">
+              <button type="button" onClick={() => tourner()} disabled={anim !== "repos"} className="cc-bouton rounded-full px-9 py-3.5 text-lg font-black text-white disabled:opacity-60">
                 {anim === "repos" ? "Tourner la manivelle ✨" : "Ça tourne…"}
               </button>
             ) : (
@@ -273,6 +281,13 @@ export default function CosmoCapsules() {
                 {anim === "repos" && resultat ? <button type="button" onClick={() => setAnim("ouverte")} className="rounded-full bg-white/60 px-4 py-2 text-sm font-semibold text-[#7a3a8a] hover:bg-white">Revoir ma capsule du jour</button> : null}
               </div>
             )}
+            {etat?.special?.disponible && !etat.disponible ? (
+              <button type="button" onClick={() => tourner(true)} disabled={anim !== "repos" && anim !== "ouverte"} className="cc-special rounded-full px-7 py-3 text-base font-black text-white disabled:opacity-60" style={{ ["--c" as string]: etat.special.couleur }}>
+                {etat.special.emoji} Capsule spéciale {etat.special.nom} : une surprise t&apos;attend…
+              </button>
+            ) : etat?.special?.disponible && etat.disponible ? (
+              <p className="rounded-full bg-white/80 px-4 py-1.5 text-xs font-bold text-[#9a3412]">{etat.special.emoji} {etat.special.nom} : après ta capsule du jour, une capsule spéciale t&apos;attend !</p>
+            ) : null}
             {erreur ? <p className="text-sm font-semibold text-[#d6336c]">{erreur}</p> : null}
             {compte.joueur ? <div className="mt-1 rounded-full bg-[#2a1640]/85 px-4 py-1.5"><BandeauDiscord compte={compte} /></div> : null}
           </div>
@@ -308,7 +323,7 @@ export default function CosmoCapsules() {
               const c = collections.find((x) => x.id === collection);
               return (
                 <p className="mb-3 text-xs text-ink-soft">
-                  {c ? <>{c.description} <span className="text-ink-soft/70">· Collection complète : +{c.bonus}</span></> : "Complète une collection pour gagner son gros bonus (une seule fois). Choisis-en une pour voir son bonus."}
+                  {c ? <>{c.description} {c.id === "evenements" ? <span className="text-ink-soft/70">· Figurines numérotées, en édition limitée</span> : <span className="text-ink-soft/70">· Collection complète : +{c.bonus}</span>}</> : "Complète une collection pour gagner son gros bonus (une seule fois). Choisis-en une pour voir son bonus."}
                 </p>
               );
             })()}
@@ -332,6 +347,8 @@ export default function CosmoCapsules() {
                       <p className="mt-0.5 text-[10px] font-bold" style={{ color: "#ffd23f" }}>
                         {etat.numeros?.[f.id] ? (f.stock === 1 ? "👑 unique" : `n°${etat.numeros[f.id]}/${f.stock}`) : epuisee ? "épuisée" : f.stock === 1 ? "👑 exemplaire unique" : `${f.stock - f.distribues} / ${f.stock} restants`}
                       </p>
+                    ) : f.numerotee && etat.numeros?.[f.id] ? (
+                      <p className="mt-0.5 text-[10px] font-bold" style={{ color: "#ffd23f" }}>✨ n°{etat.numeros[f.id]}{f.edition ? " · édition limitée" : ""}</p>
                     ) : null}
                     {n > 1 ? <span className="absolute right-1.5 top-1.5 rounded-full bg-violet/80 px-1.5 text-[10px] font-bold text-ink">×{n}</span> : null}
                   </div>
@@ -382,6 +399,8 @@ export default function CosmoCapsules() {
         @keyframes cc-tour{to{transform:rotate(720deg)}}
         .cc-voile{position:absolute;inset:-10%;background:radial-gradient(closest-side at 50% 74%,#2a164040,transparent);animation:cc-fondu .4s both;pointer-events:none}
         @keyframes cc-fondu{from{opacity:0}}
+        .cc-special{background:linear-gradient(135deg,var(--c,#f97316),#7c3aed);box-shadow:0 10px 30px -8px var(--c,#f97316),inset 0 -3px 0 rgba(0,0,0,.18);animation:cc-pulse-sp 2.2s ease-in-out infinite}
+        @keyframes cc-pulse-sp{50%{transform:scale(1.04);box-shadow:0 14px 40px -6px var(--c,#f97316)}}
         .cc-halo{position:absolute;left:50%;top:50%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;animation:cc-pulse 1.4s ease-in-out infinite;pointer-events:none}
         @keyframes cc-pulse{50%{transform:scale(1.12);opacity:.7}}
         .cc-machine{filter:drop-shadow(0 18px 30px #8a4fd655)}
