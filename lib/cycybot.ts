@@ -69,7 +69,7 @@ export type DiscordCycyBot = {
 
 export type LigneConsole = { user: string; text: string; bot: boolean };
 
-export type CollectionFigurines = { id: string; nom: string; emoji: string; description: string; total: number; apercu: { nom: string; image: string; rarete: string }[] };
+export type CollectionFigurines = { id: string; nom: string; emoji: string; description: string; total: number; mystere?: boolean; apercu: { nom: string; image: string; rarete: string }[] };
 
 // ── Leaderboard ─────────────────────────────────────────────
 

@@ -72,7 +72,7 @@ export default async function CycyBotPage() {
   const nbDiscord = discord ? discord.commands.reduce((n, g) => n + g.items.length, 0) : 0;
   // Collections de figurines : la liste du bot (nombres à jour), sinon celle du site
   const collections = discord?.figurines?.length
-    ? discord.figurines.map((c) => ({ id: c.id, nom: c.nom, emoji: c.emoji, total: c.total, image: c.apercu[0]?.image || figurinesSecours.find((s) => s.id === c.id)?.image || "/figurines/boule-rose.webp" }))
+    ? discord.figurines.map((c) => ({ id: c.id, nom: c.nom, emoji: c.emoji, total: c.total, mystere: Boolean(c.mystere) || (c.id === "evenements" && !c.apercu.length), image: c.apercu[0]?.image || figurinesSecours.find((s) => s.id === c.id)?.image || "/figurines/boule-rose.webp" }))
     : figurinesSecours;
   const stats = discord
     ? [
@@ -268,7 +268,7 @@ export default async function CycyBotPage() {
             <div className="max-w-2xl">
               <h3 className="text-ink font-semibold">Les figurines Cosmo-Capsules</h3>
               <p className="text-sm text-ink-soft">
-                Une capsule par jour sur la machine gatchapon du site : {nf(collections.reduce((n, c) => n + c.total, 0))} figurines kawaii en {collections.length} collections,
+                Une capsule par jour sur la machine gatchapon du site : {nf(collections.reduce((n, c) => n + ("mystere" in c && c.mystere ? 0 : c.total), 0))} figurines kawaii en {collections.length} collections,
                 six raretés et quelques exemplaires uniques. Ton album se montre sur le Discord, trié par numéro, rareté ou collection.
               </p>
             </div>
@@ -284,11 +284,20 @@ export default async function CycyBotPage() {
               <Link key={c.id} href="/jeux/capsules" className="group flex flex-col items-center rounded-2xl border border-violet/20 bg-void/50 p-2 text-center hover:border-lilac/60 transition-colors">
                 <div className="relative w-full aspect-square">
                   <span aria-hidden className="absolute inset-[12%] rounded-full bg-violet/40 blur-xl" />
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={c.image} alt="" loading="lazy" className="relative h-full w-full object-contain transition-transform duration-300 group-hover:scale-110" />
+                  {"mystere" in c && c.mystere ? (
+                    // Surprise : la figurine n'est pas encore sortie, on ne montre qu'une capsule dans l'ombre
+                    <span className="relative flex h-full w-full items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="/figurines/boule-rose.webp" alt="" loading="lazy" className="absolute h-[82%] w-[82%] object-contain brightness-[.12] saturate-0 drop-shadow-[0_0_14px_rgba(196,181,253,.55)] transition-transform duration-300 group-hover:scale-105" />
+                      <span className="relative font-display text-4xl font-bold text-lilac drop-shadow-[0_0_10px_rgba(196,181,253,.9)]">?</span>
+                    </span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.image} alt="" loading="lazy" className="relative h-full w-full object-contain transition-transform duration-300 group-hover:scale-110" />
+                  )}
                 </div>
                 <p className="mt-1 text-[11px] font-semibold leading-tight text-ink">{c.emoji} {c.nom}</p>
-                <p className="text-[10px] text-ink-soft">{c.total} figurines</p>
+                <p className="text-[10px] text-ink-soft">{"mystere" in c && c.mystere ? "Surprise à venir…" : `${c.total} figurines`}</p>
               </Link>
             ))}
           </div>
