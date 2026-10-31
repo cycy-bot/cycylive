@@ -31,6 +31,12 @@ export const DECOS: { key: string; nom: string; rayon: RayonDeco; cote?: "gauche
   { key: "ocean", nom: "Station lunaire", rayon: "fond", prix: 70 },
   { key: "couchant", nom: "Refuge martien", rayon: "fond", prix: 80 },
   { key: "aurore", nom: "Jardin d'aurore", rayon: "fond", prix: 90 },
+  { key: "bonbon", nom: "Cocon barbe à papa", rayon: "fond", prix: 65 },
+  { key: "menthe", nom: "Cocon menthe givrée", rayon: "fond", prix: 65 },
+  { key: "amethyste", nom: "Station améthyste", rayon: "fond", prix: 75 },
+  { key: "glace", nom: "Refuge des glaces", rayon: "fond", prix: 85 },
+  { key: "soleil", nom: "Refuge doré", rayon: "fond", prix: 85 },
+  { key: "sakura", nom: "Jardin sakura", rayon: "fond", prix: 95 },
   { key: "guirlande", nom: "Guirlande d'étoiles", rayon: "plafond", cote: "droite", prix: 35 },
   { key: "mobile", nom: "Mobile de planètes", rayon: "plafond", cote: "gauche", prix: 50 },
   { key: "lune", nom: "Lampe lune", rayon: "plafond", cote: "droite", prix: 60 },
@@ -71,7 +77,9 @@ export function migrerHabitat(brut: Record<string, unknown>, possedes: string[])
   return h;
 }
 
-const AMBIANCE: Record<string, string> = { nebuleuse: "nebuleuse", ocean: "lune", couchant: "mars", aurore: "aurore" };
+// Ambiance → image de la pièce ; les variantes de couleur reprennent la vue des fenêtres de leur pièce d'origine (teintée)
+const AMBIANCE: Record<string, string> = { nebuleuse: "nebuleuse", ocean: "lune", couchant: "mars", aurore: "aurore", bonbon: "bonbon", menthe: "menthe", amethyste: "amethyste", glace: "glace", soleil: "soleil", sakura: "sakura" };
+const VARIANTE: Record<string, { base: string; teinte: number }> = { bonbon: { base: "nebuleuse", teinte: 48 }, menthe: { base: "nebuleuse", teinte: -128 }, amethyste: { base: "lune", teinte: 55 }, glace: { base: "mars", teinte: 180 }, soleil: { base: "mars", teinte: 22 }, sakura: { base: "aurore", teinte: 140 } };
 const img = (k: string) => `url(/compagnon/habitats/${AMBIANCE[k]}.webp)`;
 
 /** Ambiances : remplacent le fond de la scène (la nuit, la pièce s'assombrit). */
@@ -242,11 +250,12 @@ function Objet({ k, em, nuit = false }: { k: string; em: EmplacementDeco; nuit?:
 
 // ── La vue par les fenêtres des ambiances (mêmes fenêtres dans les 4 pièces) ──
 function VueFenetres({ fond }: { fond: string }) {
-  const amb = AMBIANCE[fond];
+  const v = VARIANTE[fond];
+  const amb = v ? v.base : AMBIANCE[fond];
   if (!amb) return null;
   const etoiles = [[30, 120], [62, 210], [18, 300], [50, 380], [1150, 140], [1180, 260], [1135, 330], [1170, 400]];
   return (
-    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
+    <svg viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", filter: v ? `hue-rotate(${v.teinte}deg)` : undefined }}>
       <defs>
         <clipPath id="hb-fen"><rect x="-40" y="64" width="126" height="376" rx="44" /><rect x="1114" y="64" width="126" height="376" rx="44" /></clipPath>
         <filter id="hb-flou" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="14" /></filter>
