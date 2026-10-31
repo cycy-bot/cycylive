@@ -17,24 +17,62 @@ export type JourPlanning = {
   off: boolean;
   jeu?: string; // tous les jeux de la soirée, séparés par « + » (lu aussi par CycyBot et le compte à rebours)
   jeux?: string[]; // jusqu'à 3 jeux / activités dans la même soirée, dans l'ordre
+  titre?: string; // titre libre de la soirée (« Soirée jeux communautaires »…)
+  categorie?: string; // catégorie (voir CATEGORIES) : choisit l'illustration du planning
   heure?: string; // format "21h30"
   fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
 };
 
 export const MAX_JEUX = 3;
 
+/** Catégories de soirée : elles choisissent l'illustration et les couleurs du planning (site + Discord). */
+export const CATEGORIES = [
+  { id: "valorant", label: "Valorant", emoji: "🎯" },
+  { id: "pp", label: "Soirée PP", emoji: "🎮" },
+  { id: "communautaire", label: "Soirée jeux communautaires", emoji: "🎲" },
+  { id: "horreur", label: "Soirée horreur", emoji: "👻" },
+  { id: "evenement", label: "Événement spécial", emoji: "✨" },
+  { id: "caritatif", label: "Live caritatif", emoji: "💜" },
+  { id: "giveaway", label: "Giveaway", emoji: "🎁" },
+  { id: "tournoi", label: "Tournoi", emoji: "🏆" },
+  { id: "anniversaire", label: "Anniversaire", emoji: "🎂" },
+  { id: "halloween", label: "Halloween", emoji: "🎃" },
+  { id: "noel", label: "Noël", emoji: "🎄" },
+  { id: "discussion", label: "Discussion", emoji: "💬" },
+  { id: "autre", label: "Autre jeu", emoji: "🕹️" },
+] as const;
+export const categorieDe = (id?: string) => CATEGORIES.find((c) => c.id === id);
+
+type AvecSoiree = { jeu?: string; jeux?: string[]; titre?: string; categorie?: string };
+
 /** Les jeux / activités d'une soirée (1 à 3), quel que soit l'ancien ou le nouveau format. */
-export function jeuxDe(j: { jeu?: string; jeux?: string[] } | null | undefined): string[] {
+export function jeuxDe(j: AvecSoiree | null | undefined): string[] {
   if (!j) return [];
   const liste = Array.isArray(j.jeux) ? j.jeux.map((x) => String(x || "").trim()).filter(Boolean) : [];
   if (liste.length) return liste.slice(0, MAX_JEUX);
+  // Ancien format : « jeu » seul (sans titre ni catégorie, sinon « jeu » est le libellé calculé)
+  if (j.titre || j.categorie) return [];
   return j.jeu ? [String(j.jeu).trim()].filter(Boolean) : [];
 }
 
-/** Range un jour avant l'enregistrement : jeux nettoyés (3 max) et « jeu » recalculé. */
-export function avecJeux<T extends { jeu?: string; jeux?: string[] }>(j: T): T {
-  const jeux = (Array.isArray(j.jeux) ? j.jeux : j.jeu ? [j.jeu] : []).map((x) => String(x || "").trim().slice(0, 60)).filter(Boolean).slice(0, MAX_JEUX);
-  return { ...j, jeux: jeux.length ? jeux : undefined, jeu: jeux.length ? jeux.join(" + ") : undefined };
+/** Libellé complet de la soirée (lu par CycyBot, le compte à rebours, les stories) : « Titre : jeu + jeu ». */
+export function libelleSoiree(j: AvecSoiree | null | undefined): string {
+  if (!j) return "";
+  const jeux = jeuxDe(j);
+  const cat = categorieDe(j.categorie);
+  const base = String(j.titre || "").trim() || (cat && cat.id !== "autre" && cat.id !== "valorant" ? cat.label : "");
+  if (base && jeux.length) return `${base} : ${jeux.join(" + ")}`;
+  return base || jeux.join(" + ") || (cat ? cat.label : "");
+}
+
+/** Range un jour avant l'enregistrement : jeux nettoyés (3 max), titre, catégorie et « jeu » recalculé. */
+export function avecJeux<T extends AvecSoiree>(j: T): T {
+  const titre = String(j.titre || "").trim().slice(0, 80) || undefined;
+  const categorie = categorieDe(j.categorie)?.id;
+  const brut = Array.isArray(j.jeux) ? j.jeux : !titre && !categorie && j.jeu ? [j.jeu] : [];
+  const jeux = brut.map((x) => String(x || "").trim().slice(0, 60)).filter(Boolean).slice(0, MAX_JEUX);
+  const propre = { ...j, titre, categorie, jeux: jeux.length ? jeux : undefined };
+  return { ...propre, jeu: libelleSoiree(propre) || undefined };
 }
 
 export const LABEL_GENERIQUE = "Stream";

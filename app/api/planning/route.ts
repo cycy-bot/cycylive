@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Jusqu'à 3 jeux par soirée ; « jeu » est recalculé pour CycyBot et le compte à rebours
-  const propre = planning.map((j) => avecJeux({ jour: String(j?.jour || ""), off: Boolean(j?.off), heure: j?.heure ? String(j.heure).slice(0, 10) : undefined, fin: j?.fin ? String(j.fin).slice(0, 10) : undefined, jeu: j?.jeu ? String(j.jeu).slice(0, 200) : undefined, jeux: Array.isArray(j?.jeux) ? j.jeux.map(String) : undefined }));
+  const propre = planning.map((j) => avecJeux({ jour: String(j?.jour || ""), off: Boolean(j?.off), heure: j?.heure ? String(j.heure).slice(0, 10) : undefined, fin: j?.fin ? String(j.fin).slice(0, 10) : undefined, jeu: j?.jeu ? String(j.jeu).slice(0, 200) : undefined, jeux: Array.isArray(j?.jeux) ? j.jeux.map(String) : undefined, titre: j?.titre ? String(j.titre).slice(0, 80) : undefined, categorie: j?.categorie ? String(j.categorie).slice(0, 20) : undefined }));
   const resultat = await ecrirePlanning(propre);
   if (!resultat.ok) {
     return NextResponse.json(

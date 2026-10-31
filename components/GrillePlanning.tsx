@@ -5,17 +5,20 @@
 import { useState } from "react";
 import type React from "react";
 import Icone from "@/components/icones/Icone";
+import { categorieDe } from "@/data/planning";
 import { IconCrystal } from "@/components/Icons";
 
-export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; note?: string; modifie?: boolean };
+export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; note?: string; modifie?: boolean };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
 
 // Lives spéciaux (même détection que l'image du planning Discord) : illustration et couleurs à part
-type TypeLive = "caritatif" | "horreur" | "halloween" | "noel" | "anniversaire" | "tournoi" | "giveaway" | "evenement" | "";
+type TypeLive = "caritatif" | "horreur" | "halloween" | "noel" | "anniversaire" | "tournoi" | "giveaway" | "communautaire" | "evenement" | "";
 type TypeSpecial = Exclude<TypeLive, "">;
 const sansAcc = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+const PAR_CATEGORIE: Record<string, TypeLive> = { caritatif: "caritatif", horreur: "horreur", halloween: "halloween", noel: "noel", anniversaire: "anniversaire", tournoi: "tournoi", giveaway: "giveaway", communautaire: "communautaire", evenement: "evenement" };
 function typeLive(jour: JourGrille): TypeLive {
-  const t = sansAcc(`${jour.jeux.join(" ")} ${jour.note || ""}`);
+  if (jour.categorie) return PAR_CATEGORIE[jour.categorie] || "";
+  const t = sansAcc(`${jour.titre || ""} ${jour.jeux.join(" ")} ${jour.note || ""}`);
   if (/caritati|association|charit|telethon|zevent|cagnotte|solidaire|au profit/.test(t)) return "caritatif";
   if (/halloween/.test(t)) return "halloween";
   if (/noel|christmas|xmas|reveillon/.test(t)) return "noel";
@@ -36,6 +39,7 @@ const STYLE_LIVE: Record<TypeSpecial, { label: string; carte: React.CSSPropertie
   anniversaire: { label: "🎂 Anniversaire", carte: carte("192,132,252", "134,25,143"), pastille: "bg-fuchsia-950/80 border-fuchsia-400/80 text-fuchsia-100", texte: "text-fuchsia-300", halo: "rgba(240,171,252,.8)" },
   tournoi: { label: "🏆 Tournoi", carte: carte("56,189,248", "30,58,138"), pastille: "bg-sky-950/80 border-sky-400/80 text-sky-100", texte: "text-sky-300", halo: "rgba(125,211,252,.8)" },
   giveaway: { label: "🎁 Giveaway", carte: carte("52,211,153", "6,95,70"), pastille: "bg-emerald-950/80 border-emerald-400/80 text-emerald-100", texte: "text-emerald-300", halo: "rgba(110,231,183,.8)" },
+  communautaire: { label: "🎲 Jeux commu", carte: carte("129,140,248", "49,46,129"), pastille: "bg-indigo-950/80 border-indigo-400/80 text-indigo-100", texte: "text-indigo-200", halo: "rgba(165,180,252,.8)" },
   evenement: { label: "✨ Événement", carte: carte("251,191,36", "180,83,9"), pastille: "bg-amber-900/70 border-amber-400/80 text-amber-100", texte: "text-amber-200", halo: "rgba(251,191,36,.8)" },
 };
 const Grad = ({ id, c }: { id: string; c: string[] }) => (
@@ -49,6 +53,7 @@ const DESSINS: Record<TypeSpecial, React.ReactNode> = {
   anniversaire: (<><Grad id="gl-a" c={["#fdf4ff", "#f0abfc", "#a21caf"]} /><rect x="6" y="28" width="36" height="15" rx="4" fill="url(#gl-a)" /><rect x="12" y="18" width="24" height="12" rx="3" fill="url(#gl-a)" /><path d="M12 21q3 4 6 0t6 0 6 0 6 0v-3H12zM6 31q3 4 6 0t6 0 6 0 6 0 6 0 6 0v-3H6z" fill="#fff" /><rect x="16" y="9" width="3" height="9" fill="#38bdf8" /><rect x="22.5" y="9" width="3" height="9" fill="#fbbf24" /><rect x="29" y="9" width="3" height="9" fill="#f472b6" /><ellipse cx="17.5" cy="6" rx="2" ry="3.2" fill="#fde047" /><ellipse cx="24" cy="6" rx="2" ry="3.2" fill="#fde047" /><ellipse cx="30.5" cy="6" rx="2" ry="3.2" fill="#fde047" /></>),
   tournoi: (<><Grad id="gl-t" c={["#fffbeb", "#fbbf24", "#a16207"]} /><path d="M12 10a6 6 0 0 0 0 12M36 10a6 6 0 0 1 0 12" fill="none" stroke="#eab308" strokeWidth="3" /><path d="M11 6h26q0 20-13 21Q11 26 11 6z" fill="url(#gl-t)" /><rect x="21.5" y="26" width="5" height="7" fill="#ca8a04" /><rect x="14" y="33" width="20" height="4" rx="1.5" fill="url(#gl-t)" /><rect x="11" y="37" width="26" height="6" rx="2" fill="#1e3a8a" stroke="#fbbf24" strokeWidth="1" /><path d="M24 10l1.4 2.9 3.2.4-2.3 2.2.6 3.1L24 17l-2.9 1.6.6-3.1-2.3-2.2 3.2-.4z" fill="#fff" fillOpacity=".85" /></>),
   giveaway: (<><Grad id="gl-g" c={["#a7f3d0", "#34d399", "#047857"]} /><rect x="9" y="20" width="30" height="22" rx="3" fill="url(#gl-g)" /><rect x="7" y="14" width="34" height="8" rx="2" fill="url(#gl-g)" /><rect x="21.5" y="14" width="5" height="28" fill="#f472b6" /><rect x="7" y="17" width="34" height="3" fill="#f472b6" /><path d="M24 14C21 4 12 6 22 14zM24 14c3-10 12-8 2 0z" fill="#ec4899" /><circle cx="24" cy="14" r="2.4" fill="#fbcfe8" /></>),
+  communautaire: (<><Grad id="gl-m" c={["#e0e7ff", "#818cf8", "#3730a3"]} /><path d="M14 14h20c6 0 9 4 10 10l2 10c1 5-4 8-8 4l-5-5H15l-5 5c-4 4-9 1-8-4l2-10c1-6 4-10 10-10z" fill="url(#gl-m)" stroke="#fff" strokeOpacity=".5" strokeWidth="1.2" /><path d="M13 20v8M9 24h8" stroke="#1e1b4b" strokeWidth="2.6" strokeLinecap="round" /><circle cx="33" cy="21" r="2.2" fill="#f472b6" /><circle cx="38" cy="26" r="2.2" fill="#fbbf24" /><circle cx="29" cy="26" r="2.2" fill="#34d399" /><circle cx="33" cy="31" r="2.2" fill="#38bdf8" /></>),
   evenement: (<><Grad id="gl-e" c={["#fffbeb", "#fbbf24", "#b45309"]} /><path d="M24 4l5.6 13 14 1.2-10.6 9.2 3.2 13.8L24 34l-12.2 7.2 3.2-13.8L4.4 18.2l14-1.2z" fill="url(#gl-e)" stroke="#fff" strokeOpacity=".6" strokeWidth="1.2" /><path d="M42 34l1 3 3 1-3 1-1 3-1-3-3-1 3-1zM6 4l.8 2.2L9 7l-2.2.8L6 10l-.8-2.2L3 7l2.2-.8z" fill="#fde68a" /></>),
 };
 function IconeLive({ type }: { type: TypeSpecial }) {
@@ -61,8 +66,8 @@ function IconeLive({ type }: { type: TypeSpecial }) {
 
 const NOMS_SEMAINE = ["Cette semaine", "Semaine prochaine", "Dans 2 semaines", "Dans 3 semaines"];
 
-function Jeux({ jeux, couleur = "text-lilac" }: { jeux: string[]; couleur?: string }) {
-  if (!jeux.length) return <span className={`${couleur} text-sm font-medium leading-tight`}>Stream</span>;
+function Jeux({ jeux, couleur = "text-lilac", vide = "Stream" }: { jeux: string[]; couleur?: string; vide?: string }) {
+  if (!jeux.length) return vide ? <span className={`${couleur} text-sm font-medium leading-tight`}>{vide}</span> : null;
   if (jeux.length === 1) return <span className={`${couleur} block text-sm font-medium leading-tight line-clamp-2`}>{jeux[0]}</span>;
   return (
     <ol className="flex md:flex-col flex-wrap items-center gap-x-1.5 gap-y-1 w-full">
@@ -101,7 +106,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
           const estAujourdhui = jour.date === aujourdhui;
           const sp = jour.off ? "" : typeLive(jour);
           const st = sp ? STYLE_LIVE[sp] : null;
-          const valo = !jour.off && !sp && jour.jeux.some((j) => /valorant/i.test(j));
+          const valo = !jour.off && !sp && (jour.categorie === "valorant" || jour.categorie === "pp" || [jour.titre || "", ...jour.jeux].some((j) => /valorant/i.test(j)));
           return (
             <div
               key={jour.date || jour.jour}
@@ -133,7 +138,8 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                   ) : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}
                   <div className="flex-1 md:flex-none md:w-full min-w-0">
                     {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span> : null}
-                    <Jeux jeux={jour.jeux} couleur={st?.texte} />
+                    {jour.titre ? <span className={`block text-sm font-semibold leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
+                    {jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : categorieDe(jour.categorie)?.label || "Stream"} /> : null}
                   </div>
                   <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
                     {jour.heure}

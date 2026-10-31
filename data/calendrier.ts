@@ -8,10 +8,10 @@
 // /admin, onglet « Calendrier ». CycyBot relit ces données toutes les
 // 2 minutes pour les annonces Discord, les inscriptions et les rappels.
 
-import { type JourPlanning, avecJeux, jeuxDe } from "@/data/planning";
+import { type JourPlanning, avecJeux, jeuxDe, libelleSoiree } from "@/data/planning";
 
 /** Ce qui change pour une date précise (« 2026-10-20 »). */
-export type ExceptionPlanning = { off: boolean; heure?: string; fin?: string; jeu?: string; jeux?: string[]; note?: string };
+export type ExceptionPlanning = { off: boolean; heure?: string; fin?: string; jeu?: string; jeux?: string[]; titre?: string; categorie?: string; note?: string };
 
 export type TypeEvenement = "quiz" | "discord" | "projet" | "live" | "autre";
 
@@ -54,8 +54,11 @@ export function dateParis(d: Date): string {
 export function jourAvecException(jour: JourPlanning, exception?: ExceptionPlanning): JourPlanning & { note?: string; modifie?: boolean } {
   if (!exception) return jour;
   if (exception.off) return { jour: jour.jour, off: true, note: exception.note, modifie: true };
-  const jeux = jeuxDe(exception).length ? jeuxDe(exception) : jeuxDe(jour);
-  return { jour: jour.jour, off: false, heure: exception.heure || jour.heure, fin: exception.fin || jour.fin, jeux, jeu: jeux.join(" + ") || undefined, note: exception.note, modifie: true };
+  // Soirée personnalisée ce jour-là (titre, catégorie ou jeux) ; sinon celle de la semaine type
+  const perso = Boolean(exception.titre || exception.categorie || jeuxDe(exception).length);
+  const src = perso ? exception : jour;
+  const soiree = { jeux: jeuxDe(src), titre: src.titre, categorie: src.categorie };
+  return { jour: jour.jour, off: false, heure: exception.heure || jour.heure, fin: exception.fin || jour.fin, ...soiree, jeu: libelleSoiree(soiree) || undefined, note: exception.note, modifie: true };
 }
 
 const texte = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
@@ -71,7 +74,7 @@ export function nettoyerCalendrier(brut: unknown): DonneesCalendrier | null {
     for (const [date, v] of Object.entries(b.exceptions as Record<string, unknown>)) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < limite || !v || typeof v !== "object") continue;
       const e = v as Record<string, unknown>;
-      exceptions[date] = avecJeux({ off: Boolean(e.off), heure: texte(e.heure, 10) || undefined, fin: texte(e.fin, 10) || undefined, jeu: texte(e.jeu, 200) || undefined, jeux: Array.isArray(e.jeux) ? e.jeux.map((x) => texte(x, 60)) : undefined, note: texte(e.note, 120) || undefined });
+      exceptions[date] = avecJeux({ off: Boolean(e.off), heure: texte(e.heure, 10) || undefined, fin: texte(e.fin, 10) || undefined, jeu: texte(e.jeu, 200) || undefined, jeux: Array.isArray(e.jeux) ? e.jeux.map((x) => texte(x, 60)) : undefined, titre: texte(e.titre, 80) || undefined, categorie: texte(e.categorie, 20) || undefined, note: texte(e.note, 120) || undefined });
     }
   }
   const evenements: EvenementCalendrier[] = [];

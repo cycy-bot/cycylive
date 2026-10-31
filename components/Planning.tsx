@@ -23,7 +23,7 @@ export default async function Planning() {
       const jour = habituel.find((x) => x.jour === JOURS_ORDRE[k]);
       if (!jour) return [];
       const j = jourAvecException(jour, calendrier.exceptions[dates[i]]);
-      return [{ jour: j.jour, date: dates[i], off: j.off, heure: j.heure, fin: j.fin, jeux: jeuxDe(j), note: j.note, modifie: j.modifie }];
+      return [{ jour: j.jour, date: dates[i], off: j.off, heure: j.heure, fin: j.fin, jeux: jeuxDe(j), titre: j.titre, categorie: j.categorie, note: j.note, modifie: j.modifie }];
     });
     return { du: court(dates[0]), au: court(dates[6]), jours };
   });
