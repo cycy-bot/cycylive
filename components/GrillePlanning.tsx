@@ -5,10 +5,10 @@
 import { useState } from "react";
 import type React from "react";
 import Icone from "@/components/icones/Icone";
-import { categorieDe } from "@/data/planning";
+import { formatDe } from "@/data/planning";
 import { IconCrystal } from "@/components/Icons";
 
-export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; note?: string; modifie?: boolean };
+export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
 
 // Lives spéciaux (même détection que l'image du planning Discord) : illustration et couleurs à part
@@ -137,13 +137,16 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                     <img src="/images/jeux/valorant.png" alt="Valorant" width={30} height={24} className="h-6 w-auto shrink-0 drop-shadow-[0_0_10px_rgba(181,124,255,.7)]" />
                   ) : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}
                   <div className="flex-1 md:flex-none md:w-full min-w-0">
-                    {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span> : null}
+                    {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span>
+                      : formatDe(jour.categorie) ? <span className="mb-1 inline-block whitespace-nowrap rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-lilac">{formatDe(jour.categorie)!.emoji} {formatDe(jour.categorie)!.label}</span> : null}
                     {jour.titre ? <span className={`block text-sm font-semibold leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
-                    {jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : categorieDe(jour.categorie)?.label || "Stream"} /> : null}
+                    {jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
                   </div>
                   <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
-                    {jour.heure}
-                    {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
+                    {jour.aVenir ? <span className="font-medium text-lilac">Horaires à venir</span> : <>
+                      {jour.heure}
+                      {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
+                    </>}
                   </span>
                 </>
               )}

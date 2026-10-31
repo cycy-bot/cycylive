@@ -18,32 +18,54 @@ export type JourPlanning = {
   jeu?: string; // tous les jeux de la soirée, séparés par « + » (lu aussi par CycyBot et le compte à rebours)
   jeux?: string[]; // jusqu'à 3 jeux / activités dans la même soirée, dans l'ordre
   titre?: string; // titre libre de la soirée (« Soirée jeux communautaires »…)
-  categorie?: string; // catégorie (voir CATEGORIES) : choisit l'illustration du planning
+  categorie?: string; // format de la soirée (voir FORMATS) : choisit l'illustration du planning
   heure?: string; // format "21h30"
   fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
+  aVenir?: boolean; // live prévu ce jour-là, horaires pas encore connus
 };
 
 export const MAX_JEUX = 3;
 
-/** Catégories de soirée : elles choisissent l'illustration et les couleurs du planning (site + Discord). */
-export const CATEGORIES = [
-  { id: "valorant", label: "Valorant", emoji: "🎯" },
-  { id: "pp", label: "Soirée PP", emoji: "🎮" },
-  { id: "communautaire", label: "Soirée jeux communautaires", emoji: "🎲" },
-  { id: "horreur", label: "Soirée horreur", emoji: "👻" },
+/** Formats de soirée (le « quoi » du live, à côté du jeu) : ils choisissent l'illustration et les couleurs du
+ *  planning (site + Discord). Le jeu, lui, est le jeu joué (Valorant, Minecraft, Just Chatting…), comme sur Twitch. */
+export const FORMATS = [
+  { id: "ranked", label: "Ranked", emoji: "🏆" },
+  { id: "pp", label: "Parties persos", emoji: "🎮" },
+  { id: "communautaire", label: "Jeux communautaires", emoji: "🎲" },
+  { id: "decouverte", label: "Découverte", emoji: "🧭" },
+  { id: "chill", label: "Chill & discussion", emoji: "☕" },
+  { id: "horreur", label: "Jeux d'horreur", emoji: "👻" },
   { id: "evenement", label: "Événement spécial", emoji: "✨" },
   { id: "caritatif", label: "Live caritatif", emoji: "💜" },
   { id: "giveaway", label: "Giveaway", emoji: "🎁" },
-  { id: "tournoi", label: "Tournoi", emoji: "🏆" },
+  { id: "tournoi", label: "Tournoi", emoji: "🥇" },
   { id: "anniversaire", label: "Anniversaire", emoji: "🎂" },
   { id: "halloween", label: "Halloween", emoji: "🎃" },
   { id: "noel", label: "Noël", emoji: "🎄" },
-  { id: "discussion", label: "Discussion", emoji: "💬" },
-  { id: "autre", label: "Autre jeu", emoji: "🕹️" },
 ] as const;
-export const categorieDe = (id?: string) => CATEGORIES.find((c) => c.id === id);
+/** @deprecated ancien nom */
+export const CATEGORIES = FORMATS;
+export const formatDe = (id?: string) => FORMATS.find((c) => c.id === id);
+export const categorieDe = formatDe;
+
+/** Jeux proposés dans l'admin (on peut toujours écrire le sien). */
+export const JEUX_SUGGERES = ["Valorant", "Just Chatting", "Minecraft", "Palworld", "Goose Goose Duck", "Among Us", "The Legend of Zelda", "Animal Crossing", "Phasmophobia", "Lethal Company", "Fortnite", "League of Legends", "Mario Kart", "Fall Guys", "Dead by Daylight", "Stardew Valley", "Pokémon", "Overcooked", "Gartic Phone", "Jeux de société"];
 
 type AvecSoiree = { jeu?: string; jeux?: string[]; titre?: string; categorie?: string };
+
+// Anciens libellés « Valorant — RANKED » / « Valorant — Soirée PP » : le jeu d'un côté, le format de l'autre
+const ANCIENS_FORMATS: [RegExp, string][] = [[/^ranked$/i, "ranked"], [/^(soir[ée]e\s+)?pp$|^parties?\s+persos?$/i, "pp"]];
+export function separerJeuFormat(jeux: string[], categorie?: string): { jeux: string[]; categorie?: string } {
+  if (categorie) return { jeux, categorie };
+  let cat: string | undefined;
+  const out = jeux.map((j) => {
+    const m = String(j).match(/^(.+?)\s+[—–-]\s+(.+)$/);
+    const f = m && ANCIENS_FORMATS.find(([re]) => re.test(m[2].trim()));
+    if (m && f) { cat = cat || f[1]; return m[1].trim(); }
+    return j;
+  });
+  return { jeux: [...new Set(out)], categorie: cat };
+}
 
 /** Les jeux / activités d'une soirée (1 à 3), quel que soit l'ancien ou le nouveau format. */
 export function jeuxDe(j: AvecSoiree | null | undefined): string[] {
@@ -59,19 +81,26 @@ export function jeuxDe(j: AvecSoiree | null | undefined): string[] {
 export function libelleSoiree(j: AvecSoiree | null | undefined): string {
   if (!j) return "";
   const jeux = jeuxDe(j);
-  const cat = categorieDe(j.categorie);
-  const base = String(j.titre || "").trim() || (cat && cat.id !== "autre" && cat.id !== "valorant" ? cat.label : "");
-  if (base && jeux.length) return `${base} : ${jeux.join(" + ")}`;
-  return base || jeux.join(" + ") || (cat ? cat.label : "");
+  const f = formatDe(j.categorie);
+  const titre = String(j.titre || "").trim();
+  // « Titre : jeux » ; sans titre « Jeux — Format » (ex. « Valorant — Ranked ») ; sinon ce qu'on a
+  if (titre) return jeux.length ? `${titre} : ${jeux.join(" + ")}` : titre;
+  if (f && jeux.length) return `${jeux.join(" + ")} — ${f.label}`;
+  return jeux.join(" + ") || (f ? f.label : "");
 }
 
 /** Range un jour avant l'enregistrement : jeux nettoyés (3 max), titre, catégorie et « jeu » recalculé. */
 export function avecJeux<T extends AvecSoiree>(j: T): T {
   const titre = String(j.titre || "").trim().slice(0, 80) || undefined;
-  const categorie = categorieDe(j.categorie)?.id;
-  const brut = Array.isArray(j.jeux) ? j.jeux : !titre && !categorie && j.jeu ? [j.jeu] : [];
-  const jeux = brut.map((x) => String(x || "").trim().slice(0, 60)).filter(Boolean).slice(0, MAX_JEUX);
-  const propre = { ...j, titre, categorie, jeux: jeux.length ? jeux : undefined };
+  // anciennes catégories : « Valorant » devient le jeu, « Autre » / « Discussion » disparaissent
+  const ancien = String(j.categorie || "");
+  const categorie = formatDe(ancien === "discussion" ? "chill" : ancien)?.id;
+  const brut = Array.isArray(j.jeux) ? j.jeux : !titre && !ancien && j.jeu ? [j.jeu] : [];
+  let jeux = brut.map((x) => String(x || "").trim().slice(0, 60)).filter(Boolean).slice(0, MAX_JEUX);
+  if (ancien === "valorant" && !jeux.some((x) => /valorant/i.test(x))) jeux = ["Valorant", ...jeux].slice(0, MAX_JEUX);
+  const sep = separerJeuFormat(jeux, categorie);
+  jeux = sep.jeux;
+  const propre = { ...j, titre, categorie: sep.categorie, jeux: jeux.length ? jeux : undefined };
   return { ...propre, jeu: libelleSoiree(propre) || undefined };
 }
 
@@ -206,7 +235,7 @@ export type ProchainLive = {
 // (celui par défaut, ou celui enregistré via /admin).
 export function calculerProchainLive(
   planning: JourPlanning[],
-  exceptions: Record<string, { off: boolean; heure?: string; jeu?: string }> = {}
+  exceptions: Record<string, { off: boolean; heure?: string; jeu?: string; aVenir?: boolean }> = {}
 ): ProchainLive | null {
   const maintenant = new Date();
 
@@ -220,9 +249,10 @@ export function calculerProchainLive(
     const jourPlanning: JourPlanning | undefined = exception
       ? exception.off
         ? { jour: nomJour, off: true }
-        : { jour: nomJour, off: false, heure: exception.heure || habituel?.heure, jeu: exception.jeu || habituel?.jeu }
+        : { jour: nomJour, off: false, heure: exception.heure || habituel?.heure, jeu: exception.jeu || habituel?.jeu, aVenir: exception.aVenir }
       : habituel;
-    if (!jourPlanning || jourPlanning.off || !jourPlanning.heure) continue;
+    // horaires « à venir » : pas de compte à rebours tant que l'heure n'est pas fixée
+    if (!jourPlanning || jourPlanning.off || !jourPlanning.heure || jourPlanning.aVenir) continue;
 
     const { heures, minutes } = parseHeure(jourPlanning.heure);
     const dateLive = dateLiveAParis(date, heures, minutes);
