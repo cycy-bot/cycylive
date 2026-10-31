@@ -383,7 +383,7 @@ export default async function GamingPage() {
                                 <span className="absolute inset-0 flex items-center justify-center" style={{ background: `linear-gradient(160deg, rgba(${illu.couleur},.35), rgba(13,10,23,.95))` }}><Icone nom="clap" className="w-6 h-6 text-white/70" /></span>
                               )}
                               <span className="absolute left-1 top-1 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">{c.plateforme}</span>
-                              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-[10.5px] leading-tight text-white line-clamp-2">{c.titre || "▶ Voir"}</span>
+                              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-1.5 pb-1 pt-4 text-[10.5px] leading-tight text-white line-clamp-2">{c.titre || <><Icone nom="lecture" className="w-3.5 h-3.5 mr-1" />Voir</>}</span>
                             </a>
                           ))}
                         </div>

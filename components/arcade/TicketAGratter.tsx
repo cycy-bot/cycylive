@@ -300,7 +300,7 @@ export default function TicketAGratter() {
                     {ticket.given && <p className="text-ink-soft">{ticket.given.map(sansMarkdown).join(" · ")}</p>}
                     {ticket.encore ? (
                       <button type="button" onClick={obtenir} disabled={etat === "chargement"} className="mt-4 rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f5b84a] px-6 py-2.5 font-semibold text-[#3a2048] shadow-[0_0_20px_rgba(245,184,74,.45)] hover:brightness-110 disabled:opacity-60">
-                        🎁 {etat === "chargement" ? "Impression du ticket bonus…" : "Gratter mon ticket bonus du jour"}
+                        <Icone nom="cadeau" className="w-5 h-5 mr-1.5" />{etat === "chargement" ? "Impression du ticket bonus…" : "Gratter mon ticket bonus du jour"}
                       </button>
                     ) : (
                       <p className="text-xs text-ink-soft/60 mt-3">Un nouveau ticket t&apos;attend demain, dès minuit.</p>
@@ -337,7 +337,7 @@ export default function TicketAGratter() {
                         }}
                         className="rounded-full px-5 py-2.5 bg-violet/20 border border-violet/40 text-ink text-sm font-medium hover:bg-violet/30"
                       >
-                        {copie ? "Code copié ✓" : "Copier le code"}
+                        {copie ? <><Icone nom="valide" className="w-4 h-4 mr-1" />Code copié</> : "Copier le code"}
                       </button>
                       <a
                         href={DISCORD}

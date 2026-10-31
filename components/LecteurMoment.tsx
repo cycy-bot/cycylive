@@ -99,7 +99,7 @@ export default function LecteurMoment({ liens, titre, compact = false }: { liens
                   </>
                 )}
                 <button ref={fermer} type="button" onClick={() => setOuvert(null)} className={nav}>
-                  Fermer ✕
+                  Fermer <Icone nom="fermer" className="w-4 h-4 ml-1" />
                 </button>
               </div>
               <div className={"overflow-hidden rounded-2xl border border-violet/30 bg-void shadow-glow " + (vertical ? "aspect-[9/16]" : "aspect-video")}>

@@ -10,6 +10,7 @@
 // fermée pour toujours.
 // Aperçu privé de Cycy : ?apercu=<jeton de l'admin>&jour=<1-24> (jour simulé, cadeaux de test).
 
+import Icone from "@/components/icones/Icone";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Sticker, { stickerDuGain } from "@/components/arcade/Stickers";
@@ -197,7 +198,7 @@ export default function CalendrierAvent() {
   if (ferme) {
     return (
       <div className="py-24 text-center">
-        <p className="text-5xl mb-4">🌙</p>
+        <p className="mb-4"><Icone nom="lune" className="w-12 h-12 text-lilac" /></p>
         <h1 className="text-2xl font-semibold text-ink mb-2">Cette page n&apos;existe pas (encore)</h1>
         <p className="text-ink-soft">Retourne explorer la galaxie : <Link href="/jeux" className="text-lilac underline">les jeux de Cycylive</Link>.</p>
       </div>
@@ -215,13 +216,13 @@ export default function CalendrierAvent() {
     <div className="av-racine">
       {etat?.apercu ? (
         <div className="av-apercu">
-          <strong>👁️ Aperçu privé</strong> · personne d&apos;autre ne voit cette page
+          <strong><Icone nom="oeil" className="w-4 h-4 mr-1" />Aperçu privé</strong> · personne d&apos;autre ne voit cette page
           <label className="ml-2">Jour simulé :{" "}
             <select value={jour} onChange={(e) => changerJour(Number(e.target.value))}>
               {Array.from({ length: 25 }, (_, n) => n).map((n) => <option key={n} value={n}>{n === 0 ? "avant le 1er" : `${n} décembre`}</option>)}
             </select>
           </label>
-          <button type="button" onClick={() => { setResultat(null); charger({ action: "reinitialiser" }); }}>↺ Refermer mes cases de test</button>
+          <button type="button" onClick={() => { setResultat(null); charger({ action: "reinitialiser" }); }}><Icone nom="rejouer" className="w-4 h-4 mr-1" />Refermer mes cases de test</button>
           <span className="opacity-70">Les ouvertures de test n&apos;envoient aucun cadeau.</span>
         </div>
       ) : null}

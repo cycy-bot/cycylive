@@ -531,6 +531,31 @@ export const BANQUE = {
   fleche: I("Suivant", "Navigation", <>
     <path {...T} d="M4.5 12h15M13.5 6l6 6-6 6" />
   </>),
+  retour: I("Précédent / à gauche", "Navigation", <>
+    <path {...T} d="M19.5 12h-15M10.5 6l-6 6 6 6" />
+  </>),
+  haut: I("Monter / sauter", "Navigation", <>
+    <path {...T} d="M12 19.5v-15M6 10.5l6-6 6 6" />
+  </>),
+  bas: I("Descendre / lâcher", "Navigation", <>
+    <path {...T} d="M12 4.5v15M6 13.5l6 6 6-6" />
+  </>),
+  coteGauche: I("Placer à gauche", "Navigation", <>
+    <rect {...F} x="3" y="4" width="18" height="16" rx="3" />
+    <rect {...P} x="5.5" y="11" width="4.5" height="6.5" rx="1.2" />
+    <path {...T} d="M18 12h-4.5M15.5 10l-2 2 2 2" />
+    {eclat(7.75, 7.6, 1.6)}
+  </>),
+  coteDroite: I("Placer à droite", "Navigation", <>
+    <rect {...F} x="3" y="4" width="18" height="16" rx="3" />
+    <rect {...P} x="14" y="11" width="4.5" height="6.5" rx="1.2" />
+    <path {...T} d="M6 12h4.5M8.5 10l2 2-2 2" />
+    {eclat(16.25, 7.6, 1.6)}
+  </>),
+  fermer: I("Fermer", "Navigation", <>
+    <circle {...F} cx="12" cy="12" r="9.2" />
+    <path {...T} d="m9 9 6 6M15 9l-6 6" />
+  </>),
   lecture: I("Jouer", "Navigation", <>
     <circle {...F} cx="12" cy="12" r="9.2" />
     <path {...P} d="M10 8.3v7.4l6.2-3.7Z" />

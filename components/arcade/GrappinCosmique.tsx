@@ -13,6 +13,7 @@
 // La machine (public/grappin/machine-pres.webp) sert de décor : toutes les
 // positions sont en fractions de sa largeur (W) et de sa hauteur (H).
 
+import Icone from "@/components/icones/Icone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
@@ -477,8 +478,8 @@ export default function GrappinCosmique() {
             {/* le pupitre de l'image devient cliquable : joystick (◀ ▶) et gros bouton */}
             {enCours ? (
               <>
-                <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.205, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}>◀</button>
-                <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.355, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}>▶</button>
+                <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.205, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}><Icone nom="retour" className="w-[55%] h-[55%]" /></button>
+                <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-touche absolute grid place-items-center rounded-full disabled:opacity-30" style={{ left: W * 0.355, top: H * 0.82, width: W * 0.06, height: W * 0.06, zIndex: 30 }}><Icone nom="fleche" className="w-[55%] h-[55%]" /></button>
                 <button type="button" aria-label="Lâcher la pince" onClick={(e) => { e.stopPropagation(); lacher(); }} onPointerDown={(e) => e.stopPropagation()} disabled={occupe} className={`absolute rounded-full ${occupe ? "" : "gr-gros-bouton"}`} style={{ left: W * 0.62, top: H * 0.835, width: W * 0.155, height: H * 0.14, zIndex: 30 }} />
               </>
             ) : null}
@@ -539,16 +540,16 @@ export default function GrappinCosmique() {
                 ))}
                 <span className="ml-1 text-sm text-ink-soft">
                   {partie.fini ? "Plus de tirages aujourd'hui" : `${partie.restants} tirage${partie.restants > 1 ? "s" : ""}`}
-                  {partie.bonus ? <span className="ml-1.5 rounded-full bg-[#ffe066]/20 px-2 py-0.5 text-[11px] font-bold text-[#ffe066]">🎁 +{partie.bonus} bonus aujourd&apos;hui</span> : null}
+                  {partie.bonus ? <span className="ml-1.5 rounded-full bg-[#ffe066]/20 px-2 py-0.5 text-[11px] font-bold text-[#ffe066]"><Icone nom="cadeau" className="w-3.5 h-3.5 mr-0.5" />+{partie.bonus} bonus aujourd&apos;hui</span> : null}
                 </span>
               </div>
               {enCours ? (
                 <div className="flex items-center gap-2">
                   <span className={`w-10 text-right text-sm tabular-nums ${chrono <= 5 ? "text-[#ff4f9a]" : "text-ink-soft"}`}>{phase === "viser" ? `${chrono}s` : ""}</span>
-                  <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-fleche h-11 w-11 rounded-full text-lg font-black disabled:opacity-40">◀</button>
-                  <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-fleche h-11 w-11 rounded-full text-lg font-black disabled:opacity-40">▶</button>
+                  <button type="button" aria-label="Déplacer à gauche" disabled={occupe} {...maintenir(-1)} className="gr-fleche grid h-11 w-11 place-items-center rounded-full disabled:opacity-40"><Icone nom="retour" className="w-5 h-5" /></button>
+                  <button type="button" aria-label="Déplacer à droite" disabled={occupe} {...maintenir(1)} className="gr-fleche grid h-11 w-11 place-items-center rounded-full disabled:opacity-40"><Icone nom="fleche" className="w-5 h-5" /></button>
                   <button type="button" onClick={lacher} disabled={occupe} className="gr-bouton h-12 rounded-full px-6 font-black uppercase tracking-wider text-[#12062a] disabled:opacity-50">
-                    Lâcher ⬇
+                    Lâcher <Icone nom="bas" className="w-4 h-4 ml-1" />
                   </button>
                 </div>
               ) : null}
@@ -583,13 +584,13 @@ export default function GrappinCosmique() {
             </div>
             {partie.fini && partie.total ? (
               <div className="mt-4 rounded-2xl bg-violet/10 p-4 text-center">
-                <p className="text-ink font-semibold">✅ {partie.recupere ? "Ajouté à ton compte Discord !" : "Ta récompense arrive sur ton compte Discord…"}</p>
+                <p className="text-ink font-semibold"><Icone nom="valide" className="w-5 h-5 mr-1.5 text-emerald-300" />{partie.recupere ? "Ajouté à ton compte Discord !" : "Ta récompense arrive sur ton compte Discord…"}</p>
                 <div className="mx-auto mt-3 max-w-md space-y-1.5 text-left text-sm">
                   {partie.prises.map((p, i) => (
                     <div key={i} className="flex justify-between gap-3 text-ink-soft"><span>Prise {i + 1} · {p.nom}</span><span className="shrink-0 font-semibold text-ink">{p.label}</span></div>
                   ))}
                   {partie.prisesTotal && partie.total.boosters > partie.prisesTotal.boosters ? (
-                    <div className="flex justify-between gap-3 text-[#ffe066]"><span>🎁 Booster garanti du jour (aucune prise n&apos;en contenait)</span><span className="shrink-0 font-semibold">+ {partie.total.boosters - partie.prisesTotal.boosters} booster</span></div>
+                    <div className="flex justify-between gap-3 text-[#ffe066]"><span><Icone nom="cadeau" className="w-4 h-4 mr-1" />Booster garanti du jour (aucune prise n&apos;en contenait)</span><span className="shrink-0 font-semibold">+ {partie.total.boosters - partie.prisesTotal.boosters} booster</span></div>
                   ) : null}
                   <div className="flex justify-between gap-3 border-t border-white/10 pt-2 text-base font-bold text-ink"><span>Total</span><span className="text-right">{partie.total.label}</span></div>
                 </div>
@@ -604,7 +605,7 @@ export default function GrappinCosmique() {
       <aside className="carte-holo rounded-2xl border border-violet/12 p-5">
         <h2 className="mb-3 text-lg font-semibold text-ink">Comment jouer ?</h2>
         <ol className="mb-5 list-inside list-decimal space-y-2 text-sm text-ink-soft">
-          <li>Place la pince avec ◀ ▶ (le joystick de la borne, les flèches du clavier, ou en touchant la vitrine).</li>
+          <li>Place la pince avec <Icone nom="retour" className="w-4 h-4 mx-0.5" /> <Icone nom="fleche" className="w-4 h-4 mx-0.5" /> (le joystick de la borne, les flèches du clavier, ou en touchant la vitrine).</li>
           <li>Appuie sur le <strong className="text-ink">gros bouton</strong> (ou Lâcher, ou Espace) : 20 secondes par tirage !</li>
           <li>La pince attrape la peluche la plus centrée sous elle. Celles du dessus passent devant : vise juste pour atteindre le fond.</li>
           <li>Les lots précieux glissent plus souvent… mais tu ne repars <strong className="text-ink">jamais les mains vides</strong> : une étoile porte-bonheur s&apos;accroche toujours.</li>

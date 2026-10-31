@@ -806,7 +806,7 @@ export default function Compagnon() {
             </div>
             )}
           </div>
-          {boutique === "habitat" && (rayonDeco === "mur" || rayonDeco === "sol") ? (
+          {boutique === "habitat" && (rayonDeco === "mur" || rayonDeco === "sol" || rayonDeco === "plafond") ? (
             <p className="mb-2 text-xs text-ink-soft">Pose un objet à gauche et un autre à droite de la pièce : touche le côté de ton choix (le même côté une 2ᵉ fois pour le ranger).</p>
           ) : null}
           {boutique === "habitat" ? (
@@ -830,7 +830,7 @@ export default function Compagnon() {
                           const occupe = !actif && etat.habitat?.[em] ? DECOS.find((x) => x.key === etat.habitat?.[em])?.nom : "";
                           return (
                             <button key={em} type="button" onClick={() => installerDeco(d.key, em)} aria-pressed={actif} title={actif ? "Ranger" : occupe ? `Remplace ${occupe.toLowerCase()}` : "Installer ici"} className={`whitespace-nowrap rounded-full px-1 py-1.5 text-[11px] font-semibold ${actif ? "bg-violet text-ink ring-1 ring-violet-light" : "border border-violet/30 text-ink-soft hover:bg-violet/15"}`}>
-                              {em.endsWith("gauche") ? "◀ Gauche" : "Droite ▶"}
+                              {em.endsWith("gauche") ? <><Icone nom="coteGauche" className="w-3.5 h-3.5 mr-1" />Gauche</> : <>Droite<Icone nom="coteDroite" className="w-3.5 h-3.5 ml-1" /></>}
                             </button>
                           );
                         })}
@@ -963,7 +963,7 @@ export default function Compagnon() {
                 }
                 className="rounded-full px-4 py-2 bg-violet/20 border border-violet/40 text-ink text-xs font-medium hover:bg-violet/30"
               >
-                {copie ? "Code copié ✓" : "Copier le code"}
+                {copie ? <><Icone nom="valide" className="w-4 h-4 mr-1" />Code copié</> : "Copier le code"}
               </button>
               <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="rounded-full px-4 py-2 bg-violet text-ink text-xs font-medium hover:bg-violet-light">
                 Ouvrir Discord

@@ -1,5 +1,6 @@
 "use client";
 
+import Icone from "@/components/icones/Icone";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ARCADE, vitesseA, intensite } from "@/lib/arcadeRegles";
 
@@ -634,7 +635,7 @@ export default function BorneArcade() {
           onPointerCancel={() => seBaisser(false)}
           onPointerLeave={() => seBaisser(false)}
         >
-          ⬇ Se baisser
+          <Icone nom="bas" className="w-5 h-5 mr-1.5" />Se baisser
         </button>
         <button
           type="button"
@@ -646,7 +647,7 @@ export default function BorneArcade() {
           onPointerUp={relacherSaut}
           onPointerCancel={relacherSaut}
         >
-          ⬆ Sauter
+          <Icone nom="haut" className="w-5 h-5 mr-1.5" />Sauter
         </button>
       </div>
 

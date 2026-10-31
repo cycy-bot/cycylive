@@ -418,7 +418,7 @@ function Resultat({ partie, copie, setCopie, rejouer, charge }: { partie: Partie
           {partie.given && <p className="text-ink-soft">{partie.given.map((g) => g.replace(/\*\*/g, "")).join(" · ")}</p>}
           {partie.encore ? (
             <button type="button" onClick={rejouer} disabled={charge} className="mt-4 rounded-full bg-gradient-to-b from-[#ffe08a] to-[#f5b84a] px-6 py-2.5 font-semibold text-[#3a2048] shadow-[0_0_20px_rgba(245,184,74,.45)] hover:brightness-110 disabled:opacity-60">
-              🎁 {charge ? "CycyBot remplit les coffres…" : "Ouvrir mes coffres bonus du jour"}
+              <Icone nom="cadeau" className="w-5 h-5 mr-1.5" />{charge ? "CycyBot remplit les coffres…" : "Ouvrir mes coffres bonus du jour"}
             </button>
           ) : (
             <p className="text-xs text-ink-soft/60 mt-3">Trois nouveaux coffres t&apos;attendent demain, dès minuit.</p>
@@ -456,7 +456,7 @@ function Resultat({ partie, copie, setCopie, rejouer, charge }: { partie: Partie
               }}
               className="rounded-full px-5 py-2.5 bg-violet/20 border border-violet/40 text-ink text-sm font-medium hover:bg-violet/30"
             >
-              {copie ? "Code copié ✓" : "Copier le code"}
+              {copie ? <><Icone nom="valide" className="w-4 h-4 mr-1" />Code copié</> : "Copier le code"}
             </button>
             <a href={DISCORD} target="_blank" rel="noopener noreferrer" className="rounded-full px-4 py-2.5 bg-violet text-ink text-sm font-medium hover:bg-violet-light">
               Ouvrir Discord

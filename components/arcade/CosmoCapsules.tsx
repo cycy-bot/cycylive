@@ -11,6 +11,7 @@
 // devine à travers), son ouverture, et l'album des collections.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Icone from "@/components/icones/Icone";
 import { COULEUR_RARETE, NOM_RARETE, FigurineVisuel, type Rarete } from "@/components/arcade/CosmoFigurine";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
 
@@ -254,9 +255,9 @@ export default function CosmoCapsules() {
                     {resultat.special ? (
                       <p className="cc-gain mt-2 rounded-2xl bg-[#fff1e6] px-3 py-2 text-sm font-semibold text-[#9a3412]">🎃 Capsule spéciale {resultat.evenement} : cette figurine rejoint ta collection « Événements »</p>
                     ) : (
-                      <p className="cc-gain mt-2 rounded-2xl bg-[#f6efff] px-3 py-2 text-sm font-semibold text-[#5a3a8a]">🎁 {resultat.given ? resultat.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : resultat.label}</p>
+                      <p className="cc-gain mt-2 rounded-2xl bg-[#f6efff] px-3 py-2 text-sm font-semibold text-[#5a3a8a]"><Icone nom="cadeau" className="w-4 h-4 mr-1" />{resultat.given ? resultat.given.map((g) => g.replace(/\*\*/g, "")).join(" · ") : resultat.label}</p>
                     )}
-                    {resultat.bonus.filter((b) => b.type !== "doublon").map((b) => <p key={b.label} className="mt-2 text-sm font-black text-[#b26bff]">🏆 {b.label}</p>)}
+                    {resultat.bonus.filter((b) => b.type !== "doublon").map((b) => <p key={b.label} className="mt-2 text-sm font-black text-[#b26bff]"><Icone nom="trophee" className="w-4 h-4 mr-1" />{b.label}</p>)}
                     {resultat.special ? null : <p className="mt-2 text-xs text-[#7a5aa8]">{resultat.given ? "Ajouté à ton compte Discord ✅" : "Ton cadeau arrive sur ton compte Discord…"}</p>}
                     <button type="button" onClick={() => setAnim("repos")} className="mt-3 rounded-full border border-[#c9a8ff] px-4 py-1 text-xs font-semibold text-[#7a3a8a] hover:bg-[#f6efff]">Revoir la machine</button>
                   </div>
@@ -298,7 +299,7 @@ export default function CosmoCapsules() {
           <section className="carte-holo mt-5 rounded-3xl border border-violet/20 p-5" aria-labelledby="titre-album">
             <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
               <div>
-                <h2 id="titre-album" className="text-lg font-semibold text-ink">📒 Mon album</h2>
+                <h2 id="titre-album" className="text-lg font-semibold text-ink"><Icone nom="livre" className="w-5 h-5 mr-1.5 text-lilac" />Mon album</h2>
                 <p className="text-sm text-ink-soft">{etat.possedees} / {etat.total} figurines · {etat.capsules} capsule{etat.capsules > 1 ? "s" : ""} ouverte{etat.capsules > 1 ? "s" : ""}</p>
               </div>
               <div className="min-w-[200px] flex-1 sm:max-w-[260px]">

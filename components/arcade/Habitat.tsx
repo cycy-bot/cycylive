@@ -2,7 +2,7 @@
 // HABITAT DU COMPAGNON — ambiances et décorations illustrées
 // ============================================================
 // Achetées avec les bonbons cosmiques 🍬 et installées dans la scène.
-// Un objet par emplacement : fond (ambiance), plafond, mur à gauche et à droite, tapis, objet au sol à gauche et à droite.
+// Un objet par emplacement : fond (ambiance), plafond, mur et objet au sol à gauche et à droite, tapis.
 // Images : public/compagnon/habitats/<ambiance>.webp (4 pièces alignées : même sol,
 // mêmes murs, mêmes hublots) et public/compagnon/decos/<objet>.webp.
 
@@ -10,14 +10,14 @@ import type { CSSProperties } from "react";
 
 // Emplacements de la pièce : les objets du mur et les objets posés au sol se mettent à gauche OU à droite
 // (un de chaque côté), le tapis au centre du sol.
-export type EmplacementDeco = "fond" | "plafond" | "mur-gauche" | "mur-droite" | "tapis" | "sol-gauche" | "sol-droite";
+export type EmplacementDeco = "fond" | "plafond-gauche" | "plafond-droite" | "mur-gauche" | "mur-droite" | "tapis" | "sol-gauche" | "sol-droite";
 export type Habitat = Partial<Record<EmplacementDeco, string>>;
 /** Rayons de la boutique (un rayon peut aller sur deux emplacements : gauche ou droite). */
 export type RayonDeco = "fond" | "plafond" | "mur" | "tapis" | "sol";
 
 export const RAYONS_DECO: { key: RayonDeco; label: string; places: EmplacementDeco[] }[] = [
   { key: "fond", label: "Ambiance", places: ["fond"] },
-  { key: "plafond", label: "Plafond", places: ["plafond"] },
+  { key: "plafond", label: "Plafond", places: ["plafond-gauche", "plafond-droite"] },
   { key: "mur", label: "Mur", places: ["mur-gauche", "mur-droite"] },
   { key: "tapis", label: "Tapis", places: ["tapis"] },
   { key: "sol", label: "Objets au sol", places: ["sol-gauche", "sol-droite"] },
@@ -31,9 +31,9 @@ export const DECOS: { key: string; nom: string; rayon: RayonDeco; cote?: "gauche
   { key: "ocean", nom: "Station lunaire", rayon: "fond", prix: 70 },
   { key: "couchant", nom: "Refuge martien", rayon: "fond", prix: 80 },
   { key: "aurore", nom: "Jardin d'aurore", rayon: "fond", prix: 90 },
-  { key: "guirlande", nom: "Guirlande d'étoiles", rayon: "plafond", prix: 35 },
-  { key: "mobile", nom: "Mobile de planètes", rayon: "plafond", prix: 50 },
-  { key: "lune", nom: "Lampe lune", rayon: "plafond", prix: 60 },
+  { key: "guirlande", nom: "Guirlande d'étoiles", rayon: "plafond", cote: "droite", prix: 35 },
+  { key: "mobile", nom: "Mobile de planètes", rayon: "plafond", cote: "gauche", prix: 50 },
+  { key: "lune", nom: "Lampe lune", rayon: "plafond", cote: "droite", prix: 60 },
   { key: "hublot", nom: "Hublot sur la Terre", rayon: "mur", cote: "gauche", prix: 55 },
   { key: "poster", nom: "Tenture planète", rayon: "mur", cote: "gauche", prix: 40 },
   { key: "etagere", nom: "Étagère à trophées", rayon: "mur", cote: "droite", prix: 65 },
@@ -62,6 +62,7 @@ export function migrerHabitat(brut: Record<string, unknown>, possedes: string[])
     const d = decoInfo(key);
     if (!d) continue;
     if (em === "mur") poser(d.cote === "droite" ? "mur-droite" : "mur-gauche", key);
+    else if (em === "plafond") poser(d.cote === "gauche" ? "plafond-gauche" : "plafond-droite", key);
     else if (em === "sol") poser("tapis", key);
     else if (em === "gauche") poser("sol-gauche", key);
     else if (em === "droite") poser("sol-droite", key);
@@ -82,14 +83,14 @@ export const FONDS: Record<string, { jour: string; nuit: string }> = Object.from
 // largeur de la scène). Sur une scène étroite (téléphone), l'objet rapetisse au lieu de déborder sur les autres.
 // La scène est un conteneur CSS (cqh / cqw).
 const TAILLE: Record<string, { h: number; w: number; anim?: string; haut?: number }> = {
-  guirlande: { h: 26, w: 40 }, mobile: { h: 28, w: 34, anim: "hb-balance" }, lune: { h: 30, w: 22, anim: "hb-balance" },
-  hublot: { h: 26, w: 24, haut: 22 }, poster: { h: 29, w: 22, haut: 19 }, etagere: { h: 18, w: 26, haut: 30 },
+  guirlande: { h: 22, w: 34 }, mobile: { h: 23, w: 27, anim: "hb-balance" }, lune: { h: 24, w: 18, anim: "hb-balance" },
+  hublot: { h: 26, w: 24, haut: 25 }, poster: { h: 29, w: 22, haut: 23 }, etagere: { h: 18, w: 26, haut: 32 },
   tapis: { h: 22, w: 58 }, nuage: { h: 27, w: 50 }, herbe: { h: 25, w: 54 },
   plante: { h: 31, w: 21 }, lave: { h: 30, w: 14, anim: "hb-lueur" }, telescope: { h: 34, w: 23 },
   arcade: { h: 36, w: 22, anim: "hb-lueur" }, aquarium: { h: 30, w: 22 }, coffre: { h: 24, w: 22 },
 };
-// Plafond : position fixe (centré sur le haut de la pièce)
-const PLAFOND: Record<string, CSSProperties> = { guirlande: { right: "12%", top: "-2%" }, mobile: { left: "30%", top: "-1%" }, lune: { right: "15%", top: "-1%" } };
+// Plafond : un objet suspendu à gauche, un autre à droite
+const PLAFOND_HAUT: Record<string, string> = { guirlande: "-2%", mobile: "-1%", lune: "-1%" };
 
 function placement(k: string, em: EmplacementDeco): (CSSProperties & { anim?: string }) | null {
   const t = TAILLE[k];
@@ -97,7 +98,8 @@ function placement(k: string, em: EmplacementDeco): (CSSProperties & { anim?: st
   const r = TAILLE_IMG[k] || 1;
   const width = `min(${(t.h * r).toFixed(2)}cqh, ${t.w}cqw)`;
   const base = { width, anim: t.anim };
-  if (em === "plafond") return { ...base, ...(PLAFOND[k] || { left: "50%", top: 0 }) };
+  if (em === "plafond-gauche") return { ...base, left: "24%", top: PLAFOND_HAUT[k] || "0%" };
+  if (em === "plafond-droite") return { ...base, right: "24%", top: PLAFOND_HAUT[k] || "0%" };
   if (em === "tapis") return { ...base, left: "50%", bottom: "1%", transform: "translateX(-50%)" };
   if (em === "mur-gauche") return { ...base, left: "15%", top: `${t.haut ?? 22}%` };
   if (em === "mur-droite") return { ...base, right: "15%", top: `${t.haut ?? 22}%` };
@@ -323,7 +325,7 @@ export function DecorScene({ habitat, nuit = false }: { habitat: Habitat; nuit?:
         @media (prefers-reduced-motion: reduce){[class*="hb-"]{animation:none!important}}
       `}</style>
       {habitat.fond && <VueFenetres fond={habitat.fond} />}
-      {(["mur-gauche", "mur-droite", "plafond", "tapis", "sol-gauche", "sol-droite"] as EmplacementDeco[]).map((em) => (habitat[em] ? <Objet key={em} k={habitat[em]!} em={em} nuit={nuit} /> : null))}
+      {(["mur-gauche", "mur-droite", "plafond-gauche", "plafond-droite", "tapis", "sol-gauche", "sol-droite"] as EmplacementDeco[]).map((em) => (habitat[em] ? <Objet key={em} k={habitat[em]!} em={em} nuit={nuit} /> : null))}
     </>
   );
 }
