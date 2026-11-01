@@ -564,6 +564,27 @@ export const BANQUE = {
     <circle {...F} cx="12" cy="12" r="9.2" />
     <path {...T} d="M12 8v8M8 12h8" />
   </>),
+  // ── Outils (interface admin) ─────────────────────
+  calques: I("Scènes / calques", "Infos", <>
+    <path {...F} d="M12 3.2 20.5 8 12 12.8 3.5 8Z" />
+    <path {...T} d="m3.5 12.2 8.5 4.8 8.5-4.8M3.5 16.2l8.5 4.8 8.5-4.8" opacity=".75" />
+    {eclat(12, 8, 1.7)}
+  </>),
+  curseurs: I("Réglages / pilotage", "Infos", <>
+    <path {...T} d="M4 7h5.5M14.5 7H20M4 17h10M19 17h1" opacity=".75" />
+    <circle {...F} cx="12" cy="7" r="2.6" />
+    <circle {...F} cx="16.5" cy="17" r="2.6" />
+    <circle {...P} cx="12" cy="7" r="1" />
+  </>),
+  image: I("Image / miniature", "Infos", <>
+    <rect {...F} x="3" y="4.5" width="18" height="15" rx="3" />
+    <path {...T} d="m3.6 17 5-5 4 4 2.4-2.4 5.4 5" />
+    <circle {...P} cx="16" cy="9" r="1.6" />
+  </>),
+  diese: I("Salon", "Communauté", <>
+    <rect {...F} x="3" y="3" width="18" height="18" rx="5" />
+    <path {...T} d="M10 7.5 8.5 16.5M15.5 7.5 14 16.5M7 10h10.5M6.5 14H17" />
+  </>),
 } satisfies Record<string, DefIcone>;
 
 export type NomIcone = keyof typeof BANQUE;
