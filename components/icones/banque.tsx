@@ -585,6 +585,60 @@ export const BANQUE = {
     <rect {...F} x="3" y="3" width="18" height="18" rx="5" />
     <path {...T} d="M10 7.5 8.5 16.5M15.5 7.5 14 16.5M7 10h10.5M6.5 14H17" />
   </>),
+  corbeille: I("Supprimer", "Infos", <>
+    <path {...F} d="M6 7.5h12l-1 12.2a2 2 0 0 1-2 1.8H9a2 2 0 0 1-2-1.8Z" />
+    <path {...T} d="M4 7.5h16M9.5 7.5V5a1.5 1.5 0 0 1 1.5-1.5h2A1.5 1.5 0 0 1 14.5 5v2.5M10 11.5v6M14 11.5v6" />
+  </>),
+  disquette: I("Enregistrer", "Infos", <>
+    <path {...F} d="M4 6.5A2.5 2.5 0 0 1 6.5 4h9.8L20 7.7v9.8a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5Z" />
+    <path {...T} d="M8 4v4.5h7V4M8 20v-5.5h8V20" />
+    {eclat(17.6, 11, 1.5)}
+  </>),
+  crayon: I("Modifier", "Infos", <>
+    <path {...F} d="M15.2 4.6a2.2 2.2 0 0 1 3.1 0l1.1 1.1a2.2 2.2 0 0 1 0 3.1L9 19.2 4 20l.8-5Z" />
+    <path {...T} d="m13.5 6.3 4.2 4.2M4.8 15l4.2 4.2" />
+  </>),
+  engrenage: I("Réglages", "Infos", <>
+    <path {...F} d="M10.3 3h3.4l.5 2.4 1.9.8 2-1.4 2.4 2.4-1.4 2 .8 1.9 2.4.5v3.4l-2.4.5-.8 1.9 1.4 2-2.4 2.4-2-1.4-1.9.8-.5 2.4h-3.4l-.5-2.4-1.9-.8-2 1.4-2.4-2.4 1.4-2-.8-1.9L3 13.7v-3.4l2.4-.5.8-1.9-1.4-2 2.4-2.4 2 1.4 1.9-.8Z" />
+    <circle {...T} cx="12" cy="12" r="3" />
+    <circle {...P} cx="12" cy="12" r="1" />
+  </>),
+  cloche: I("Notification", "Infos", <>
+    <path {...F} d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 2h-15Z" />
+    <path {...T} d="M10 21h4M12 3v2" />
+    {eclat(18.5, 5, 1.8)}
+  </>),
+  dossier: I("Dossier", "Infos", <>
+    <path {...F} d="M3 7a2.5 2.5 0 0 1 2.5-2.5h4l2 2.5h7A2.5 2.5 0 0 1 21 9.5v8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5Z" />
+    <path {...T} d="M3 10h18" opacity=".75" />
+  </>),
+  fiole: I("Tester", "Infos", <>
+    <path {...F} d="M9.5 3.5h5M10 3.5v5.2L4.8 17.6A2 2 0 0 0 6.5 20.5h11a2 2 0 0 0 1.7-2.9L14 8.7V3.5" />
+    <path {...T} d="M7.2 14h9.6" opacity=".75" />
+    <circle {...P} cx="11" cy="17" r="1" /><circle {...P} cx="14" cy="16" r=".8" />
+  </>),
+  palette: I("Couleurs / style", "Infos", <>
+    <path {...F} d="M12 3a9 9 0 1 0 0 18c1.4 0 2-1 1.6-2.1-.5-1.3.4-2.4 1.7-2.4H18a3 3 0 0 0 3-3C21 7 17 3 12 3Z" />
+    <circle {...P} cx="7.5" cy="11" r="1.3" /><circle {...P} cx="10" cy="7" r="1.3" /><circle {...P} cx="15" cy="7.5" r="1.3" />
+  </>),
+  cle: I("Clé / accès", "Infos", <>
+    <circle {...F} cx="8" cy="15" r="4.5" />
+    <path {...T} d="m11.3 11.7 8.2-8.2M16.5 6.5l2.5 2.5M14.5 8.5l2 2" />
+    <circle {...P} cx="8" cy="15" r="1.3" />
+  </>),
+  deverrouille: I("Déverrouillé", "Infos", <>
+    <rect {...F} x="4.5" y="10.5" width="15" height="10" rx="3" />
+    <path {...T} d="M8 10.5V7.5a4 4 0 0 1 7.7-1.5" />
+    <circle {...P} cx="12" cy="15.5" r="1.5" />
+  </>),
+  pause: I("Pause", "Navigation", <>
+    <circle {...F} cx="12" cy="12" r="9.2" />
+    <path {...T} d="M10 8.5v7M14 8.5v7" />
+  </>),
+  envoyer: I("Envoyer / publier", "Navigation", <>
+    <path {...F} d="M3.5 11 20.5 3.5 15 20.5l-3.2-6.3Z" />
+    <path {...T} d="m11.8 14.2 8.7-10.7" />
+  </>),
 } satisfies Record<string, DefIcone>;
 
 export type NomIcone = keyof typeof BANQUE;
