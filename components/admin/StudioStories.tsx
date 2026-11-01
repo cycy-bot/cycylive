@@ -13,6 +13,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import { IconTwitch } from "@/components/Icons";
 import { illustrationPour } from "@/lib/illustrationJeu";
 import { liens } from "@/data/liens";
+import { FONDS, DUREE_BOUCLE, dessinerFondStory, type StyleFond } from "@/lib/fondsStories";
 
 type Modele = "live" | "cesoir" | "planning" | "off";
 const MODELES: { valeur: Modele; label: string; icone: NomIcone }[] = [
@@ -92,40 +93,13 @@ type Ressources = {
   sans: string;
 };
 
-function dessinerFond(ctx: CanvasRenderingContext2D, r: Ressources, teinte: string) {
-  ctx.fillStyle = FOND;
-  ctx.fillRect(0, 0, L, H);
-  if (r.fond) {
-    const s = Math.max(L / r.fond.width, H / r.fond.height);
-    const w = r.fond.width * s, h = r.fond.height * s;
-    ctx.globalAlpha = 0.85;
-    ctx.drawImage(r.fond, (L - w) / 2, (H - h) / 2, w, h);
-    ctx.globalAlpha = 1;
-  }
-  const halo = (x: number, y: number, rayon: number, couleur: string) => {
-    const g = ctx.createRadialGradient(x, y, 0, x, y, rayon);
-    g.addColorStop(0, couleur);
-    g.addColorStop(1, "rgba(0,0,0,0)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, L, H);
-  };
-  halo(L * 0.85, H * 0.12, 760, "rgba(161,92,255,.45)");
-  halo(L * 0.1, H * 0.78, 820, `rgba(${teinte},.32)`);
-  const voile = ctx.createLinearGradient(0, 0, 0, H);
-  voile.addColorStop(0, "rgba(13,10,23,.15)");
-  voile.addColorStop(0.55, "rgba(13,10,23,.35)");
-  voile.addColorStop(1, "rgba(13,10,23,.92)");
-  ctx.fillStyle = voile;
-  ctx.fillRect(0, 0, L, H);
-}
-
 function dessinerLogo(ctx: CanvasRenderingContext2D, r: Ressources) {
   if (r.logo) {
-    // logo limité à 250 px de haut pour laisser la place au badge
-    const h = Math.min(250, (r.logo.height / r.logo.width) * 560), w = (r.logo.width / r.logo.height) * h;
-    ctx.drawImage(r.logo, (L - w) / 2, 60, w, h);
+    // logo limité à 190 px de haut : de l'air au-dessus et une vraie marge avant le badge
+    const h = Math.min(190, (r.logo.height / r.logo.width) * 520), w = (r.logo.width / r.logo.height) * h;
+    ctx.drawImage(r.logo, (L - w) / 2, 96, w, h);
   } else {
-    texteCentre(ctx, "Cycylive", 190, 80, r.display, "#fff");
+    texteCentre(ctx, "Cycylive", 220, 80, r.display, "#fff");
   }
 }
 
@@ -155,7 +129,7 @@ function dessinerPhoto(ctx: CanvasRenderingContext2D, r: Ressources, cx: number,
   // anneaux d'orbite
   ctx.strokeStyle = "rgba(224,179,255,.18)";
   ctx.lineWidth = 3;
-  for (const k of [1.32, 1.6]) {
+  for (const k of [1.2, 1.4]) {
     ctx.beginPath();
     ctx.arc(cx, cy, rayon * k, 0, Math.PI * 2);
     ctx.stroke();
@@ -180,7 +154,7 @@ function dessinerPhoto(ctx: CanvasRenderingContext2D, r: Ressources, cx: number,
   if (r.photo) {
     const s = Math.max((rayon * 2) / r.photo.width, (rayon * 2) / r.photo.height);
     const w = r.photo.width * s, h = r.photo.height * s;
-    ctx.drawImage(r.photo, cx - w / 2, cy - h / 2.3, w, h);
+    ctx.drawImage(r.photo, cx - w / 2, cy - h / 2, w, h); // photo centrée dans le cercle
   } else {
     ctx.fillStyle = "#1c1430";
     ctx.fillRect(cx - rayon, cy - rayon, rayon * 2, rayon * 2);
@@ -197,9 +171,9 @@ function dessinerPhoto(ctx: CanvasRenderingContext2D, r: Ressources, cx: number,
     ctx.quadraticCurveTo(x, y, x, y - t);
     ctx.fill();
   };
-  etoile(cx + rayon * 1.05, cy - rayon * 0.95, 26);
-  etoile(cx - rayon * 1.2, cy + rayon * 0.55, 16);
-  etoile(cx + rayon * 1.38, cy + rayon * 0.2, 11);
+  etoile(cx + rayon * 0.98, cy - rayon * 0.9, 24);
+  etoile(cx - rayon * 1.12, cy + rayon * 0.55, 15);
+  etoile(cx + rayon * 1.28, cy + rayon * 0.22, 10);
 }
 
 function dessinerJeu(ctx: CanvasRenderingContext2D, r: Ressources, jeu: string, y: number) {
@@ -223,11 +197,11 @@ function dessinerJeu(ctx: CanvasRenderingContext2D, r: Ressources, jeu: string, 
 }
 
 function dessinerPied(ctx: CanvasRenderingContext2D, r: Ressources) {
-  // la zone 1380–1600 reste libre pour le sticker « lien » d'Instagram
+  // en bas, au-dessus de la zone des réponses d'Instagram
   ctx.font = `600 46px ${r.sans}`;
   const texte = `twitch.tv/${chaine}`;
   const w = ctx.measureText(texte).width + 150;
-  const x = (L - w) / 2, y = 1700;
+  const x = (L - w) / 2, y = 1712;
   pilule(ctx, x, y, w, 104, 52);
   ctx.fillStyle = "rgba(255,255,255,.08)";
   ctx.fill();
@@ -244,18 +218,20 @@ function dessinerPied(ctx: CanvasRenderingContext2D, r: Ressources) {
 
 export type ReglagesStory = { modele: Modele; jeu: string; heure: string; message: string; planning: JourPlanning[]; aujourdhui: string };
 
-export function dessinerStory(ctx: CanvasRenderingContext2D, r: Ressources, o: ReglagesStory) {
-  const teinte = illustrationPour(o.jeu).couleur;
-  dessinerFond(ctx, r, o.modele === "off" ? "129,140,248" : teinte);
+export const teinteStory = (o: Pick<ReglagesStory, "modele" | "jeu">) => (o.modele === "off" ? "129,140,248" : illustrationPour(o.jeu).couleur);
+
+/** Tout sauf le fond : logo, badge, photo, textes, lien Twitch (dessiné une fois, posé sur le fond animé). */
+export function dessinerContenu(ctx: CanvasRenderingContext2D, r: Ressources, o: ReglagesStory) {
+  const teinte = teinteStory(o);
   dessinerLogo(ctx, r);
 
   if (o.modele === "planning") {
-    dessinerBadge(ctx, r, "PLANNING DE LA SEMAINE", 330, "rgba(161,92,255,.9)");
-    dessinerPhoto(ctx, r, L / 2, 580, 110, "161,92,255");
-    let y = 760;
+    dessinerBadge(ctx, r, "PLANNING DE LA SEMAINE", 340, "rgba(161,92,255,.9)");
+    dessinerPhoto(ctx, r, L / 2, 600, 105, "161,92,255");
+    let y = 790;
     for (const j of o.planning) {
       const auj = j.jour === o.aujourdhui;
-      pilule(ctx, 90, y, L - 180, 104, 28);
+      pilule(ctx, 90, y, L - 180, 100, 28);
       ctx.fillStyle = auj ? "rgba(161,92,255,.38)" : j.off ? "rgba(255,255,255,.04)" : "rgba(255,255,255,.09)";
       ctx.fill();
       if (auj) {
@@ -267,39 +243,45 @@ export function dessinerStory(ctx: CanvasRenderingContext2D, r: Ressources, o: R
       ctx.textAlign = "left";
       ctx.font = `700 42px ${r.display}`;
       ctx.fillStyle = j.off ? "rgba(255,255,255,.45)" : "#fff";
-      ctx.fillText(j.jour, 130, y + 54);
+      ctx.fillText(j.jour, 134, y + 52);
       const nomJeu = j.off ? "OFF" : j.jeu || LABEL_GENERIQUE;
       const icone = r.icones[j.off ? "dodo" : illustrationPour(nomJeu).icone];
-      if (icone) ctx.drawImage(icone, 400, y + 26, 52, 52);
+      if (icone) ctx.drawImage(icone, 404, y + 25, 50, 50);
       ctx.font = `500 38px ${r.sans}`;
       ctx.fillStyle = j.off ? "rgba(255,255,255,.45)" : LILAS;
-      ctx.fillText(nomJeu, 470, y + 54, 330);
+      ctx.fillText(nomJeu, 476, y + 52, 320);
       ctx.textAlign = "right";
       ctx.font = `700 40px ${r.sans}`;
       ctx.fillStyle = "#fff";
-      if (!j.off && j.heure) ctx.fillText(j.heure, L - 130, y + 54);
+      if (!j.off && j.heure) ctx.fillText(j.heure, L - 134, y + 52);
       ctx.textBaseline = "alphabetic";
-      y += 116;
+      y += 114;
     }
     dessinerPied(ctx, r);
     return;
   }
 
-  if (o.modele === "live") dessinerBadge(ctx, r, "EN LIVE MAINTENANT", 330, "#e11d48", true);
-  if (o.modele === "cesoir") dessinerBadge(ctx, r, `CE SOIR · ${o.heure || "21h30"}`, 330, "rgba(161,92,255,.95)");
-  if (o.modele === "off") dessinerBadge(ctx, r, "PAS DE LIVE CE SOIR", 330, "rgba(99,102,241,.9)");
+  if (o.modele === "live") dessinerBadge(ctx, r, "EN LIVE MAINTENANT", 340, "#e11d48", true);
+  if (o.modele === "cesoir") dessinerBadge(ctx, r, `CE SOIR · ${o.heure || "21h30"}`, 340, "rgba(161,92,255,.95)");
+  if (o.modele === "off") dessinerBadge(ctx, r, "PAS DE LIVE CE SOIR", 340, "rgba(99,102,241,.9)");
 
-  dessinerPhoto(ctx, r, L / 2, 720, 230, o.modele === "off" ? "129,140,248" : teinte);
+  // photo : centre à 790, anneaux jusqu'à ~320 px → entre le badge (bas à 426) et le titre
+  dessinerPhoto(ctx, r, L / 2, 790, 220, teinte);
 
   const titre = o.modele === "live" ? "On se retrouve en live !" : o.modele === "cesoir" ? "Rendez-vous ce soir !" : "Soirée repos";
-  const finTitre = texteCentre(ctx, titre, 1110, 104, r.display, "#fff", 700, 940, 1.05, 2);
-  let y = finTitre + 50;
+  const finTitre = texteCentre(ctx, titre, 1222, 100, r.display, "#fff", 700, 920, 1.08, 2);
+  let y = finTitre + 74;
   if (o.modele !== "off") {
     dessinerJeu(ctx, r, o.jeu || LABEL_GENERIQUE, y);
-    y += 170;
-  }
-  if (o.message) texteCentre(ctx, o.message, y + 30, 44, r.sans, "rgba(255,255,255,.82)", 500, 900, 1.25, 2);
+    y += 120 + 92;
+  } else y += 30;
+  if (o.message) texteCentre(ctx, o.message, y, 44, r.sans, "rgba(255,255,255,.85)", 500, 880, 1.28, 2);
   dessinerPied(ctx, r);
+}
+
+export function dessinerStory(ctx: CanvasRenderingContext2D, r: Ressources, o: ReglagesStory, style: StyleFond = "fixe", t = 0) {
+  dessinerFondStory(ctx, L, H, style, teinteStory(o), t, r.fond);
+  dessinerContenu(ctx, r, o);
 }
 
 // ── Composant ────────────────────────────────────────────────
@@ -321,7 +303,18 @@ export default function StudioStories({ planning }: { planning: JourPlanning[] }
   const [legende, setLegende] = useState("");
   const [ressources, setRessources] = useState<Ressources | null>(null);
   const [info, setInfo] = useState("");
+  const [fond, setFond] = useState<StyleFond>(() => {
+    try {
+      const f = localStorage.getItem("cycy-story-fond") as StyleFond | null;
+      return f && FONDS.some((x) => x.valeur === f) ? f : "etoiles";
+    } catch {
+      return "etoiles";
+    }
+  });
+  const [enregistrement, setEnregistrement] = useState(0); // progression de la vidéo (0 = rien en cours)
   const canvas = useRef<HTMLCanvasElement>(null);
+  const calque = useRef<HTMLCanvasElement | null>(null); // le contenu (textes, photo…) dessiné une fois
+  const animee = FONDS.find((f) => f.valeur === fond)?.anime ?? false;
 
   // Ordre de la semaine : du lundi au dimanche
   const semaine = [...planning].sort((a, b) => ((JOURS_ORDRE.indexOf(a.jour) + 6) % 7) - ((JOURS_ORDRE.indexOf(b.jour) + 6) % 7));
@@ -364,13 +357,114 @@ export default function StudioStories({ planning }: { planning: JourPlanning[] }
   }, [modele, jeu, heure]);
 
   useEffect(() => {
-    const ctx = canvas.current?.getContext("2d");
-    if (!ctx || !ressources) return;
-    dessinerStory(ctx, ressources, { modele, jeu, heure, message, planning: semaine, aujourdhui });
+    try {
+      localStorage.setItem("cycy-story-fond", fond);
+    } catch {}
+  }, [fond]);
+
+  // Le contenu est dessiné une seule fois sur un calque transparent, puis posé sur le fond à chaque image
+  useEffect(() => {
+    if (!ressources) return;
+    const c = calque.current ?? document.createElement("canvas");
+    c.width = L;
+    c.height = H;
+    const cx = c.getContext("2d");
+    if (!cx) return;
+    cx.clearRect(0, 0, L, H);
+    dessinerContenu(cx, ressources, { modele, jeu, heure, message, planning: semaine, aujourdhui });
+    calque.current = c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ressources, modele, jeu, heure, message, planning]);
 
+  const teinte = teinteStory({ modele, jeu });
+  const image = (ctx: CanvasRenderingContext2D, t: number) => {
+    dessinerFondStory(ctx, L, H, fond, teinte, t, ressources?.fond ?? null);
+    if (calque.current) ctx.drawImage(calque.current, 0, 0);
+  };
+
+  // Aperçu : animé en boucle (30 images/s) si le fond l'est
+  useEffect(() => {
+    const ctx = canvas.current?.getContext("2d");
+    if (!ctx || !ressources) return;
+    if (!animee || enregistrement) {
+      if (!enregistrement) image(ctx, 0.35);
+      return;
+    }
+    let id = 0, dernier = 0;
+    const debut = performance.now();
+    const boucle = (now: number) => {
+      id = requestAnimationFrame(boucle);
+      if (now - dernier < 33) return;
+      dernier = now;
+      image(ctx, (((now - debut) / 1000) % DUREE_BOUCLE) / DUREE_BOUCLE);
+    };
+    id = requestAnimationFrame(boucle);
+    return () => cancelAnimationFrame(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ressources, modele, jeu, heure, message, planning, fond, animee, enregistrement]);
+
+  // Vignettes des fonds (une image fixe de chaque, à la teinte du jeu)
+  const vignettes = useRef<Record<string, HTMLCanvasElement | null>>({});
+  useEffect(() => {
+    for (const f of FONDS) {
+      const v = vignettes.current[f.valeur];
+      const ctx = v?.getContext("2d");
+      if (!ctx) continue;
+      ctx.save();
+      ctx.scale(v!.width / L, v!.height / H);
+      dessinerFondStory(ctx, L, H, f.valeur, teinte, 0.35, ressources?.fond ?? null);
+      ctx.restore();
+    }
+  }, [teinte, ressources]);
+
+  // Vidéo de la story (une boucle de 6 s, ×2 pour ~12 s) : MP4 si le navigateur sait faire, sinon WebM
+  async function enregistrerVideo() {
+    const c = canvas.current, ctx = c?.getContext("2d");
+    if (!c || !ctx || !ressources) return;
+    if (typeof MediaRecorder === "undefined" || !c.captureStream) {
+      setInfo("Ce navigateur ne sait pas créer de vidéo : essaie avec Chrome ou Safari à jour.");
+      return;
+    }
+    const types = ["video/mp4;codecs=avc1", "video/mp4", "video/webm;codecs=vp9", "video/webm"];
+    const type = types.find((x) => MediaRecorder.isTypeSupported(x)) || "";
+    const flux = c.captureStream(30);
+    const rec = new MediaRecorder(flux, { mimeType: type || undefined, videoBitsPerSecond: 8_000_000 });
+    const morceaux: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size && morceaux.push(e.data);
+    const fini = new Promise<void>((ok) => (rec.onstop = () => ok()));
+    setEnregistrement(1);
+    setInfo("");
+    rec.start();
+    const total = DUREE_BOUCLE * 2 * 1000, debut = performance.now();
+    await new Promise<void>((ok) => {
+      const pas = (now: number) => {
+        const e = now - debut;
+        image(ctx, ((e / 1000) % DUREE_BOUCLE) / DUREE_BOUCLE);
+        setEnregistrement(Math.max(1, Math.round((e / total) * 100)));
+        if (e < total) requestAnimationFrame(pas);
+        else ok();
+      };
+      requestAnimationFrame(pas);
+    });
+    rec.stop();
+    await fini;
+    setEnregistrement(0);
+    const ext = (rec.mimeType || type).includes("mp4") ? "mp4" : "webm";
+    const fichier = new File(morceaux, `story-${modele}-${fond}.${ext}`, { type: ext === "mp4" ? "video/mp4" : "video/webm" });
+    const donnees = { files: [fichier], text: legende };
+    if (navigator.canShare?.(donnees)) {
+      try {
+        await navigator.share(donnees);
+        return;
+      } catch {}
+    }
+    telecharger(fichier);
+    if (ext === "webm") setInfo("Vidéo enregistrée en WebM (ce navigateur ne fait pas le MP4) : Instagram l’accepte depuis un ordinateur ; sur iPhone, enregistre-la depuis Safari.");
+  }
+
   function enFichier(): Promise<File | null> {
+    const ctx = canvas.current?.getContext("2d");
+    if (ctx) image(ctx, 0.35);
     return new Promise((ok) => {
       canvas.current?.toBlob((b) => ok(b ? new File([b], `story-${modele}.jpg`, { type: "image/jpeg" }) : null), "image/jpeg", 0.92);
     });
@@ -445,14 +539,35 @@ export default function StudioStories({ planning }: { planning: JourPlanning[] }
             <input value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Objectif Immortel ce soir !" maxLength={90} className={`${champ} mt-1`} />
           </label>
         )}
+        <div>
+          <p className="text-sm text-ink-soft mb-2">Fond {animee ? "(animé : la story peut partir en vidéo)" : "(fixe)"}</p>
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+            {FONDS.map((f) => (
+              <button
+                key={f.valeur}
+                onClick={() => setFond(f.valeur)}
+                aria-pressed={fond === f.valeur}
+                className={`group rounded-xl border p-1 text-center transition-all ${fond === f.valeur ? "border-violet-light bg-violet/20" : "border-violet/20 hover:bg-violet/10"}`}
+              >
+                <canvas ref={(n) => { vignettes.current[f.valeur] = n; }} width={72} height={128} className="w-full aspect-[9/16] rounded-lg bg-[#0d0a17]" />
+                <span className={`block mt-1 text-[11px] leading-tight ${fond === f.valeur ? "text-ink" : "text-ink-soft"}`}>{f.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
         <label className="block text-sm text-ink-soft">
           Légende à coller avec la story
           <textarea value={legende} onChange={(e) => setLegende(e.target.value)} rows={3} className={`${champ} mt-1`} />
         </label>
         <div className="flex flex-wrap gap-2">
           <button onClick={partager} disabled={!ressources} className="inline-flex items-center gap-2 rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-white hover:bg-violet-light hover:shadow-glow transition-all disabled:opacity-50">
-            <Icone nom="megaphone" className="w-4 h-4" /> Partager (Insta, TikTok…)
+            <Icone nom="megaphone" className="w-4 h-4" /> Partager l&apos;image
           </button>
+          {animee && (
+            <button onClick={enregistrerVideo} disabled={!ressources || Boolean(enregistrement)} className="inline-flex items-center gap-2 rounded-full bg-violet/25 border border-violet-light/50 px-5 py-2.5 text-sm font-semibold text-ink hover:bg-violet/35 transition-all disabled:opacity-60">
+              <Icone nom="clap" className="w-4 h-4" /> {enregistrement ? `Création de la vidéo… ${enregistrement} %` : "Partager en vidéo (12 s)"}
+            </button>
+          )}
           <button onClick={() => telecharger()} disabled={!ressources} className="rounded-full border border-violet/30 px-5 py-2.5 text-sm text-ink-soft hover:bg-violet/10 transition-all disabled:opacity-50">
             Télécharger l&apos;image
           </button>
@@ -462,8 +577,8 @@ export default function StudioStories({ planning }: { planning: JourPlanning[] }
         </div>
         {info && <p className="text-xs text-ink-soft" role="status">{info}</p>}
         <p className="text-xs text-ink-soft/60 leading-relaxed">
-          Sur téléphone, « Partager » ouvre la feuille de partage : choisis Instagram (Story) ou TikTok. Le milieu bas de l&apos;image est laissé libre pour
-          ajouter le sticker « Lien » vers ta chaîne Twitch.
+          Sur téléphone, « Partager » ouvre la feuille de partage : choisis Instagram (Story) ou TikTok. Avec un fond animé, « Partager en vidéo » crée une story
+          animée de 12 s (la page doit rester ouverte pendant la création). Ajoute le sticker « Lien » vers ta chaîne Twitch sous le jeu.
         </p>
       </div>
       <div>
