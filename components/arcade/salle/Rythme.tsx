@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 const BPM = 120;
 const TEMPS = 60 / BPM; // une noire = 0,5 s
@@ -182,6 +183,7 @@ export default function Rythme({ onDebut, onFin }: PropsJeu) {
   useEffect(() => {
     if (phase !== "jeu") return;
     const clavier = (e: KeyboardEvent) => {
+      if (dansUnChamp(e)) return;
       if (e.repeat) return;
       const i = TOUCHES.indexOf(e.key.toLowerCase());
       if (i >= 0) {

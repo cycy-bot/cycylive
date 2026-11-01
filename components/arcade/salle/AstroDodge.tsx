@@ -13,6 +13,7 @@ import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 import type { NomIcone } from "@/components/icones/banque";
 import { asteroide, etoile as etoileCanvas, eclat, pastilleBonus, iconeBouclier, iconeSablier, iconeMiniVaisseau, iconeEtoile, iconeLaser, iconeRafale, iconeEventail, iconeChercheur, soucoupe } from "./dessinsCanvas";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 type Roche = { x: number; y: number; vx: number; vy: number; r: number; a: number; va: number; forme: number[]; teinte: string; pv: number; touche: number };
 type TypeArme = "laser" | "rafale" | "eventail" | "chercheur";
@@ -66,6 +67,7 @@ export default function AstroDodge({ onDebut, onFin }: PropsJeu) {
   useEffect(() => {
     if (phase !== "jeu") return;
     const bas = (e: KeyboardEvent) => {
+      if (dansUnChamp(e)) return;
       const k = e.key.toLowerCase();
       if (["arrowleft", "arrowright", "arrowup", "arrowdown", "z", "q", "s", "d", "w", "a"].includes(k)) {
         e.preventDefault();

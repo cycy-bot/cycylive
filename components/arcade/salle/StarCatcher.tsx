@@ -9,6 +9,7 @@ import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
 import type { NomIcone } from "@/components/icones/banque";
 import { etoile as etoileCanvas, eclat, meteorite, trouNoir, pastilleBonus, iconeCoeur, iconeAimant, iconeFilet, iconeDouble } from "./dessinsCanvas";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 type Type = "etoile" | "doree" | "meteore" | "trou" | "vie" | "aimant" | "filet" | "double";
 type Objet = { x: number; y: number; vy: number; vx: number; type: Type; t: number; base: number };
@@ -51,6 +52,7 @@ export default function StarCatcher({ onDebut, onFin }: PropsJeu) {
   useEffect(() => {
     if (phase !== "jeu") return;
     const bas = (e: KeyboardEvent) => {
+      if (dansUnChamp(e)) return;
       const k = e.key.toLowerCase();
       if (["arrowleft", "arrowright", "q", "d", "a"].includes(k)) { e.preventDefault(); touches.current.add(k); cibleX.current = null; }
     };

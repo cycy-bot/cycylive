@@ -16,6 +16,7 @@
 import Icone from "@/components/icones/Icone";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 
@@ -326,12 +327,13 @@ export default function GrappinCosmique() {
   useEffect(() => {
     if (!partie || partie.fini) return;
     const enBas = (e: KeyboardEvent) => {
+      if (dansUnChamp(e)) return;
       const tag = (document.activeElement?.tagName || "").toUpperCase();
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       if (e.key === "ArrowLeft" || e.key === "ArrowRight") { e.preventDefault(); setDuree(0); dir.current = e.key === "ArrowLeft" ? -1 : 1; }
       if (e.key === " " || e.key === "Enter" || e.key === "ArrowDown") { e.preventDefault(); lacher(); }
     };
-    const enHaut = (e: KeyboardEvent) => { if (e.key === "ArrowLeft" || e.key === "ArrowRight") dir.current = 0; };
+    const enHaut = (e: KeyboardEvent) => { if (dansUnChamp(e)) return; if (e.key === "ArrowLeft" || e.key === "ArrowRight") dir.current = 0; };
     window.addEventListener("keydown", enBas);
     window.addEventListener("keyup", enHaut);
     return () => { window.removeEventListener("keydown", enBas); window.removeEventListener("keyup", enHaut); };

@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 // ── La table (unités logiques) ──
 const TW = 400, TH = 720;
@@ -94,6 +95,7 @@ export default function Flipper({ onDebut, onFin }: PropsJeu) {
   useEffect(() => {
     if (phase !== "jeu") return;
     const regle = (e: KeyboardEvent, v: boolean) => {
+      if (dansUnChamp(e)) return;
       const k = e.key.toLowerCase();
       if (["arrowleft", "q", "z", "a"].includes(k) || e.code === "ShiftLeft") { entree.current.g = v; e.preventDefault(); }
       else if (["arrowright", "m", "p"].includes(k) || e.code === "ShiftRight") { entree.current.d = v; e.preventDefault(); }

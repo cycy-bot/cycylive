@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { EcranDepart, type PropsJeu } from "./FinDePartie";
+import { dansUnChamp } from "@/lib/clavierJeu";
 
 const MOTS = (
   "AMOUR ARBRE AVION BALLE BANDE BARBE BATON BELLE BIJOU BLANC BOIRE BOITE BOMBE BONUS BRAVE BRISE BRUIT CABLE CALME CANON " +
@@ -159,6 +160,7 @@ export default function CycyWord({ onDebut, onFin }: PropsJeu) {
 
   useEffect(() => {
     const f = (e: KeyboardEvent) => {
+      if (dansUnChamp(e)) return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const tag = (document.activeElement?.tagName || "").toUpperCase();
       if (tag === "INPUT" || tag === "TEXTAREA") return;
