@@ -183,7 +183,8 @@ export default function GrappinCosmique() {
   const [penche, setPenche] = useState(0); // balancement (degrés)
   const [phase, setPhase] = useState<Phase>("viser");
   const [duree, setDuree] = useState(0);
-  const [tenu, setTenu] = useState<{ look: Look; chute?: boolean } | null>(null);
+  // t : taille de la peluche dans la vitrine (× W), gardée telle quelle dans la pince ; a : son inclinaison
+  const [tenu, setTenu] = useState<{ look: Look; t?: number; a?: number; chute?: boolean } | null>(null);
   const [cache, setCache] = useState<number | null>(null);
   const [glisse, setGlisse] = useState<Objet | null>(null);
   const [annonce, setAnnonce] = useState<Lot | null>(null);
@@ -275,7 +276,7 @@ export default function GrappinCosmique() {
     // 3. remontée, avec l'objet visé
     setPhase("remontee");
     const cibleObj = r.cible != null ? partie.objets.find((o) => o.id === r.cible) || null : null;
-    if (cibleObj) { setCache(cibleObj.id); setTenu({ look: cibleObj.look }); }
+    if (cibleObj) { const pl = places.current.get(cibleObj.id); setCache(cibleObj.id); setTenu({ look: cibleObj.look, t: pl?.t, a: pl?.a }); }
     else setTenu({ look: "porte-bonheur" });
     setDuree(r.glisse ? 750 : 1400);
     setHaut(r.glisse ? descente * 0.5 : 0);
@@ -458,11 +459,15 @@ export default function GrappinCosmique() {
                 <div className="gr-spirale absolute rounded-full" style={{ left: PL * (CABLE_X - CABLE_L / 2), width: PL * CABLE_L, top: H * 0.01, height: haut + PH * CABLE_Y, transition: `height ${transition}` }} />
                 {/* tête de la pince : ouverte / fermée en fondu, l'objet tenu entre les doigts */}
                 <div className="absolute" style={{ left: -PL / 2, top: haut, width: PL, height: PH, transition: `top ${transition}` }}>
-                  {tenu ? (
-                    <div className={`absolute left-1/2 ${tenu.chute ? "gr-chute" : ""}`} style={{ top: PH * TENU_Y - (S * echelle(tenu.look) * 0.92) / 2, marginLeft: -(S * echelle(tenu.look) * 0.92) / 2 }}>
-                      <Peluche look={tenu.look} taille={S * echelle(tenu.look) * 0.92} />
-                    </div>
-                  ) : null}
+                  {tenu ? (() => {
+                    // même taille que dans la vitrine (sinon la taille habituelle de la pince)
+                    const tt = tenu.t ? tenu.t * W : S * echelle(tenu.look) * 0.92;
+                    return (
+                      <div className={`absolute left-1/2 ${tenu.chute ? "gr-chute" : "gr-tenu"}`} style={{ top: PH * TENU_Y - tt * 0.55, marginLeft: -tt / 2, width: tt, height: tt, "--a": `${tenu.a || 0}deg` } as React.CSSProperties}>
+                        <Peluche look={tenu.look} taille={tt} />
+                      </div>
+                    );
+                  })() : null}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src="/grappin/pince-ouverte.webp" alt="" draggable={false} className="absolute inset-0 h-full w-full drop-shadow-[0_8px_10px_rgba(0,0,0,.45)]" style={{ opacity: fermee ? 0 : 1, transition: "opacity 260ms ease" }} />
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -655,7 +660,9 @@ export default function GrappinCosmique() {
         .gr-fleche{background:#2a1a4a;color:#e9c8ff;border:2px solid #c56bff;box-shadow:0 0 12px #c56bff66;touch-action:none}
         .gr-fleche:not(:disabled):active{background:#c56bff;color:#12062a}
         .gr-chute{animation:gr-chute .55s cubic-bezier(.5,0,.8,.4) forwards}
-        @keyframes gr-chute{to{transform:translateY(170%) scale(.75) rotate(14deg);opacity:0}}
+        @keyframes gr-chute{from{transform:rotate(var(--a,0deg))}to{transform:translateY(170%) rotate(calc(var(--a,0deg) + 14deg));opacity:0}}
+        .gr-tenu{transform:rotate(var(--a,0deg));animation:gr-balance 1.6s ease-in-out infinite;transform-origin:50% 10%}
+        @keyframes gr-balance{0%,100%{transform:rotate(var(--a,0deg))}50%{transform:rotate(calc(var(--a,0deg) * .3 + 3deg))}}
         .gr-retombe{animation:gr-retombe .7s cubic-bezier(.5,0,.75,0) both}
         @keyframes gr-retombe{from{transform:translateY(-150%) rotate(-14deg)}70%{transform:translateY(0) rotate(5deg)}85%{transform:translateY(-9%)}to{transform:translateY(0)}}
         .gr-flash{animation:gr-flash 1.1s ease-out}
