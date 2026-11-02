@@ -15,11 +15,11 @@ export type ClipTwitch = {
 
 type ClipHelix = { id: string; url: string; title: string; view_count: number; created_at: string; thumbnail_url: string; duration: number; game_id: string; creator_name: string };
 
-async function helix<T>(chemin: string, acces: { clientId: string; token: string }): Promise<T | null> {
+async function helix<T>(chemin: string, acces: { clientId: string; token: string }, frais = false): Promise<T | null> {
   try {
     const r = await fetch(`https://api.twitch.tv/helix/${chemin}`, {
       headers: { "Client-Id": acces.clientId, Authorization: `Bearer ${acces.token}` },
-      next: { revalidate: 1800 },
+      ...(frais ? { cache: "no-store" as const } : { next: { revalidate: 1800 } }),
     });
     return r.ok ? ((await r.json()) as T) : null;
   } catch {
@@ -34,7 +34,9 @@ export async function derniersClipsTwitch(limite = 12): Promise<ClipTwitch[]> {
   let clips: ClipHelix[] = [];
   for (const jours of [60, 365]) {
     const depuis = new Date(Date.now() - jours * 86400000).toISOString();
-    const d = await helix<{ data: ClipHelix[] }>(`clips?broadcaster_id=${acces.broadcasterId}&first=100&started_at=${encodeURIComponent(depuis)}`, acces);
+    // ended_at obligatoire : sans lui, Twitch ne renvoie que la semaine qui suit started_at (donc pas les clips récents)
+    const jusqua = new Date(Date.now() + 3600000).toISOString();
+    const d = await helix<{ data: ClipHelix[] }>(`clips?broadcaster_id=${acces.broadcasterId}&first=100&started_at=${encodeURIComponent(depuis)}&ended_at=${encodeURIComponent(jusqua)}`, acces, true);
     clips = d?.data || [];
     if (clips.length >= 6) break;
   }
