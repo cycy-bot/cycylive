@@ -10,6 +10,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import TimelineHabillage from "@/components/admin/TimelineHabillage";
 import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
+import { enregistrerBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
 import { calquesDepuisModele, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, type Calque, type Modele } from "@/lib/habillageTikTok";
 
 type ClipTwitch = { id: string; titre: string; url: string; miniature: string; vues: number; duree: number; date: string; jeu: string };
@@ -96,6 +97,14 @@ export default function GenerateurContenus() {
   // « Ajouter à la vidéothèque » (Studio créatrice de CycyBot)
   const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
   const [nouveauTag, setNouveauTag] = useState("");
+  // Brouillons : reprendre un montage plus tard (clip + réglages gardés dans le navigateur)
+  const [brouillons, setBrouillons] = useState<BrouillonInfo[]>([]);
+  const [brouillonId, setBrouillonId] = useState("");
+  const [brEtat, setBrEtat] = useState<{ etat: "repos" | "enreg" | "ok" | "erreur"; maj?: number; message?: string }>({ etat: "repos" });
+  const fichierBlob = useRef<Blob | null>(null);
+  const fichierEnregistre = useRef("");
+  const restauration = useRef<Record<string, any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
+  const restaure = useRef(false);
   const [polices, setPolices] = useState({ display: "system-ui, sans-serif", sans: "system-ui, sans-serif" });
 
   const video = useRef<HTMLVideoElement>(null);
@@ -118,6 +127,7 @@ export default function GenerateurContenus() {
       new FontFace(nom, `url(/fonts/${f})`).load().then((x) => document.fonts.add(x)).catch(() => {});
     }
     try { const m = JSON.parse(localStorage.getItem(CLE_MODELE) || "null"); if (m) setModele({ ...MODELE_DEFAUT, ...m }); } catch { /* modèle d’origine */ }
+    listerBrouillons().then(setBrouillons).catch(() => {});
   }, []);
 
   // ── Habillage : le modèle (positions, durées, animations, textes fixes) est gardé pour les prochaines vidéos ──
@@ -278,12 +288,78 @@ export default function GenerateurContenus() {
 
   function charger(f: File) {
     if (fichier) URL.revokeObjectURL(fichier);
+    fichierBlob.current = f; fichierEnregistre.current = ""; restauration.current = null;
+    setBrouillonId(""); setBrEtat({ etat: "repos" });
     setFichier(URL.createObjectURL(f));
     setNomFichier(f.name);
     setExport({ etat: "repos", progres: 0 });
     setSousTitres([]);
     setCalques([]); setSel("");
   }
+
+  // ── Brouillons ──
+  const etatMontage = () => ({ titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele, clipChoisi, duree });
+  function miniatureApercu() {
+    try {
+      const src = apercu.current; if (!src) return "";
+      const c = document.createElement("canvas"); c.width = 180; c.height = 320;
+      c.getContext("2d")!.drawImage(src, 0, 0, 180, 320);
+      return c.toDataURL("image/jpeg", 0.72);
+    } catch { return ""; }
+  }
+  async function enregistrerEnBrouillon(auto = false) {
+    if (!fichierBlob.current || restauration.current) return;
+    const bid = brouillonId || id() + id();
+    setBrEtat((x) => ({ ...x, etat: "enreg" }));
+    try {
+      const ancien = brouillons.find((b) => b.id === bid);
+      const info: BrouillonInfo = { id: bid, nom: titre.trim() || nomFichier.replace(/\.[^.]+$/, "") || "Brouillon", nomFichier, maj: Date.now(), duree, miniature: miniatureApercu() || ancien?.miniature || "", etat: etatMontage() };
+      await enregistrerBrouillon(info, fichierEnregistre.current === bid ? undefined : fichierBlob.current);
+      fichierEnregistre.current = bid;
+      setBrouillonId(bid);
+      setBrEtat({ etat: "ok", maj: info.maj });
+      setBrouillons((l) => [info, ...l.filter((b) => b.id !== bid)]);
+    } catch (er) {
+      setBrEtat({ etat: "erreur", message: (auto ? "Enregistrement automatique impossible : " : "Brouillon non enregistré : ") + (er instanceof Error ? er.message : String(er)) });
+    }
+  }
+  async function reprendreBrouillon(b: BrouillonInfo) {
+    try {
+      const blob = await lireFichierBrouillon(b.id);
+      if (!blob) throw new Error("le fichier du clip n’est plus là (données du navigateur effacées ?)");
+      const r = b.etat as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (fichier) URL.revokeObjectURL(fichier);
+      restauration.current = r; restaure.current = true;
+      fichierBlob.current = blob; fichierEnregistre.current = b.id;
+      setBrouillonId(b.id); setBrEtat({ etat: "ok", maj: b.maj });
+      setExport({ etat: "repos", progres: 0 }); setSel("");
+      setNomFichier(b.nomFichier);
+      setTitre(r.titre || ""); setJeu(r.jeu || ""); setSousTitres(r.sousTitres || []); setTranscription(r.transcription || "");
+      setClipChoisi(r.clipChoisi || null);
+      if (r.modele) setModele({ ...MODELE_DEFAUT, ...r.modele });
+      if (r.dispo) setDispo(r.dispo);
+      if (typeof r.focusX === "number") setFocusX(r.focusX);
+      if (typeof r.zoom === "number") setZoom(r.zoom);
+      if (r.cam) setCam(r.cam);
+      setFichier(URL.createObjectURL(blob));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (er) {
+      setBrEtat({ etat: "erreur", message: "Impossible de reprendre ce brouillon : " + (er instanceof Error ? er.message : String(er)) });
+    }
+  }
+  async function effacerBrouillon(b: BrouillonInfo) {
+    if (!confirm(`Supprimer le brouillon « ${b.nom} » ?`)) return;
+    try { await supprimerBrouillon(b.id); } catch { /* déjà parti */ }
+    setBrouillons((l) => l.filter((x) => x.id !== b.id));
+    if (b.id === brouillonId) { setBrouillonId(""); fichierEnregistre.current = ""; setBrEtat({ etat: "repos" }); }
+  }
+  // une fois enregistré, le brouillon se met à jour tout seul à chaque modification
+  useEffect(() => {
+    if (!brouillonId || restauration.current || export_.etat === "en-cours") return;
+    const t = setTimeout(() => { enregistrerEnBrouillon(true); }, 1500);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele]);
 
   function choisirClip(c: ClipTwitch) {
     setClipChoisi(c);
@@ -532,6 +608,13 @@ export default function GenerateurContenus() {
     });
   }
 
+  const boutonBrouillon = (
+    <button type="button" onClick={() => enregistrerEnBrouillon()} disabled={brEtat.etat === "enreg"} title={brouillonId ? "Le brouillon se met à jour tout seul à chaque modification" : "Garder ce montage pour le reprendre plus tard"}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-all disabled:opacity-60 ${brouillonId ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-violet/30 text-ink hover:bg-violet/10"}`}>
+      💾 {brEtat.etat === "enreg" ? "Enregistrement…" : brouillonId ? `Brouillon enregistré${brEtat.maj ? " · " + new Date(brEtat.maj).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}` : "Enregistrer en brouillon"}
+    </button>
+  );
+
   const champBase = "rounded-lg bg-card border border-violet/20 px-3 py-2 text-sm text-ink outline-none focus:border-violet/60";
   const champ = `w-full ${champBase}`;
   const curseur = "w-full accent-violet-500";
@@ -539,6 +622,28 @@ export default function GenerateurContenus() {
   return (
     <div className="space-y-6">
       <video ref={finVideo} src={ENDING} preload="auto" playsInline className="hidden" />
+      {/* Brouillons */}
+      {brouillons.length > 0 && (
+        <section className="carte-holo rounded-2xl p-5 space-y-3">
+          <h3 className="font-semibold text-ink flex items-center gap-2"><Icone nom="document" className="w-5 h-5 text-lilac" /> 📝 Mes brouillons <span className="text-xs font-normal text-ink-soft/70">montages pas terminés, à reprendre quand tu veux</span></h3>
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {brouillons.map((b) => (
+              <div key={b.id} className={`w-40 shrink-0 overflow-hidden rounded-xl border transition-all ${b.id === brouillonId ? "border-violet-light ring-2 ring-violet/40" : "border-violet/15"}`}>
+                <button type="button" onClick={() => reprendreBrouillon(b)} className="block w-full text-left" title="Reprendre ce montage">
+                  {b.miniature ? <img src={b.miniature} alt="" className="aspect-[9/14] w-full object-cover bg-black" /> : <span className="flex aspect-[9/14] w-full items-center justify-center bg-violet/10 text-2xl">🎬</span>}
+                  <span className="block px-2.5 pt-2 text-xs font-medium text-ink line-clamp-2 min-h-[2rem]">{b.nom}</span>
+                  <span className="block px-2.5 text-[11px] text-ink-soft/70">{new Date(b.maj).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}{b.duree ? ` · ${Math.round(b.duree)} s` : ""}</span>
+                </button>
+                <div className="flex items-center justify-between px-2.5 pb-2 pt-1.5">
+                  <button type="button" onClick={() => reprendreBrouillon(b)} className="text-xs font-semibold text-lilac">{b.id === brouillonId ? "En cours ✎" : "Reprendre"}</button>
+                  <button type="button" onClick={() => effacerBrouillon(b)} className="text-xs text-ink-soft/60 hover:text-red-300" title="Supprimer le brouillon">🗑️</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* 1. Source */}
       <section className="carte-holo rounded-2xl p-5 space-y-4">
         <h3 className="font-semibold text-ink flex items-center gap-2"><Icone nom="clap" className="w-5 h-5 text-lilac" /> 1. Le clip</h3>
@@ -569,13 +674,25 @@ export default function GenerateurContenus() {
         <>
           {/* 2. Montage */}
           <section className="carte-holo rounded-2xl p-5">
-            <h3 className="font-semibold text-ink flex items-center gap-2 mb-4"><Icone nom="smartphone" className="w-5 h-5 text-lilac" /> 2. Vidéo verticale</h3>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-semibold text-ink flex items-center gap-2"><Icone nom="smartphone" className="w-5 h-5 text-lilac" /> 2. Vidéo verticale</h3>
+              {boutonBrouillon}
+            </div>
+            {brEtat.etat === "erreur" && <p className="-mt-2 mb-3 text-xs text-red-300" role="alert">{brEtat.message}</p>}
             <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
               <div className="space-y-4 min-w-0">
                 <video ref={video} src={fichier} controls playsInline className={habille ? "w-full max-h-48 rounded-xl bg-black" : "w-full rounded-xl bg-black"} crossOrigin="anonymous"
                   onLoadedMetadata={(e) => {
                     const v = e.currentTarget;
                     const appliquer = (d: number) => {
+                      const r = restauration.current;
+                      if (r) {
+                        // reprise d'un brouillon : on remet la coupe et les calques tels qu'ils étaient
+                        setDuree(d); setDebut(Math.min(r.debut || 0, d)); setFin(r.fin && r.fin <= d ? r.fin : d);
+                        setCalques(Array.isArray(r.calques) && r.calques.length ? r.calques : calquesDepuisModele(modele, d, r.titre || titre, ""));
+                        setTimeout(() => { restauration.current = null; }, 0);
+                        return;
+                      }
                       setDuree(d); setDebut(0); setFin(d);
                       setCalques(calquesDepuisModele(modele, d, titre, ""));
                       if (v.videoHeight > v.videoWidth * 1.4) setDispo("vertical");
@@ -587,7 +704,7 @@ export default function GenerateurContenus() {
                     v.addEventListener("durationchange", lire);
                     v.currentTime = 1e7;
                   }}
-                  onLoadedData={(e) => { const v = e.currentTarget; if (v.videoHeight > v.videoWidth * 1.4) { const essai = (n: number) => { if (!detecterSeparation() && n > 0) setTimeout(() => essai(n - 1), 400); }; setTimeout(() => essai(5), 150); } }}
+                  onLoadedData={(e) => { const v = e.currentTarget; if (restaure.current) { restaure.current = false; return; } if (v.videoHeight > v.videoWidth * 1.4) { const essai = (n: number) => { if (!detecterSeparation() && n > 0) setTimeout(() => essai(n - 1), 400); }; setTimeout(() => essai(5), 150); } }}
                   onPlay={() => { brancherAudio(); setEnLecture(true); }} onPause={() => setEnLecture(false)} />
                 <div className="grid gap-2 sm:grid-cols-2">
                   {DISPOS.map((d) => (
@@ -689,6 +806,7 @@ export default function GenerateurContenus() {
               <button type="button" onClick={exporter} disabled={export_.etat === "en-cours"} className="inline-flex items-center gap-2 rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-glow-sm hover:bg-violet-light transition-all disabled:opacity-50">
                 <Icone nom="clap" className="w-4 h-4" /> {export_.etat === "en-cours" ? (export_.progres >= 0.95 && habille && modele.ending ? "Cinématique de fin…" : `Création… ${Math.round(export_.progres * 100)} %`) : habille ? "Créer et télécharger ma vidéo" : "Créer la vidéo verticale"}
               </button>
+              {boutonBrouillon}
               {!habille && <button type="button" onClick={() => visuel("miniature")} className="rounded-full border border-violet/30 px-4 py-2.5 text-sm text-ink-soft hover:bg-violet/10 transition-all">Miniature YouTube (image en cours)</button>}
               {!habille && <button type="button" onClick={() => visuel("story")} className="rounded-full border border-violet/30 px-4 py-2.5 text-sm text-ink-soft hover:bg-violet/10 transition-all">Image story « Nouveau clip »</button>}
             </div>
