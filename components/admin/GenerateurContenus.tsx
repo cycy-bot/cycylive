@@ -9,6 +9,7 @@ import Icone from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import TimelineHabillage from "@/components/admin/TimelineHabillage";
+import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
 import { calquesDepuisModele, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, type Calque, type Modele } from "@/lib/habillageTikTok";
 
 type ClipTwitch = { id: string; titre: string; url: string; miniature: string; vues: number; duree: number; date: string; jeu: string };
@@ -92,6 +93,9 @@ export default function GenerateurContenus() {
   const [transcription, setTranscription] = useState("");
   const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string }>({ etat: "repos", progres: 0 });
   const [copie, setCopie] = useState("");
+  // « Ajouter à la vidéothèque » (Studio créatrice de CycyBot)
+  const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
+  const [nouveauTag, setNouveauTag] = useState("");
   const [polices, setPolices] = useState({ display: "system-ui, sans-serif", sans: "system-ui, sans-serif" });
 
   const video = useRef<HTMLVideoElement>(null);
@@ -259,6 +263,8 @@ export default function GenerateurContenus() {
   // Boucle d'aperçu
   useEffect(() => {
     const boucle = () => {
+      // pendant la création, l'aperçu et la timeline se mettent en pause : tout le temps de calcul va à la vidéo exportée (plus fluide)
+      if (export_.etat === "en-cours") { rafRef.current = requestAnimationFrame(boucle); return; }
       const v = video.current, c = apercu.current?.getContext("2d");
       if (v && c && v.readyState >= 2) dessiner(c, v, v.currentTime, true);
       if (v && Math.abs(v.currentTime - dernierT.current) > 0.03) { dernierT.current = v.currentTime; setTCur(Math.max(0, v.currentTime - debut)); }
@@ -345,13 +351,14 @@ export default function GenerateurContenus() {
     const canvas = document.createElement("canvas");
     canvas.width = W; canvas.height = H;
     const c = canvas.getContext("2d")!;
-    const flux = canvas.captureStream(30);
+    // 60 images/s : les zooms, flashs et textes animés restent fluides (même si le clip source est en 30)
+    const flux = canvas.captureStream(60);
     a.dest.stream.getAudioTracks().forEach((t) => flux.addTrack(t));
     const types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
     const type = types.find((t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t));
     if (!type) { setExport({ etat: "erreur", progres: 0, message: "Ce navigateur ne sait pas enregistrer de vidéo : utilise Chrome, Edge ou Safari récent." }); return; }
     const morceaux: Blob[] = [];
-    const rec = new MediaRecorder(flux, { mimeType: type, videoBitsPerSecond: 8_000_000 });
+    const rec = new MediaRecorder(flux, { mimeType: type, videoBitsPerSecond: 16_000_000 });
     rec.ondataavailable = (e) => { if (e.data.size) morceaux.push(e.data); };
     const termine = new Promise<void>((ok) => { rec.onstop = () => ok(); });
     setExport({ etat: "en-cours", progres: 0 });
@@ -363,9 +370,12 @@ export default function GenerateurContenus() {
     await v.play();
     const finT = fin || v.duration;
     await new Promise<void>((ok) => {
+      let dernierMaj = 0;
       const pas = () => {
         dessiner(c, v, v.currentTime);
-        setExport((x) => ({ ...x, progres: Math.min(avecFin ? 0.95 : 1, (v.currentTime - debut) / Math.max(0.1, finT - debut) * (avecFin ? 0.95 : 1)) }));
+        // la barre de progression n'est mise à jour que 5 fois par seconde : la redessiner à chaque image ralentissait l'enregistrement
+        const maint = performance.now();
+        if (maint - dernierMaj > 200) { dernierMaj = maint; setExport((x) => ({ ...x, progres: Math.min(avecFin ? 0.95 : 1, (v.currentTime - debut) / Math.max(0.1, finT - debut) * (avecFin ? 0.95 : 1)) })); }
         if (v.currentTime >= finT || v.ended) { v.pause(); ok(); return; }
         requestAnimationFrame(pas);
       };
@@ -386,7 +396,6 @@ export default function GenerateurContenus() {
           const pas = () => {
             c.globalAlpha = 1; c.drawImage(fige, 0, 0);
             c.globalAlpha = Math.min(1, fv.currentTime / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1;
-            setExport((x) => ({ ...x, progres: 1 }));
             if (fv.ended || fv.currentTime >= (fv.duration || 4) - 0.03 || Date.now() > limite) { ok(); return; }
             requestAnimationFrame(pas);
           };
@@ -402,6 +411,7 @@ export default function GenerateurContenus() {
     const blob = new Blob(morceaux, { type: type.split(";")[0] });
     const url = URL.createObjectURL(blob), ext = type.includes("mp4") ? "mp4" : "webm";
     setExport({ etat: "fini", progres: 1, url, ext });
+    preparerVideotheque();
     // téléchargement automatique (le bouton reste là aussi)
     const lien = document.createElement("a"); lien.href = url; lien.download = `${(etat.current.titre || "tiktok-cycylive").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 50)}.${ext}`;
     document.body.appendChild(lien); lien.click(); lien.remove();
@@ -475,6 +485,51 @@ export default function GenerateurContenus() {
     const f = new File([blob], `clip-cycylive.${export_.ext}`, { type: blob.type });
     if (navigator.canShare?.({ files: [f] })) { try { await navigator.share({ files: [f], text: textes[0].texte }); } catch { /* annulé */ } }
     else { const a = document.createElement("a"); a.href = export_.url; a.download = f.name; a.click(); }
+  }
+
+  // ── Vidéothèque : titre, description et hashtags choisis parmi les propositions ──
+  const sansHashtags = (t: string) => t.split("\n").map((l) => l.replace(/(\s*#[\p{L}\d_]+)+\s*$/u, "")).filter((l) => l.trim()).join("\n");
+  const descriptions = textes.filter((t) => t.plateforme !== "Titres alternatifs").map((t) => ({ nom: t.plateforme, texte: sansHashtags(t.texte) }));
+  const titresProposes = [titre, ...(textes.find((t) => t.plateforme === "Titres alternatifs")?.texte.split("\n") || [])].map((t) => t.trim()).filter((t, i, a) => t && a.indexOf(t) === i);
+  const tagsProposes = [...new Set([...hashtags(jeu), ...vt.tags])];
+  function preparerVideotheque() {
+    setVt({ titre: etat.current.titre || titre || "", desc: descriptions[0]?.texte || "", tags: hashtags(jeu), etat: "repos", pct: 0 });
+  }
+  async function miniatureDepuis(url: string): Promise<Blob | null> {
+    try {
+      const v = document.createElement("video"); v.muted = true; v.playsInline = true; v.preload = "auto"; v.src = url;
+      await new Promise((ok, ko) => { v.onloadeddata = ok; v.onerror = ko; setTimeout(ko, 8000); });
+      // image prise pendant la carte titre (début du clip)
+      v.currentTime = Math.min(1.2, (Number.isFinite(v.duration) ? v.duration : 3) * 0.3);
+      await new Promise((ok) => { v.onseeked = ok; setTimeout(ok, 3000); });
+      const cv = document.createElement("canvas"); cv.width = 720; cv.height = 1280;
+      cv.getContext("2d")!.drawImage(v, 0, 0, cv.width, cv.height);
+      return await new Promise((ok) => cv.toBlob((b) => ok(b), "image/jpeg", 0.86));
+    } catch { return null; }
+  }
+  async function ajouterVideotheque() {
+    if (!export_.url || vt.etat === "envoi") return;
+    if (!integre()) { setVt((x) => ({ ...x, etat: "erreur", message: "Ouvre le générateur depuis CycyBot (Création de contenus) pour l’ajouter à ta vidéothèque." })); return; }
+    setVt((x) => ({ ...x, etat: "envoi", pct: 0, message: "" }));
+    const fichier = await fetch(export_.url).then((r) => r.blob());
+    const miniature = await miniatureDepuis(export_.url);
+    const id = Math.random().toString(36).slice(2);
+    await new Promise<void>((fini) => {
+      let recu = false;
+      const stop = (maj: Partial<typeof vt>) => { window.removeEventListener("message", ecoute); clearTimeout(attente); setVt((x) => ({ ...x, ...maj })); fini(); };
+      const ecoute = (ev: MessageEvent) => {
+        const d = ev.data as { type?: string; id?: string; pct?: number; message?: string; enLigne?: boolean };
+        if (!ORIGINES_INTERFACE.includes(ev.origin) || !d || d.id !== id) return;
+        if (d.type === "cycy-videotheque-recu") recu = true;
+        if (d.type === "cycy-videotheque-etat") setVt((x) => ({ ...x, pct: d.pct || 0 }));
+        if (d.type === "cycy-videotheque-ok") stop({ etat: "ok", pct: 100, message: d.enLigne === false ? "Ajoutée (fiche seulement : le stockage vidéo n’est pas activé, garde ton fichier)." : "" });
+        if (d.type === "cycy-videotheque-erreur") stop({ etat: "erreur", message: "L’ajout a échoué : " + (d.message || "erreur inconnue") });
+      };
+      window.addEventListener("message", ecoute);
+      const attente = setTimeout(() => { if (!recu) stop({ etat: "erreur", message: "CycyBot n’a pas répondu : recharge la page de l’interface puis réessaie." }); }, 6000);
+      const msg = { type: "cycy-videotheque", id, fichier, miniature, ext: export_.ext, nom: vt.titre.trim() || titre || "Vidéo montée", legende: vt.desc.trim(), hashtags: vt.tags.join(" ") };
+      for (const o of [...new Set<string>(ORIGINES_INTERFACE)]) { try { window.parent.postMessage(msg, o); } catch { /* autre origine */ } }
+    });
   }
 
   const champBase = "rounded-lg bg-card border border-violet/20 px-3 py-2 text-sm text-ink outline-none focus:border-violet/60";
@@ -640,7 +695,7 @@ export default function GenerateurContenus() {
             {export_.etat === "en-cours" && (
               <div className="h-2 rounded-full bg-white/10 overflow-hidden"><div className="h-full bg-violet transition-all" style={{ width: `${Math.round(export_.progres * 100)}%` }} /></div>
             )}
-            <p className="text-xs text-ink-soft/70">La vidéo se crée en temps réel (un clip de 30 s prend 30 s{habille && modele.ending ? ", plus 4 s pour la fin" : ""}) : garde l’onglet ouvert. À la fin, elle se télécharge toute seule sur ton appareil. Rien n’est publié ni ajouté au site : tu la postes toi-même sur tes réseaux.</p>
+            <p className="text-xs text-ink-soft/70">La vidéo se crée en temps réel (un clip de 30 s prend 30 s{habille && modele.ending ? ", plus 4 s pour la fin" : ""}) : garde l’onglet ouvert. À la fin, elle se télécharge toute seule sur ton appareil. Rien n’est publié : tu la postes toi-même sur tes réseaux, ou tu l’ajoutes à ta vidéothèque pour la planifier.</p>
             {export_.etat === "erreur" && <p className="text-sm text-red-300" role="alert">{export_.message}</p>}
             {export_.etat === "fini" && export_.url && (
               <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-emerald-300/30 bg-emerald-400/10 p-4">
@@ -649,8 +704,33 @@ export default function GenerateurContenus() {
                   <p className="text-sm text-emerald-100">Ta vidéo est prête ({export_.ext?.toUpperCase()}) !</p>
                   <div className="flex flex-wrap gap-2">
                     <a href={export_.url} download={`clip-cycylive.${export_.ext}`} className="rounded-full bg-violet px-4 py-2 text-sm font-semibold text-white hover:bg-violet-light transition-all">Télécharger</a>
+                    <button type="button" onClick={ajouterVideotheque} disabled={vt.etat === "envoi" || vt.etat === "ok"} className="rounded-full bg-emerald-500/90 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 transition-all disabled:opacity-60">
+                      {vt.etat === "envoi" ? `Ajout… ${vt.pct} %` : vt.etat === "ok" ? "✓ Dans ta vidéothèque" : "📼 Ajouter à la vidéothèque"}
+                    </button>
                     <button type="button" onClick={partager} className="rounded-full border border-violet/30 px-4 py-2 text-sm text-ink-soft hover:bg-violet/10 transition-all">Partager (TikTok, Insta…)</button>
                   </div>
+                  {vt.etat === "ok" && <p className="text-xs text-emerald-100">Elle t’attend dans Studio créatrice → Vidéothèque, prête à planifier. {vt.message}</p>}
+                  {vt.etat === "erreur" && <p className="text-xs text-red-300" role="alert">{vt.message}</p>}
+                  {vt.etat !== "ok" && (
+                    <div className="mt-2 w-full max-w-xl space-y-2.5 rounded-xl border border-violet/20 bg-white/[0.03] p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-lilac">Pour la vidéothèque</p>
+                      <label className="block text-xs text-ink-soft">Titre
+                        <input value={vt.titre} onChange={(e) => setVt((x) => ({ ...x, titre: e.target.value }))} className={`${champ} mt-1`} />
+                      </label>
+                      {titresProposes.length > 1 && <div className="flex flex-wrap gap-1.5">{titresProposes.map((t) => <button key={t} type="button" onClick={() => setVt((x) => ({ ...x, titre: t }))} className={`rounded-full border px-2.5 py-1 text-xs transition-all ${vt.titre === t ? "border-violet bg-violet/25 text-white" : "border-violet/25 text-ink-soft hover:bg-violet/10"}`}>{t}</button>)}</div>}
+                      <label className="block text-xs text-ink-soft">Description
+                        <textarea value={vt.desc} onChange={(e) => setVt((x) => ({ ...x, desc: e.target.value }))} rows={3} className={`${champ} mt-1 resize-y`} />
+                      </label>
+                      <div className="flex flex-wrap gap-1.5">{descriptions.map((d) => <button key={d.nom} type="button" onClick={() => setVt((x) => ({ ...x, desc: d.texte }))} className={`rounded-full border px-2.5 py-1 text-xs transition-all ${vt.desc === d.texte ? "border-violet bg-violet/25 text-white" : "border-violet/25 text-ink-soft hover:bg-violet/10"}`}>{d.nom}</button>)}</div>
+                      <p className="text-xs text-ink-soft">Hashtags <span className="opacity-60">(clique pour ajouter ou retirer)</span></p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {tagsProposes.map((h) => { const on = vt.tags.includes(h); return <button key={h} type="button" onClick={() => setVt((x) => ({ ...x, tags: on ? x.tags.filter((t) => t !== h) : [...x.tags, h] }))} className={`rounded-full border px-2.5 py-1 text-xs transition-all ${on ? "border-cyan-300/60 bg-cyan-400/15 text-cyan-100" : "border-white/15 text-ink-soft/70 hover:bg-white/5"}`}>{on ? "" : "+ "}{h}</button>; })}
+                        <form onSubmit={(e) => { e.preventDefault(); const h = "#" + nouveauTag.replace(/^#+/, "").replace(/\s+/g, "").toLowerCase(); if (h.length > 1 && !vt.tags.includes(h)) setVt((x) => ({ ...x, tags: [...x.tags, h] })); setNouveauTag(""); }} className="inline-flex">
+                          <input value={nouveauTag} onChange={(e) => setNouveauTag(e.target.value)} placeholder="+ nouveau" className="w-24 rounded-full border border-dashed border-white/20 bg-transparent px-2.5 py-1 text-xs text-ink outline-none focus:border-violet/60" />
+                        </form>
+                      </div>
+                    </div>
+                  )}
                   {export_.ext === "webm" && <p className="text-xs text-ink-soft/70">Format WebM : accepté par TikTok et YouTube. Pour Instagram, exporte plutôt depuis Safari ou un Chrome récent (MP4).</p>}
                 </div>
               </div>
