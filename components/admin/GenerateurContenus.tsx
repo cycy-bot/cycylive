@@ -278,7 +278,7 @@ export default function GenerateurContenus() {
       const v = video.current, c = apercu.current?.getContext("2d");
       if (v && c && v.readyState >= 2) dessiner(c, v, v.currentTime, true);
       if (v && Math.abs(v.currentTime - dernierT.current) > 0.03) { dernierT.current = v.currentTime; setTCur(Math.max(0, v.currentTime - debut)); }
-      if (v && fin && v.currentTime >= fin && !v.paused && export_.etat !== "en-cours") { v.currentTime = debut; }
+      if (v && fin && v.currentTime >= fin && !v.paused) { v.currentTime = debut; }
       rafRef.current = requestAnimationFrame(boucle);
     };
     rafRef.current = requestAnimationFrame(boucle);
