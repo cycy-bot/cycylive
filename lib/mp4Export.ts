@@ -6,6 +6,8 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// WebCodecs pris sur l'objet global : le projet ne dépend pas des définitions de types d'une version précise
+const WC = (): any => globalThis as any;
 const SR = 48000;
 const FPS = 60;
 const VTS = 90000; // échelle de temps de la piste vidéo
@@ -39,11 +41,11 @@ async function decoderSon(src: Blob | string): Promise<AudioBuffer> {
   return await ctx.decodeAudioData(buf);
 }
 
-async function choisirCodecVideo(W: number, H: number): Promise<VideoEncoderConfig> {
+async function choisirCodecVideo(W: number, H: number): Promise<any> {
   // profils sans images B (l'ordre de décodage = l'ordre d'affichage) : baseline puis main, niveaux 5.x
   for (const codec of ["avc1.42E032", "avc1.42E033", "avc1.4D0032", "avc1.42E02A", "avc1.4D002A"]) {
-    const cfg: VideoEncoderConfig = { codec, width: W, height: H, bitrate: 14_000_000, framerate: FPS, latencyMode: "realtime", avc: { format: "avc" } } as VideoEncoderConfig;
-    try { const s = await VideoEncoder.isConfigSupported(cfg); if (s.supported) return cfg; } catch { /* suivant */ }
+    const cfg = { codec, width: W, height: H, bitrate: 14_000_000, framerate: FPS, latencyMode: "realtime", avc: { format: "avc" } };
+    try { const s = await WC().VideoEncoder.isConfigSupported(cfg); if (s.supported) return cfg; } catch { /* suivant */ }
   }
   throw new Error("encodeur H.264 indisponible");
 }
@@ -71,18 +73,18 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
   // ── 2. Encodage du son (AAC) ──
   const aChunks: { data: Uint8Array; ts: number }[] = [];
   let aDesc: Uint8Array | null = null, aErr: unknown = null;
-  const ae = new AudioEncoder({
-    output: (ch, meta) => { const d = new Uint8Array(ch.byteLength); ch.copyTo(d); aChunks.push({ data: d, ts: ch.timestamp }); if (meta?.decoderConfig?.description) aDesc = versU8(meta.decoderConfig.description); },
-    error: (e) => { aErr = e; },
+  const ae = new (WC().AudioEncoder)({
+    output: (ch: any, meta: any) => { const d = new Uint8Array(ch.byteLength); ch.copyTo(d); aChunks.push({ data: d, ts: ch.timestamp }); if (meta?.decoderConfig?.description) aDesc = versU8(meta.decoderConfig.description); },
+    error: (e: unknown) => { aErr = e; },
   });
-  const aCfg: AudioEncoderConfig = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 192_000 };
-  if (!(await AudioEncoder.isConfigSupported(aCfg)).supported) throw new Error("encodeur AAC indisponible");
+  const aCfg = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 192_000 };
+  if (!(await WC().AudioEncoder.isConfigSupported(aCfg)).supported) throw new Error("encodeur AAC indisponible");
   ae.configure(aCfg);
   const g0 = mix.getChannelData(0), g1 = mix.numberOfChannels > 1 ? mix.getChannelData(1) : g0;
   for (let i = 0; i < mix.length; i += 4800) {
     const n = Math.min(4800, mix.length - i), d = new Float32Array(n * 2);
     d.set(g0.subarray(i, i + n), 0); d.set(g1.subarray(i, i + n), n);
-    const ad = new AudioData({ format: "f32-planar", sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((i / SR) * 1e6), data: d });
+    const ad = new (WC().AudioData)({ format: "f32-planar", sampleRate: SR, numberOfFrames: n, numberOfChannels: 2, timestamp: Math.round((i / SR) * 1e6), data: d });
     ae.encode(ad); ad.close();
   }
   await ae.flush(); ae.close();
@@ -95,15 +97,15 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
   const c = canvas.getContext("2d")!;
   const vChunks: { data: Uint8Array; ts: number; cle: boolean }[] = [];
   let vDesc: Uint8Array | null = null, vErr: unknown = null;
-  const ve = new VideoEncoder({
-    output: (ch, meta) => { const d = new Uint8Array(ch.byteLength); ch.copyTo(d); vChunks.push({ data: d, ts: ch.timestamp, cle: ch.type === "key" }); if (meta?.decoderConfig?.description) vDesc = versU8(meta.decoderConfig.description); },
-    error: (e) => { vErr = e; },
+  const ve = new (WC().VideoEncoder)({
+    output: (ch: any, meta: any) => { const d = new Uint8Array(ch.byteLength); ch.copyTo(d); vChunks.push({ data: d, ts: ch.timestamp, cle: ch.type === "key" }); if (meta?.decoderConfig?.description) vDesc = versU8(meta.decoderConfig.description); },
+    error: (e: unknown) => { vErr = e; },
   });
   ve.configure(await choisirCodecVideo(W, H));
   let dernier = -1e9, derniereCle = -1e12;
   const image = (ts: number) => {
     if (ts <= dernier + 4000 || ve.encodeQueueSize > 12) return; // image déjà faite, ou encodeur débordé : on passe
-    const f = new VideoFrame(canvas, { timestamp: ts });
+    const f = new (WC().VideoFrame)(canvas, { timestamp: ts });
     const cle = ts - derniereCle >= 2e6; if (cle) derniereCle = ts;
     ve.encode(f, { keyFrame: cle }); f.close();
     dernier = ts;
