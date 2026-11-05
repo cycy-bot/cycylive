@@ -5,7 +5,7 @@
 import { useState } from "react";
 import type React from "react";
 import Icone from "@/components/icones/Icone";
-import { formatDe, texteEtape, type Etape } from "@/data/planning";
+import { formatDe, lignesDeroule, type Etape } from "@/data/planning";
 import { IconCrystal } from "@/components/Icons";
 
 export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean; etapes?: Etape[] };
@@ -81,19 +81,16 @@ function Jeux({ jeux, couleur = "text-lilac", vide = "Stream" }: { jeux: string[
   );
 }
 
-/** Soirée en plusieurs parties : une ligne par partie, avec son heure (« 21h15 · 🎁 Giveaway »). */
-function Deroule({ etapes, heure, couleur = "text-lilac" }: { etapes: Etape[]; heure?: string; couleur?: string }) {
+/** Soirée en plusieurs parties : une ligne par partie, avec son heure (« 21h15 🎁 Giveaway Horus X »). */
+function Deroule({ etapes, heure, couleur = "text-lilac", avecJeu = true }: { etapes: Etape[]; heure?: string; couleur?: string; avecJeu?: boolean }) {
   return (
-    <ol className="flex flex-col gap-1 w-full text-left md:text-center">
-      {etapes.map((e, i) => {
-        const f = formatDe(e.format);
-        return (
-          <li key={i} className="flex items-baseline gap-1.5 md:justify-center min-w-0 text-[11.5px] leading-tight">
-            <span className="shrink-0 tabular-nums text-ink-soft">{i === 0 ? heure || "" : e.heure || "puis"}</span>
-            <span className={`truncate font-medium ${couleur}`}>{f ? f.emoji + " " : ""}{texteEtape(e)}</span>
-          </li>
-        );
-      })}
+    <ol className="flex flex-col gap-1 w-full">
+      {lignesDeroule(etapes, { debut: heure, avecJeu }).map((x, i) => (
+        <li key={i} className="grid grid-cols-[2.6rem_1fr] items-baseline gap-1.5 min-w-0 text-left text-[11.5px] leading-tight">
+          <span className="tabular-nums font-semibold text-ink text-right">{x.heure || "ensuite"}</span>
+          <span className={`min-w-0 line-clamp-2 font-medium ${x.reprise ? "text-ink-soft" : couleur}`}>{x.emoji ? x.emoji + " " : x.reprise ? "↻ " : ""}{x.texte}</span>
+        </li>
+      ))}
     </ol>
   );
 }
@@ -157,7 +154,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                     {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span>
                       : formatDe(jour.categorie) ? <span className="mb-1 inline-block whitespace-nowrap rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-lilac">{formatDe(jour.categorie)!.emoji} {formatDe(jour.categorie)!.label}</span> : null}
                     {jour.titre ? <span className={`block text-sm font-semibold leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
-                    {(jour.etapes?.length || 0) > 1 ? <Deroule etapes={jour.etapes!} heure={jour.aVenir ? "" : jour.heure} couleur={st?.texte} /> : jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
+                    {(jour.etapes?.length || 0) > 1 ? <Deroule etapes={jour.etapes!} heure={jour.aVenir ? "" : jour.heure} couleur={st?.texte} avecJeu={!valo} /> : jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
                   </div>
                   <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
                     {jour.aVenir ? <span className="font-medium text-lilac">Horaires à venir</span> : <>

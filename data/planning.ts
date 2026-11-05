@@ -26,7 +26,7 @@ export type JourPlanning = {
 };
 
 /** Une partie de la soirée : heure de début (sauf la 1re, qui commence avec le live), jeu et format. */
-export type Etape = { heure?: string; jeu?: string; format?: string };
+export type Etape = { heure?: string; jeu?: string; format?: string; detail?: string };
 
 export const MAX_JEUX = 3;
 export const MAX_ETAPES = 5;
@@ -62,18 +62,19 @@ const nettoyerEtape = (e: Etape | null | undefined): Etape => ({
   heure: String(e?.heure ?? "").trim().slice(0, 10) || undefined,
   jeu: String(e?.jeu ?? "").trim().slice(0, 60) || undefined,
   format: formatDe(String(e?.format ?? ""))?.id,
+  detail: String(e?.detail ?? "").trim().slice(0, 40) || undefined,
 });
 /** Le déroulé enregistré (2 parties ou plus), sinon rien : une soirée simple garde ses jeux et son format. */
 export function deroule(j: AvecSoiree | null | undefined): Etape[] {
   if (!j || !Array.isArray(j.etapes)) return [];
-  const l = j.etapes.map(nettoyerEtape).filter((e) => e.jeu || e.format).slice(0, MAX_ETAPES);
+  const l = j.etapes.map(nettoyerEtape).filter((e) => e.jeu || e.format || e.detail).slice(0, MAX_ETAPES);
   return l.length > 1 ? l : [];
 }
 /** Le déroulé pour l'édition : celui enregistré, sinon construit à partir des jeux et du format. */
 export function etapesDe(j: AvecSoiree | null | undefined): Etape[] {
   const d = deroule(j);
   if (d.length) return d;
-  if (Array.isArray(j?.etapes) && j!.etapes.length) return j!.etapes.map((e) => ({ heure: e?.heure || "", jeu: e?.jeu || "", format: e?.format || "" }));
+  if (Array.isArray(j?.etapes) && j!.etapes.length) return j!.etapes.map((e) => ({ heure: e?.heure || "", jeu: e?.jeu || "", format: e?.format || "", detail: e?.detail || "" }));
   const jeux = jeuxDe(j), f = formatDe(j?.categorie)?.id;
   if (jeux.length) return jeux.map((jeu, i) => ({ jeu, format: i === 0 ? f : undefined }));
   return [{ format: f }];
@@ -89,6 +90,23 @@ export function resumeEtapes(etapes: Etape[]): { jeux: string[]; categorie?: str
 export function texteEtape(e: Etape): string {
   const f = formatDe(e.format);
   return e.jeu && f ? `${e.jeu} — ${f.label}` : e.jeu || f?.label || "";
+}
+export type LigneDeroule = { heure: string; emoji: string; texte: string; reprise: boolean };
+/**
+ * Les lignes du déroulé, prêtes à afficher : « 19h · Parties persos », « 21h15 · Giveaway Horus X »,
+ * « 22h · Parties persos (reprise) ». Le jeu n'est rappelé que s'il change (ou s'il n'est pas déjà montré : avecJeu).
+ */
+export function lignesDeroule(etapes: Etape[], { debut = "", avecJeu = true }: { debut?: string; avecJeu?: boolean } = {}): LigneDeroule[] {
+  const l = etapes.map(nettoyerEtape);
+  return l.map((e, i) => {
+    const f = formatDe(e.format), prec = l[i - 1];
+    const cle = (x: Etape) => x.format || x.jeu || "";
+    const reprise = i > 0 && l.slice(0, i - 1).some((x) => cle(x) === cle(e)) && cle(prec) !== cle(e);
+    const jeu = e.jeu && f && (i === 0 ? avecJeu : e.jeu !== (prec.jeu || l[0].jeu)) ? e.jeu : "";
+    const nom = f ? f.label : e.jeu || "";
+    const texte = [jeu ? `${jeu} · ${nom}` : nom, e.detail].filter(Boolean).join(" ") + (reprise ? " (reprise)" : "");
+    return { heure: i === 0 ? debut : e.heure || "", emoji: f?.emoji || "", texte, reprise };
+  });
 }
 
 // Anciens libellés « Valorant — RANKED » / « Valorant — Soirée PP » : le jeu d'un côté, le format de l'autre
@@ -122,7 +140,7 @@ export function libelleSoiree(j: AvecSoiree | null | undefined): string {
   const d = deroule(j);
   if (d.length) {
     const t = String(j.titre || "").trim();
-    const txt = d.map((e, i) => (i > 0 && e.heure ? `${e.heure} ` : "") + texteEtape(e)).join(" · ");
+    const txt = lignesDeroule(d).map((x, i) => (i > 0 && x.heure ? `${x.heure} ` : "") + x.texte).join(" · ");
     return t ? `${t} : ${txt}` : txt;
   }
   const jeux = jeuxDe(j);

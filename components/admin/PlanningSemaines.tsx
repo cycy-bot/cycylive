@@ -36,7 +36,7 @@ function ChampsEtapes({ etapes, debut, onChange, disabled }: { etapes: Etape[]; 
             {i === 0 ? (
               <span className="w-16 shrink-0 text-center text-xs text-ink-soft" title="La 1re partie commence avec le live">{debut || "Début"}</span>
             ) : (
-              <input aria-label={`Heure de la partie ${i + 1}`} value={e.heure ?? ""} disabled={disabled} placeholder="21h15" maxLength={10} onChange={(x) => changer(i, { heure: x.target.value })} className={`${CHAMP} w-16 shrink-0 text-center`} />
+              <input aria-label={`Heure de début de la partie ${i + 1}`} title="Heure à laquelle cette partie commence" value={e.heure ?? ""} disabled={disabled} placeholder="à 21h15" maxLength={10} onChange={(x) => changer(i, { heure: x.target.value })} className={`${CHAMP} w-16 shrink-0 text-center ${e.heure ? "" : "border-amber-300/50"}`} />
             )}
             <input
               list="cycy-jeux"
@@ -52,15 +52,18 @@ function ChampsEtapes({ etapes, debut, onChange, disabled }: { etapes: Etape[]; 
               <button type="button" disabled={disabled} aria-label="Retirer cette partie" title="Retirer cette partie" onClick={() => onChange(liste.filter((_, k) => k !== i))} className="shrink-0 rounded-full w-7 h-7 border border-violet/20 text-ink-soft hover:text-red-300 hover:border-red-400/40">✕</button>
             ) : null}
           </div>
-          <select aria-label={`Format de la partie ${i + 1}`} value={formatDe(e.format) ? e.format : ""} disabled={disabled} onChange={(x) => changer(i, { format: x.target.value })} className={`${CHAMP} w-full`}>
-            <option value="">— Live classique —</option>
-            {FORMATS.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
-          </select>
+          <div className="flex items-center gap-1.5">
+            <select aria-label={`Format de la partie ${i + 1}`} value={formatDe(e.format) ? e.format : ""} disabled={disabled} onChange={(x) => changer(i, { format: x.target.value })} className={`${CHAMP} flex-1 min-w-0`}>
+              <option value="">— Live classique —</option>
+              {FORMATS.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+            </select>
+            <input aria-label={`Précision de la partie ${i + 1}`} value={e.detail ?? ""} disabled={disabled} placeholder="Précision (ex. Horus X)" maxLength={40} onChange={(x) => changer(i, { detail: x.target.value })} className={`${CHAMP} flex-1 min-w-0`} />
+          </div>
         </div>
       ))}
       {liste.length < MAX_ETAPES && !disabled ? (
         <button type="button" onClick={() => onChange([...liste, { heure: "" }])} className="self-start text-xs text-lilac hover:underline">
-          ＋ Ajouter une partie à la soirée (ex. 🎁 giveaway à 21h15, puis reprise)
+          ＋ Ajouter une partie à la soirée (ex. 🎁 giveaway à 21h15, puis reprise à 22h)
         </button>
       ) : null}
     </div>
