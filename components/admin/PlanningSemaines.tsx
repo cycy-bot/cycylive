@@ -150,7 +150,7 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
     const estType = date === null;
     const h = habituelDe(i);
     const e = estType ? { off: h?.off ?? true, heure: h?.heure, fin: h?.fin, aVenir: Boolean(h?.aVenir), ...soireeDe(h), note: "", modifie: false } : effectif(date!, i);
-    const passe = !estType && date! < aujourdHui;
+    const passe = !estType && date! < aujourdHui; // jour passé : affiché en petit, mais modifiable
     const indexType = planning.findIndex((p) => p.jour === NOMS[i]);
     const maj = (patch: Partial<ExceptionPlanning>) => {
       if (estType) {
@@ -166,7 +166,7 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
     return (
       <div
         key={date || NOMS[i]}
-        className={`carte-holo rounded-2xl border p-3.5 flex flex-col gap-2.5 ${passe ? "opacity-45" : ""} ${
+        className={`carte-holo rounded-2xl border p-3.5 flex flex-col gap-2.5 ${passe ? "opacity-70" : ""} ${
           date === aujourdHui ? "border-violet-light shadow-glow-sm" : e.modifie ? "border-amber-300/40" : "border-violet/15"
         }`}
       >
@@ -176,8 +176,8 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
           {date === aujourdHui ? <span className="rounded-full bg-violet px-2 py-0.5 text-[10px] font-semibold text-white">Aujourd’hui</span> : null}
           {e.modifie ? <span className="rounded-full bg-amber-300/15 px-2 py-0.5 text-[10px] font-semibold text-amber-200">Modifié</span> : null}
           <div className="ml-auto flex rounded-full border border-violet/20 p-0.5 text-xs">
-            <button type="button" disabled={passe} onClick={() => maj({ off: false })} className={`rounded-full px-2.5 py-1 ${!e.off ? "bg-violet text-white" : "text-ink-soft"}`}>Live</button>
-            <button type="button" disabled={passe} onClick={() => maj({ off: true })} className={`rounded-full px-2.5 py-1 ${e.off ? "bg-violet/40 text-white" : "text-ink-soft"}`}>OFF</button>
+            <button type="button" onClick={() => maj({ off: false })} className={`rounded-full px-2.5 py-1 ${!e.off ? "bg-violet text-white" : "text-ink-soft"}`}>Live</button>
+            <button type="button" onClick={() => maj({ off: true })} className={`rounded-full px-2.5 py-1 ${e.off ? "bg-violet/40 text-white" : "text-ink-soft"}`}>OFF</button>
           </div>
         </div>
         {!e.off ? (
@@ -187,23 +187,23 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
                 <span className="rounded-lg border border-dashed border-violet/40 px-3 py-1.5 text-sm text-lilac">🕒 Horaires à venir</span>
               ) : (
                 <>
-                  <input aria-label={`Début du ${NOMS[i]}`} value={e.heure ?? ""} placeholder="21h30" disabled={passe} onChange={(x) => maj({ heure: x.target.value })} className={`${CHAMP} w-20`} />
+                  <input aria-label={`Début du ${NOMS[i]}`} value={e.heure ?? ""} placeholder="21h30" onChange={(x) => maj({ heure: x.target.value })} className={`${CHAMP} w-20`} />
                   <span className="text-ink-soft text-sm">→</span>
-                  <input aria-label={`Fin du ${NOMS[i]}`} value={e.fin ?? ""} placeholder="Fin (1h)" disabled={passe} onChange={(x) => maj({ fin: x.target.value })} className={`${CHAMP} w-24`} />
+                  <input aria-label={`Fin du ${NOMS[i]}`} value={e.fin ?? ""} placeholder="Fin (1h)" onChange={(x) => maj({ fin: x.target.value })} className={`${CHAMP} w-24`} />
                 </>
               )}
               <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-soft cursor-pointer" title="Il y aura un live ce jour-là, mais l'heure n'est pas encore fixée">
-                <input type="checkbox" checked={Boolean(e.aVenir)} disabled={passe} onChange={(x) => maj(x.target.checked ? { aVenir: true } : { aVenir: false, heure: e.heure || habituelDe(i)?.heure || "21h30" })} />
+                <input type="checkbox" checked={Boolean(e.aVenir)} onChange={(x) => maj(x.target.checked ? { aVenir: true } : { aVenir: false, heure: e.heure || habituelDe(i)?.heure || "21h30" })} />
                 Horaires à venir
               </label>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">🎮 Déroulé de la soirée · jeu et format</span>
-              <ChampsEtapes etapes={e.etapes} debut={e.aVenir ? "" : e.heure} disabled={passe} onChange={(etapes) => { const r = resumeEtapes(etapes); maj({ etapes, jeux: r.jeux, categorie: r.categorie || "" }); }} />
+              <ChampsEtapes etapes={e.etapes} debut={e.aVenir ? "" : e.heure} onChange={(etapes) => { const r = resumeEtapes(etapes); maj({ etapes, jeux: r.jeux, categorie: r.categorie || "" }); }} />
             </div>
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">✏️ Titre (facultatif)</span>
-              <input value={e.titre} disabled={passe} maxLength={80} onChange={(x) => maj({ titre: x.target.value })}
+              <input value={e.titre} maxLength={80} onChange={(x) => maj({ titre: x.target.value })}
                 placeholder="ex. Soirée spéciale 2 ans, Tournoi entre abonnés…" className={`${CHAMP} w-full`} />
             </label>
             {apercu ? <p className="text-[11px] text-ink-soft">Affiché : <span className="text-lilac">{cat ? cat.emoji + " " : ""}{apercu}</span></p> : null}
@@ -213,8 +213,8 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
         )}
         {!estType ? (
           <div className="flex items-center gap-2 mt-auto">
-            <input aria-label="Note" value={e.note} placeholder="Note (« live spécial 2 ans »…)" maxLength={120} disabled={passe} onChange={(x) => maj({ note: x.target.value })} className={`${CHAMP} flex-1 min-w-0 text-xs`} />
-            {e.modifie && !passe ? (
+            <input aria-label="Note" value={e.note} placeholder="Note (« live spécial 2 ans »…)" maxLength={120} onChange={(x) => maj({ note: x.target.value })} className={`${CHAMP} flex-1 min-w-0 text-xs`} />
+            {e.modifie ? (
               <button type="button" title="Revenir à la semaine type pour ce jour" onClick={() => changerException(date!, null)} className="text-xs text-ink-soft hover:text-lilac whitespace-nowrap">↺ Habituel</button>
             ) : null}
           </div>
@@ -258,7 +258,24 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
               </button>
             ))}
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 items-start">{semaines[semaine].map((date, i) => carteJour(date, i))}</div>
+          {(() => {
+            // à partir d'aujourd'hui en grand ; les jours déjà passés de la semaine sont rangés en bas, repliés
+            const jours = semaines[semaine].map((date, i) => ({ date, i }));
+            const aVenir = jours.filter((x) => x.date >= aujourdHui), passes = jours.filter((x) => x.date < aujourdHui);
+            return (
+              <>
+                {aVenir.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 items-start">{aVenir.map((x) => carteJour(x.date, x.i))}</div> : null}
+                {passes.length ? (
+                  <details className="rounded-2xl border border-violet/15 bg-void/20 px-3.5 py-2.5">
+                    <summary className="cursor-pointer text-sm text-ink-soft select-none">
+                      🕘 Jours passés de la semaine ({passes.map((x) => NOMS[x.i].toLowerCase()).join(", ")}) · toujours affichés sur le site et Discord, modifiables ici
+                    </summary>
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4 items-start text-[13px]">{passes.map((x) => carteJour(x.date, x.i))}</div>
+                  </details>
+                ) : null}
+              </>
+            );
+          })()}
           <div className="flex flex-wrap gap-2 text-sm">
             {semaine > 0 ? (
               <button type="button" onClick={() => copierSemaine(semaine - 1, semaine)} className="rounded-full border border-violet/25 px-4 py-1.5 text-ink-soft hover:bg-violet/10">

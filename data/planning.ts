@@ -72,8 +72,7 @@ export function deroule(j: AvecSoiree | null | undefined): Etape[] {
 }
 /** Le déroulé pour l'édition : celui enregistré, sinon construit à partir des jeux et du format. */
 export function etapesDe(j: AvecSoiree | null | undefined): Etape[] {
-  const d = deroule(j);
-  if (d.length) return d;
+  // le texte reste tel qu'il est tapé (espaces compris) : il n'est nettoyé qu'à l'enregistrement
   if (Array.isArray(j?.etapes) && j!.etapes.length) return j!.etapes.map((e) => ({ heure: e?.heure || "", jeu: e?.jeu || "", format: e?.format || "", detail: e?.detail || "" }));
   const jeux = jeuxDe(j), f = formatDe(j?.categorie)?.id;
   if (jeux.length) return jeux.map((jeu, i) => ({ jeu, format: i === 0 ? f : undefined }));
