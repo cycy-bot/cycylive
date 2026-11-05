@@ -10,6 +10,7 @@ import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import TimelineHabillage from "@/components/admin/TimelineHabillage";
 import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
+import { exporterMp4, webcodecsDispo } from "@/lib/mp4Export";
 import { enregistrerBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
 import { calquesDepuisModele, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, type Calque, type Modele } from "@/lib/habillageTikTok";
 
@@ -160,7 +161,7 @@ export default function GenerateurContenus() {
   }
   function lectureOuPause() {
     const v = video.current; if (!v) return;
-    if (v.paused) { if (v.currentTime >= (fin || duree) - 0.05) v.currentTime = debut; brancherAudio(); v.play(); } else v.pause();
+    if (v.paused) { if (v.currentTime >= (fin || duree) - 0.05) v.currentTime = debut; v.play(); } else v.pause();
   }
   // Repère la ligne de séparation caméra / jeu : la ligne horizontale la plus marquée entre 25 et 55 % de la hauteur
   function detecterSeparation() {
@@ -289,6 +290,8 @@ export default function GenerateurContenus() {
   function charger(f: File) {
     if (fichier) URL.revokeObjectURL(fichier);
     fichierBlob.current = f; fichierEnregistre.current = ""; restauration.current = null;
+    // copie en mémoire tout de suite : sur iPhone/iPad, le fichier de la galerie est temporaire
+    f.arrayBuffer().then((b) => { if (fichierBlob.current === f) fichierBlob.current = new Blob([b], { type: f.type || "video/mp4" }); }).catch(() => {});
     setBrouillonId(""); setBrEtat({ etat: "repos" });
     setFichier(URL.createObjectURL(f));
     setNomFichier(f.name);
@@ -420,7 +423,30 @@ export default function GenerateurContenus() {
     try { await exporterVideo(v, avecFin); }
     catch (er) { setExport({ etat: "erreur", progres: 0, message: "La création a échoué : " + (er instanceof Error ? er.message : String(er)) + ". Réessaie (garde l’onglet ouvert pendant la création)." }); }
   }
+  // Fin de l'export : lien, vidéothèque et téléchargement automatique
+  function livrer(blob: Blob, ext: string) {
+    const url = URL.createObjectURL(blob);
+    setExport({ etat: "fini", progres: 1, url, ext });
+    preparerVideotheque();
+    const lien = document.createElement("a"); lien.href = url; lien.download = `${(etat.current.titre || "tiktok-cycylive").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 50)}.${ext}`;
+    document.body.appendChild(lien); lien.click(); lien.remove();
+  }
   async function exporterVideo(v: HTMLVideoElement, avecFin: boolean) {
+    // 1) export image par image (MP4 propre, son calé) quand le navigateur sait le faire
+    if (webcodecsDispo()) {
+      setExport({ etat: "en-cours", progres: 0 });
+      try {
+        const blob = await exporterMp4({
+          video: v, source: fichierBlob.current || v.currentSrc, debut, fin: fin || v.duration, W, H,
+          dessiner: (c, vv, t) => dessiner(c, vv, t),
+          ending: avecFin && finVideo.current ? { el: finVideo.current, url: ENDING } : null,
+          progres: (x) => setExport((e) => ({ ...e, progres: x })),
+        });
+        livrer(blob, "mp4");
+        return;
+      } catch (er) { console.warn("Export image par image impossible, enregistrement classique :", er); }
+    }
+    // 2) sinon : enregistrement en direct (ancien mode)
     brancherAudio();
     const a = audio.current!;
     await a.ctx.resume();
@@ -439,9 +465,14 @@ export default function GenerateurContenus() {
     const termine = new Promise<void>((ok) => { rec.onstop = () => ok(); });
     setExport({ etat: "en-cours", progres: 0 });
     a.gain.gain.value = 0; // export silencieux pour toi, le son est bien dans la vidéo
+    // un export précédent a pu laisser le son coupé ou la cinématique audible : tout est remis à zéro
+    a.principal.gain.cancelScheduledValues(a.ctx.currentTime); a.principal.gain.value = 1;
+    if (a.finGain) { a.finGain.gain.cancelScheduledValues(a.ctx.currentTime); a.finGain.gain.value = 0; }
     v.pause();
     v.currentTime = debut;
     await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
+    // laisse le son de l'ancienne position se vider avant d'enregistrer (sinon on entendait la fin du clip au début)
+    await new Promise((ok) => setTimeout(ok, 350));
     rec.start(250);
     await v.play();
     const finT = fin || v.duration;
@@ -484,13 +515,7 @@ export default function GenerateurContenus() {
     rec.stop();
     await termine;
     a.gain.gain.value = 1;
-    const blob = new Blob(morceaux, { type: type.split(";")[0] });
-    const url = URL.createObjectURL(blob), ext = type.includes("mp4") ? "mp4" : "webm";
-    setExport({ etat: "fini", progres: 1, url, ext });
-    preparerVideotheque();
-    // téléchargement automatique (le bouton reste là aussi)
-    const lien = document.createElement("a"); lien.href = url; lien.download = `${(etat.current.titre || "tiktok-cycylive").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 50)}.${ext}`;
-    document.body.appendChild(lien); lien.click(); lien.remove();
+    livrer(new Blob(morceaux, { type: type.split(";")[0] }), type.includes("mp4") ? "mp4" : "webm");
   }
 
   // ── Visuels fixes (miniature, story) à partir de l'image en cours ──
@@ -705,7 +730,8 @@ export default function GenerateurContenus() {
                     v.currentTime = 1e7;
                   }}
                   onLoadedData={(e) => { const v = e.currentTarget; if (restaure.current) { restaure.current = false; return; } if (v.videoHeight > v.videoWidth * 1.4) { const essai = (n: number) => { if (!detecterSeparation() && n > 0) setTimeout(() => essai(n - 1), 400); }; setTimeout(() => essai(5), 150); } }}
-                  onPlay={() => { brancherAudio(); setEnLecture(true); }} onPause={() => setEnLecture(false)} />
+                  onError={() => setBrEtat({ etat: "erreur", message: "Ce clip ne peut pas être lu ici : réimporte-le depuis ta galerie (ou exporte-le en MP4)." })}
+                  onPlay={() => setEnLecture(true)} onPause={() => setEnLecture(false)} />
                 <div className="grid gap-2 sm:grid-cols-2">
                   {DISPOS.map((d) => (
                     <button key={d.valeur} type="button" onClick={() => setDispo(d.valeur)} className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-all ${dispo === d.valeur ? "border-violet-light bg-violet/20 text-ink" : "border-violet/20 text-ink-soft hover:bg-violet/10"}`}>

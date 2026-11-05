@@ -45,13 +45,29 @@ export async function listerBrouillons(): Promise<BrouillonInfo[]> {
   return (l || []).sort((a, b) => b.maj - a.maj);
 }
 
-export function lireFichierBrouillon(id: string): Promise<Blob | undefined> {
-  return requete<Blob | undefined>(FICHIERS, "readonly", (s) => s.get(id));
+// Le clip est gardé en octets (et non en « fichier ») : sur iPhone/iPad, un fichier choisi dans la galerie
+// n'est qu'un lien vers une copie temporaire qui disparaît, et le brouillon ne s'ouvrait plus.
+type FichierGarde = { octets: ArrayBuffer; type: string };
+export async function lireFichierBrouillon(id: string): Promise<Blob | undefined> {
+  const r = await requete<Blob | FichierGarde | undefined>(FICHIERS, "readonly", (s) => s.get(id));
+  if (!r) return undefined;
+  if (r instanceof Blob) {
+    // ancien brouillon : on vérifie que le fichier est encore lisible
+    try { const b = await r.arrayBuffer(); return new Blob([b], { type: r.type || "video/mp4" }); }
+    catch { throw new Error("le clip de ce brouillon n’est plus lisible (iPhone/iPad : enregistré avant la correction). Réimporte le clip, puis enregistre à nouveau le brouillon"); }
+  }
+  if (r.octets) return new Blob([r.octets], { type: r.type || "video/mp4" });
+  return undefined;
 }
 
 /** Enregistre les infos du brouillon ; le fichier vidéo n'est écrit que s'il est fourni (une seule fois par brouillon). */
 export async function enregistrerBrouillon(info: BrouillonInfo, fichier?: Blob) {
-  if (fichier) await requete(FICHIERS, "readwrite", (s) => s.put(fichier, info.id));
+  if (fichier) {
+    const octets = await fichier.arrayBuffer();
+    if (!octets.byteLength) throw new Error("le clip est vide ou illisible");
+    const garde: FichierGarde = { octets, type: fichier.type || "video/mp4" };
+    await requete(FICHIERS, "readwrite", (s) => s.put(garde, info.id));
+  }
   await requete(INFOS, "readwrite", (s) => s.put(info));
   // demande au navigateur de ne pas effacer ces données quand l'espace manque
   try { await navigator.storage?.persist?.(); } catch { /* facultatif */ }

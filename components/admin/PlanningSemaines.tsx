@@ -34,9 +34,9 @@ function ChampsEtapes({ etapes, debut, onChange, disabled }: { etapes: Etape[]; 
         <div key={i} className="rounded-xl border border-violet/15 bg-void/30 p-2 flex flex-col gap-1.5">
           <div className="flex items-center gap-1.5">
             {i === 0 ? (
-              <span className="w-16 shrink-0 text-center text-xs text-ink-soft" title="La 1re partie commence avec le live">{debut || "Début"}</span>
+              <span className="w-[5.5rem] shrink-0 text-center text-xs text-ink-soft" title="La 1re partie commence avec le live">{debut ? `à ${debut}` : "Début"}</span>
             ) : (
-              <input aria-label={`Heure de début de la partie ${i + 1}`} title="Heure à laquelle cette partie commence" value={e.heure ?? ""} disabled={disabled} placeholder="à 21h15" maxLength={10} onChange={(x) => changer(i, { heure: x.target.value })} className={`${CHAMP} w-16 shrink-0 text-center ${e.heure ? "" : "border-amber-300/50"}`} />
+              <input aria-label={`Heure de début de la partie ${i + 1}`} title="Heure à laquelle cette partie commence" value={e.heure ?? ""} disabled={disabled} placeholder="21h15" maxLength={10} inputMode="text" autoComplete="off" onChange={(x) => changer(i, { heure: x.target.value })} className={`${CHAMP} w-[5.5rem] shrink-0 text-center ${e.heure ? "" : "border-amber-300/50"}`} />
             )}
             <input
               list="cycy-jeux"
