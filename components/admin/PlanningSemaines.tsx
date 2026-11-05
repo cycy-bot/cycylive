@@ -6,7 +6,7 @@
 // la retire. Tout s'enregistre en un clic, CycyBot le récupère dans les 2 minutes.
 
 import { useMemo, useState } from "react";
-import { MAX_JEUX, FORMATS, formatDe, JEUX_SUGGERES, jeuxDe, libelleSoiree, separerJeuFormat, type JourPlanning } from "@/data/planning";
+import { MAX_ETAPES, FORMATS, formatDe, JEUX_SUGGERES, jeuxDe, libelleSoiree, separerJeuFormat, etapesDe, resumeEtapes, type Etape, type JourPlanning } from "@/data/planning";
 import { dateParis, type DonneesCalendrier, type ExceptionPlanning } from "@/data/calendrier";
 
 const CHAMP = "rounded-lg bg-card border border-violet/20 px-3 py-1.5 text-sm text-ink outline-none focus:border-violet/60";
@@ -24,32 +24,43 @@ function semainesAVenir(): string[][] {
 }
 const nomSemaine = (i: number) => (i === 0 ? "Cette semaine" : i === 1 ? "Semaine prochaine" : `Dans ${i} semaines`);
 
-/** Jusqu'à 3 jeux / activités : un champ par partie de la soirée, ajout et retrait (les champs vides restent pendant la saisie). */
-function ChampsJeux({ jeux, onChange, suggestions, disabled }: { jeux: string[]; onChange: (j: string[]) => void; suggestions: string[]; disabled?: boolean }) {
-  const liste = jeux.length ? jeux : [""];
+/** Déroulé de la soirée : une ligne par partie (heure, jeu, format). La 1re commence avec le live. */
+function ChampsEtapes({ etapes, debut, onChange, disabled }: { etapes: Etape[]; debut?: string; onChange: (e: Etape[]) => void; disabled?: boolean }) {
+  const liste = etapes.length ? etapes : [{}];
+  const changer = (i: number, patch: Partial<Etape>) => onChange(liste.map((x, k) => (k === i ? { ...x, ...patch } : x)));
   return (
-    <div className="flex flex-col gap-1.5 w-full">
-      {liste.map((j, i) => (
-        <div key={i} className="flex items-center gap-1.5">
-          <span className="w-5 shrink-0 text-center text-[11px] text-ink-soft">{liste.length > 1 ? i + 1 : "🎮"}</span>
-          <input
-            list="cycy-jeux"
-            value={j}
-            disabled={disabled}
-            aria-label={`Jeu ${i + 1}`}
-            placeholder={i === 0 ? "Valorant, Minecraft, Just Chatting…" : "Puis…"}
-            maxLength={60}
-            onChange={(e) => onChange(liste.map((x, k) => (k === i ? e.target.value : x)))}
-            className={`${CHAMP} flex-1 min-w-0`}
-          />
-          {liste.length > 1 || j ? (
-            <button type="button" disabled={disabled} aria-label="Retirer ce jeu" title="Retirer ce jeu" onClick={() => onChange(liste.length > 1 ? liste.filter((_, k) => k !== i) : [""])} className="shrink-0 rounded-full w-7 h-7 border border-violet/20 text-ink-soft hover:text-red-300 hover:border-red-400/40">✕</button>
-          ) : null}
+    <div className="flex flex-col gap-2 w-full">
+      {liste.map((e, i) => (
+        <div key={i} className="rounded-xl border border-violet/15 bg-void/30 p-2 flex flex-col gap-1.5">
+          <div className="flex items-center gap-1.5">
+            {i === 0 ? (
+              <span className="w-16 shrink-0 text-center text-xs text-ink-soft" title="La 1re partie commence avec le live">{debut || "Début"}</span>
+            ) : (
+              <input aria-label={`Heure de la partie ${i + 1}`} value={e.heure ?? ""} disabled={disabled} placeholder="21h15" maxLength={10} onChange={(x) => changer(i, { heure: x.target.value })} className={`${CHAMP} w-16 shrink-0 text-center`} />
+            )}
+            <input
+              list="cycy-jeux"
+              value={e.jeu ?? ""}
+              disabled={disabled}
+              aria-label={`Jeu de la partie ${i + 1}`}
+              placeholder={i === 0 ? "Valorant, Minecraft, Just Chatting…" : "Jeu (facultatif)"}
+              maxLength={60}
+              onChange={(x) => changer(i, { jeu: x.target.value })}
+              className={`${CHAMP} flex-1 min-w-0`}
+            />
+            {liste.length > 1 ? (
+              <button type="button" disabled={disabled} aria-label="Retirer cette partie" title="Retirer cette partie" onClick={() => onChange(liste.filter((_, k) => k !== i))} className="shrink-0 rounded-full w-7 h-7 border border-violet/20 text-ink-soft hover:text-red-300 hover:border-red-400/40">✕</button>
+            ) : null}
+          </div>
+          <select aria-label={`Format de la partie ${i + 1}`} value={formatDe(e.format) ? e.format : ""} disabled={disabled} onChange={(x) => changer(i, { format: x.target.value })} className={`${CHAMP} w-full`}>
+            <option value="">— Live classique —</option>
+            {FORMATS.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
+          </select>
         </div>
       ))}
-      {liste.length < MAX_JEUX && !disabled ? (
-        <button type="button" onClick={() => onChange([...liste, ""])} className="self-start ml-6 text-xs text-lilac hover:underline">
-          ＋ Un autre jeu dans la soirée ({liste.length}/{MAX_JEUX})
+      {liste.length < MAX_ETAPES && !disabled ? (
+        <button type="button" onClick={() => onChange([...liste, { heure: "" }])} className="self-start text-xs text-lilac hover:underline">
+          ＋ Ajouter une partie à la soirée (ex. 🎁 giveaway à 21h15, puis reprise)
         </button>
       ) : null}
     </div>
@@ -57,16 +68,17 @@ function ChampsJeux({ jeux, onChange, suggestions, disabled }: { jeux: string[];
 }
 
 // Soirée telle que saisie (les jeux vides sont gardés tant qu'on écrit)
-type Soiree = { jeux: string[]; titre: string; categorie: string };
-const soireeDe = (x: { jeu?: string; jeux?: string[]; titre?: string; categorie?: string } | null | undefined): Soiree => {
+type Soiree = { jeux: string[]; titre: string; categorie: string; etapes: Etape[] };
+const soireeDe = (x: { jeu?: string; jeux?: string[]; titre?: string; categorie?: string; etapes?: Etape[] } | null | undefined): Soiree => {
   const jeux = x && Array.isArray(x.jeux) ? x.jeux.map((v) => String(v ?? "")) : jeuxDe(x);
   // anciennes catégories : « Valorant » devient le jeu ; « Valorant — RANKED » → jeu Valorant + format Ranked
   const ancien = x?.categorie === "valorant" ? "" : x?.categorie === "discussion" ? "chill" : x?.categorie || "";
   const j2 = x?.categorie === "valorant" && !jeux.some((v) => /valorant/i.test(v)) ? ["Valorant", ...jeux] : jeux;
   const sep = separerJeuFormat(j2, formatDe(ancien) ? ancien : undefined);
-  return { jeux: sep.jeux, titre: x?.titre || "", categorie: sep.categorie || "" };
+  const base = { jeux: sep.jeux, titre: x?.titre || "", categorie: sep.categorie || "" };
+  return { ...base, etapes: etapesDe(Array.isArray(x?.etapes) && x!.etapes.length ? x : base) };
 };
-const aSoiree = (x: { jeux?: string[]; titre?: string; categorie?: string } | undefined) => Boolean(x && (x.titre !== undefined || x.categorie !== undefined || Array.isArray(x.jeux)));
+const aSoiree = (x: { jeux?: string[]; titre?: string; categorie?: string; etapes?: Etape[] } | undefined) => Boolean(x && (x.titre !== undefined || x.categorie !== undefined || Array.isArray(x.jeux) || Array.isArray(x.etapes)));
 
 type Props = {
   planning: JourPlanning[];
@@ -110,7 +122,7 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
   // Modifier une date : on part de ce qui est affiché et on l'enregistre comme exception
   const modifierDate = (date: string, i: number, patch: Partial<ExceptionPlanning>) => {
     const e = effectif(date, i);
-    const base: ExceptionPlanning = { off: e.off, heure: e.heure, fin: e.fin, aVenir: e.aVenir || undefined, jeux: e.jeux, titre: e.titre, categorie: e.categorie, note: e.note || undefined };
+    const base: ExceptionPlanning = { off: e.off, heure: e.heure, fin: e.fin, aVenir: e.aVenir || undefined, jeux: e.jeux, titre: e.titre, categorie: e.categorie, etapes: e.etapes, note: e.note || undefined };
     const suivant = { ...base, ...patch };
     if (patch.off === false && !suivant.heure && !suivant.aVenir) suivant.heure = habituelDe(i)?.heure || "21h30";
     changerException(date, { ...suivant, jeu: libelleSoiree({ ...suivant, titre: suivant.titre || undefined, categorie: suivant.categorie || undefined }) || undefined });
@@ -141,13 +153,13 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
       if (estType) {
         const p: Partial<JourPlanning> = { ...patch } as Partial<JourPlanning>;
         const apres = { ...soireeDe(h), ...patch };
-        p.jeu = libelleSoiree({ jeux: apres.jeux, titre: apres.titre || undefined, categorie: apres.categorie || undefined }) || undefined;
+        p.jeu = libelleSoiree({ jeux: apres.jeux, titre: apres.titre || undefined, categorie: apres.categorie || undefined, etapes: apres.etapes }) || undefined;
         if (patch.off === false && !h?.heure && !h?.aVenir) p.heure = "21h30";
         if (indexType >= 0) modifierJour(indexType, p);
       } else modifierDate(date!, i, patch);
     };
     const cat = formatDe(e.categorie);
-    const apercu = libelleSoiree({ jeux: e.jeux, titre: e.titre || undefined, categorie: e.categorie || undefined });
+    const apercu = libelleSoiree({ jeux: e.jeux, titre: e.titre || undefined, categorie: e.categorie || undefined, etapes: e.etapes });
     return (
       <div
         key={date || NOMS[i]}
@@ -183,16 +195,9 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
               </label>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">🎮 Jeu</span>
-              <ChampsJeux jeux={e.jeux} suggestions={suggestions} disabled={passe} onChange={(jeux) => maj({ jeux })} />
+              <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">🎮 Déroulé de la soirée · jeu et format</span>
+              <ChampsEtapes etapes={e.etapes} debut={e.aVenir ? "" : e.heure} disabled={passe} onChange={(etapes) => { const r = resumeEtapes(etapes); maj({ etapes, jeux: r.jeux, categorie: r.categorie || "" }); }} />
             </div>
-            <label className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">🏷️ Format de la soirée</span>
-              <select value={formatDe(e.categorie) ? e.categorie : ""} disabled={passe} onChange={(x) => maj({ categorie: x.target.value })} className={`${CHAMP} w-full`}>
-                <option value="">— Live classique —</option>
-                {FORMATS.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.label}</option>)}
-              </select>
-            </label>
             <label className="flex flex-col gap-1">
               <span className="text-[11px] uppercase tracking-wide text-ink-soft/70">✏️ Titre (facultatif)</span>
               <input value={e.titre} disabled={passe} maxLength={80} onChange={(x) => maj({ titre: x.target.value })}

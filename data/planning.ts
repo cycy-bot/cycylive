@@ -22,9 +22,14 @@ export type JourPlanning = {
   heure?: string; // format "21h30"
   fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
   aVenir?: boolean; // live prévu ce jour-là, horaires pas encore connus
+  etapes?: Etape[]; // déroulé de la soirée (ex. 19h parties persos → 21h15 giveaway → parties persos)
 };
 
+/** Une partie de la soirée : heure de début (sauf la 1re, qui commence avec le live), jeu et format. */
+export type Etape = { heure?: string; jeu?: string; format?: string };
+
 export const MAX_JEUX = 3;
+export const MAX_ETAPES = 5;
 
 /** Formats de soirée (le « quoi » du live, à côté du jeu) : ils choisissent l'illustration et les couleurs du
  *  planning (site + Discord). Le jeu, lui, est le jeu joué (Valorant, Minecraft, Just Chatting…), comme sur Twitch. */
@@ -51,7 +56,40 @@ export const categorieDe = formatDe;
 /** Jeux proposés dans l'admin (on peut toujours écrire le sien). */
 export const JEUX_SUGGERES = ["Valorant", "Just Chatting", "Minecraft", "Palworld", "Goose Goose Duck", "Among Us", "The Legend of Zelda", "Animal Crossing", "Phasmophobia", "Lethal Company", "Fortnite", "League of Legends", "Mario Kart", "Fall Guys", "Dead by Daylight", "Stardew Valley", "Pokémon", "Overcooked", "Gartic Phone", "Jeux de société"];
 
-type AvecSoiree = { jeu?: string; jeux?: string[]; titre?: string; categorie?: string };
+type AvecSoiree = { jeu?: string; jeux?: string[]; titre?: string; categorie?: string; etapes?: Etape[] };
+
+const nettoyerEtape = (e: Etape | null | undefined): Etape => ({
+  heure: String(e?.heure ?? "").trim().slice(0, 10) || undefined,
+  jeu: String(e?.jeu ?? "").trim().slice(0, 60) || undefined,
+  format: formatDe(String(e?.format ?? ""))?.id,
+});
+/** Le déroulé enregistré (2 parties ou plus), sinon rien : une soirée simple garde ses jeux et son format. */
+export function deroule(j: AvecSoiree | null | undefined): Etape[] {
+  if (!j || !Array.isArray(j.etapes)) return [];
+  const l = j.etapes.map(nettoyerEtape).filter((e) => e.jeu || e.format).slice(0, MAX_ETAPES);
+  return l.length > 1 ? l : [];
+}
+/** Le déroulé pour l'édition : celui enregistré, sinon construit à partir des jeux et du format. */
+export function etapesDe(j: AvecSoiree | null | undefined): Etape[] {
+  const d = deroule(j);
+  if (d.length) return d;
+  if (Array.isArray(j?.etapes) && j!.etapes.length) return j!.etapes.map((e) => ({ heure: e?.heure || "", jeu: e?.jeu || "", format: e?.format || "" }));
+  const jeux = jeuxDe(j), f = formatDe(j?.categorie)?.id;
+  if (jeux.length) return jeux.map((jeu, i) => ({ jeu, format: i === 0 ? f : undefined }));
+  return [{ format: f }];
+}
+/** Les jeux (sans doublon) et le format principal (le 1er choisi) d'un déroulé. */
+export function resumeEtapes(etapes: Etape[]): { jeux: string[]; categorie?: string } {
+  const l = etapes.map(nettoyerEtape);
+  // format principal (illustration du planning) : un format spécial (giveaway, tournoi…) passe avant ranked / parties persos
+  const special = l.find((e) => e.format && !["ranked", "pp", "decouverte", "chill"].includes(e.format));
+  return { jeux: [...new Set(l.map((e) => e.jeu).filter(Boolean) as string[])].slice(0, MAX_JEUX), categorie: (special || l.find((e) => e.format))?.format };
+}
+/** Texte d'une partie : « Valorant — Parties persos », « Giveaway »… */
+export function texteEtape(e: Etape): string {
+  const f = formatDe(e.format);
+  return e.jeu && f ? `${e.jeu} — ${f.label}` : e.jeu || f?.label || "";
+}
 
 // Anciens libellés « Valorant — RANKED » / « Valorant — Soirée PP » : le jeu d'un côté, le format de l'autre
 const ANCIENS_FORMATS: [RegExp, string][] = [[/^ranked$/i, "ranked"], [/^(soir[ée]e\s+)?pp$|^parties?\s+persos?$/i, "pp"]];
@@ -80,6 +118,13 @@ export function jeuxDe(j: AvecSoiree | null | undefined): string[] {
 /** Libellé complet de la soirée (lu par CycyBot, le compte à rebours, les stories) : « Titre : jeu + jeu ». */
 export function libelleSoiree(j: AvecSoiree | null | undefined): string {
   if (!j) return "";
+  // Soirée en plusieurs parties : « Valorant — Parties persos · 21h15 Giveaway · Parties persos »
+  const d = deroule(j);
+  if (d.length) {
+    const t = String(j.titre || "").trim();
+    const txt = d.map((e, i) => (i > 0 && e.heure ? `${e.heure} ` : "") + texteEtape(e)).join(" · ");
+    return t ? `${t} : ${txt}` : txt;
+  }
   const jeux = jeuxDe(j);
   const f = formatDe(j.categorie);
   const titre = String(j.titre || "").trim();
@@ -90,8 +135,18 @@ export function libelleSoiree(j: AvecSoiree | null | undefined): string {
 }
 
 /** Range un jour avant l'enregistrement : jeux nettoyés (3 max), titre, catégorie et « jeu » recalculé. */
-export function avecJeux<T extends AvecSoiree>(j: T): T {
+export function avecJeux<T extends AvecSoiree>(j0: T): T {
+  // une seule partie : elle redevient un jeu + un format
+  const r1 = Array.isArray(j0.etapes) && !deroule(j0).length ? resumeEtapes(j0.etapes) : null;
+  const j: T = r1 ? { ...j0, jeux: Array.isArray(j0.jeux) && j0.jeux.length ? j0.jeux : r1.jeux, categorie: j0.categorie || r1.categorie } : j0;
   const titre = String(j.titre || "").trim().slice(0, 80) || undefined;
+  // déroulé en plusieurs parties : il décide des jeux et du format principal
+  const d = deroule(j);
+  if (d.length) {
+    const r = resumeEtapes(d);
+    const propre = { ...j, titre, etapes: d, jeux: r.jeux.length ? r.jeux : undefined, categorie: r.categorie };
+    return { ...propre, jeu: libelleSoiree(propre) || undefined };
+  }
   // anciennes catégories : « Valorant » devient le jeu, « Autre » / « Discussion » disparaissent
   const ancien = String(j.categorie || "");
   const categorie = formatDe(ancien === "discussion" ? "chill" : ancien)?.id;
@@ -100,7 +155,7 @@ export function avecJeux<T extends AvecSoiree>(j: T): T {
   if (ancien === "valorant" && !jeux.some((x) => /valorant/i.test(x))) jeux = ["Valorant", ...jeux].slice(0, MAX_JEUX);
   const sep = separerJeuFormat(jeux, categorie);
   jeux = sep.jeux;
-  const propre = { ...j, titre, categorie: sep.categorie, jeux: jeux.length ? jeux : undefined };
+  const propre = { ...j, titre, categorie: sep.categorie, jeux: jeux.length ? jeux : undefined, etapes: undefined };
   return { ...propre, jeu: libelleSoiree(propre) || undefined };
 }
 

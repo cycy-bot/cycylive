@@ -5,10 +5,10 @@
 import { useState } from "react";
 import type React from "react";
 import Icone from "@/components/icones/Icone";
-import { formatDe } from "@/data/planning";
+import { formatDe, texteEtape, type Etape } from "@/data/planning";
 import { IconCrystal } from "@/components/Icons";
 
-export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean };
+export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean; etapes?: Etape[] };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
 
 // Lives spéciaux (même détection que l'image du planning Discord) : illustration et couleurs à part
@@ -81,6 +81,23 @@ function Jeux({ jeux, couleur = "text-lilac", vide = "Stream" }: { jeux: string[
   );
 }
 
+/** Soirée en plusieurs parties : une ligne par partie, avec son heure (« 21h15 · 🎁 Giveaway »). */
+function Deroule({ etapes, heure, couleur = "text-lilac" }: { etapes: Etape[]; heure?: string; couleur?: string }) {
+  return (
+    <ol className="flex flex-col gap-1 w-full text-left md:text-center">
+      {etapes.map((e, i) => {
+        const f = formatDe(e.format);
+        return (
+          <li key={i} className="flex items-baseline gap-1.5 md:justify-center min-w-0 text-[11.5px] leading-tight">
+            <span className="shrink-0 tabular-nums text-ink-soft">{i === 0 ? heure || "" : e.heure || "puis"}</span>
+            <span className={`truncate font-medium ${couleur}`}>{f ? f.emoji + " " : ""}{texteEtape(e)}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
 export default function GrillePlanning({ semaines, aujourdhui }: { semaines: SemaineGrille[]; aujourdhui: string }) {
   const [s, setS] = useState(0);
   const semaine = semaines[s] ?? semaines[0];
@@ -140,7 +157,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                     {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span>
                       : formatDe(jour.categorie) ? <span className="mb-1 inline-block whitespace-nowrap rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-lilac">{formatDe(jour.categorie)!.emoji} {formatDe(jour.categorie)!.label}</span> : null}
                     {jour.titre ? <span className={`block text-sm font-semibold leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
-                    {jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
+                    {(jour.etapes?.length || 0) > 1 ? <Deroule etapes={jour.etapes!} heure={jour.aVenir ? "" : jour.heure} couleur={st?.texte} /> : jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
                   </div>
                   <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
                     {jour.aVenir ? <span className="font-medium text-lilac">Horaires à venir</span> : <>
