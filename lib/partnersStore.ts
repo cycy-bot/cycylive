@@ -9,7 +9,7 @@ import { BonPlan, bonsPlansParDefaut } from "@/data/deals";
 
 const CLE_PARTENAIRES = "cycylive:partenaires";
 const CLE_BONS_PLANS = "cycylive:bons-plans";
-const CLE_MIGRATION_HORUS = "cycylive:migration:horus-13";
+const CLE_MIGRATION_HORUS = "cycylive:migration:horus-13-v2";
 
 // Horus X passe de -11 % à -13 % (code CYCYLIVE) : textes et visuel mis à jour une seule fois, puis enregistrés
 const VISUEL_HORUS = "/images/partenaires/horus-x-13.jpg";
@@ -19,7 +19,7 @@ async function migrerHorus(redis: Redis) {
   if (await redis.get(CLE_MIGRATION_HORUS)) return;
   const [p, b] = await Promise.all([redis.get<Partenaire[]>(CLE_PARTENAIRES), redis.get<BonPlan[]>(CLE_BONS_PLANS)]);
   if (Array.isArray(p)) {
-    await redis.set(CLE_PARTENAIRES, p.map((x) => (estHorus(x.nom) ? { ...x, description: en13(x.description) || "", reduction: en13(x.reduction), ctaLabel: en13(x.ctaLabel) || x.ctaLabel, image: VISUEL_HORUS } : x)));
+    await redis.set(CLE_PARTENAIRES, p.map((x) => (estHorus(x.nom) ? { ...x, description: en13(x.description) || "", reduction: en13(x.reduction), ctaLabel: en13(x.ctaLabel) || x.ctaLabel, image: VISUEL_HORUS, affichage: x.affichage === "image" ? "image" : "banniere" } : x)));
   }
   if (Array.isArray(b)) {
     await redis.set(CLE_BONS_PLANS, b.map((x) => (estHorus(x.marque) ? { ...x, offre: en13(x.offre) || x.offre, reduction: en13(x.reduction), conditions: en13(x.conditions) } : x)));

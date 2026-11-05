@@ -27,19 +27,29 @@ async function compresser(fichier: File, largeurMax: number): Promise<string> {
     });
   }
   const img = await chargerImage(fichier);
-  const echelle = Math.min(1, largeurMax / img.naturalWidth);
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(img.naturalWidth * echelle);
-  canvas.height = Math.round(img.naturalHeight * echelle);
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Ton navigateur ne peut pas préparer l'image.");
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  // On baisse la qualité tant que l'image dépasse ~600 Ko
-  for (const qualite of [0.86, 0.75, 0.6, 0.45]) {
-    const data = canvas.toDataURL("image/webp", qualite);
-    if (data.length < 600 * 1024) return data;
+  const LIMITE = 600 * 1024;
+  let largeur = Math.min(largeurMax, img.naturalWidth);
+  for (let essai = 0; essai < 5; essai++) {
+    const echelle = largeur / img.naturalWidth;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(img.naturalWidth * echelle));
+    canvas.height = Math.max(1, Math.round(img.naturalHeight * echelle));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Ton navigateur ne peut pas préparer l'image.");
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    // 1) WebP (Chrome, Firefox…) — Safari ne sait pas en produire : il renvoie un PNG, très lourd
+    const webp = canvas.toDataURL("image/webp", 0.86);
+    if (webp.startsWith("data:image/webp")) {
+      for (const qualite of [0.86, 0.75, 0.6, 0.45]) { const d = canvas.toDataURL("image/webp", qualite); if (d.length < LIMITE) return d; }
+    } else {
+      // 2) PNG si l'image a de la transparence et reste légère (logos), sinon JPEG
+      const transparente = (() => { try { const p = ctx.getImageData(0, 0, canvas.width, canvas.height).data; for (let i = 3; i < p.length; i += 4 * 7) if (p[i] < 250) return true; } catch { /* rien */ } return false; })();
+      if (transparente) { const png = canvas.toDataURL("image/png"); if (png.length < LIMITE) return png; }
+      if (!transparente) for (const qualite of [0.88, 0.8, 0.7, 0.55]) { const d = canvas.toDataURL("image/jpeg", qualite); if (d.length < LIMITE) return d; }
+    }
+    largeur = Math.round(largeur * 0.75); // encore trop lourd : image un peu plus petite
   }
-  return canvas.toDataURL("image/webp", 0.35);
+  throw new Error("Image trop lourde : essaie une image plus petite.");
 }
 
 export default function ChampImage({
