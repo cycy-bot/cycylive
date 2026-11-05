@@ -37,8 +37,72 @@ const versU8 = (b: unknown): Uint8Array | null => {
 
 async function decoderSon(src: Blob | string): Promise<AudioBuffer> {
   const buf = typeof src === "string" ? await (await fetch(src)).arrayBuffer() : await src.arrayBuffer();
-  const ctx = new OfflineAudioContext(2, SR, SR);
-  return await ctx.decodeAudioData(buf);
+  const ctx = () => new OfflineAudioContext(2, SR, SR);
+  try { return await ctx().decodeAudioData(buf.slice(0)); }
+  catch (e) {
+    // Safari ne décode pas le son d'une vidéo .mov / .mp4 complète : on sort la piste AAC dans un petit fichier audio .m4a
+    const m4a = extraireAac(new Uint8Array(buf));
+    if (!m4a) throw e;
+    return await ctx().decodeAudioData(m4a.buffer as ArrayBuffer);
+  }
+}
+
+// ── Lecture de la piste son AAC d'un fichier MP4 / MOV (iPhone, Android, OBS…) ──
+function lireBoites(d: Uint8Array, debut: number, fin: number): { type: string; deb: number; fin: number; corps: number }[] {
+  const out: { type: string; deb: number; fin: number; corps: number }[] = [];
+  const dv = new DataView(d.buffer, d.byteOffset, d.byteLength);
+  let p = debut;
+  while (p + 8 <= fin) {
+    let taille = dv.getUint32(p); const type = String.fromCharCode(d[p + 4], d[p + 5], d[p + 6], d[p + 7]);
+    let corps = p + 8;
+    if (taille === 1) { taille = Number(dv.getBigUint64(p + 8)); corps = p + 16; } else if (taille === 0) taille = fin - p;
+    if (taille < 8 || p + taille > fin) break;
+    out.push({ type, deb: p, fin: p + taille, corps });
+    p += taille;
+  }
+  return out;
+}
+export function extraireAac(d: Uint8Array): Uint8Array | null {
+  try {
+    const dv = new DataView(d.buffer, d.byteOffset, d.byteLength);
+    const enfant = (b: { corps: number; fin: number }, t: string, saut = 0) => lireBoites(d, b.corps + saut, b.fin).find((x) => x.type === t);
+    const moov = lireBoites(d, 0, d.length).find((x) => x.type === "moov"); if (!moov) return null;
+    for (const trak of lireBoites(d, moov.corps, moov.fin).filter((x) => x.type === "trak")) {
+      const mdia = enfant(trak, "mdia"); if (!mdia) continue;
+      const hdlr = enfant(mdia, "hdlr"); if (!hdlr || String.fromCharCode(...d.subarray(hdlr.corps + 8, hdlr.corps + 12)) !== "soun") continue;
+      const stbl = enfant(enfant(mdia, "minf")!, "stbl"); if (!stbl) continue;
+      const stsd = enfant(stbl, "stsd")!; const entree = lireBoites(d, stsd.corps + 8, stsd.fin)[0];
+      if (!entree || entree.type !== "mp4a") return null;
+      // version de l'entrée son (QuickTime v1/v2 : champs en plus avant les sous-boîtes)
+      const version = dv.getUint16(entree.corps + 8);
+      const saut = 28 + (version === 1 ? 16 : version === 2 ? 36 : 0);
+      let esds = lireBoites(d, entree.corps + saut, entree.fin).find((x) => x.type === "esds");
+      if (!esds) { const wave = lireBoites(d, entree.corps + saut, entree.fin).find((x) => x.type === "wave"); if (wave) esds = lireBoites(d, wave.corps, wave.fin).find((x) => x.type === "esds"); }
+      if (!esds) return null;
+      // DecoderSpecificInfo (tag 0x05) = configuration AAC
+      let q = esds.corps + 4, asc: Uint8Array | null = null;
+      while (q < esds.fin - 2) { if (d[q] === 0x05) { let n = 0, k = q + 1; for (let i = 0; i < 4; i++) { const b = d[k++]; n = (n << 7) | (b & 127); if (!(b & 128)) break; } asc = d.slice(k, k + n); break; } q++; }
+      if (!asc) return null;
+      const stsz = enfant(stbl, "stsz")!, stsc = enfant(stbl, "stsc")!, stco = enfant(stbl, "stco") || enfant(stbl, "co64")!;
+      const tailleFixe = dv.getUint32(stsz.corps + 4), nb = dv.getUint32(stsz.corps + 8);
+      const tailles = Array.from({ length: nb }, (_, i) => (tailleFixe || dv.getUint32(stsz.corps + 12 + i * 4)));
+      const co64 = stco.type === "co64", nChunks = dv.getUint32(stco.corps + 4);
+      const offs = Array.from({ length: nChunks }, (_, i) => (co64 ? Number(dv.getBigUint64(stco.corps + 8 + i * 8)) : dv.getUint32(stco.corps + 8 + i * 4)));
+      const nE = dv.getUint32(stsc.corps + 4), regles = Array.from({ length: nE }, (_, i) => ({ premier: dv.getUint32(stsc.corps + 8 + i * 12), n: dv.getUint32(stsc.corps + 12 + i * 12) }));
+      const trames: Uint8Array[] = []; let s = 0;
+      for (let c = 0; c < nChunks && s < nb; c++) {
+        let n = regles[0].n; for (const r of regles) if (c + 1 >= r.premier) n = r.n;
+        let o = offs[c];
+        for (let k = 0; k < n && s < nb; k++) { trames.push(d.subarray(o, o + tailles[s])); o += tailles[s]; s++; }
+      }
+      if (!trames.length) return null;
+      // petit fichier audio MP4 (même écriture que l'export)
+      const sr = (() => { const idx = ((asc[0] & 7) << 1) | (asc[1] >> 7); return [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350][idx] || 44100; })();
+      const ch = (asc[1] >> 3) & 15 || 2;
+      return assemblerAudio(asc, trames, sr, ch);
+    }
+    return null;
+  } catch { return null; }
 }
 
 async function choisirCodecVideo(W: number, H: number): Promise<any> {
@@ -102,45 +166,63 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
     error: (e: unknown) => { vErr = e; },
   });
   ve.configure(await choisirCodecVideo(W, H));
-  let dernier = -1e9, derniereCle = -1e12;
-  const image = (ts: number) => {
-    if (ts <= dernier + 4000 || ve.encodeQueueSize > 12) return; // image déjà faite, ou encodeur débordé : on passe
+  // grille fixe de 60 images/s : chaque image prend la place qui lui revient dans le temps du clip
+  let derniereImage = -1;
+  const image = (t: number) => {
+    const n = Math.floor(t * FPS + 1e-6);
+    if (n <= derniereImage) return false;
+    const ts = Math.round((n * 1e6) / FPS);
     const f = new (WC().VideoFrame)(canvas, { timestamp: ts });
-    const cle = ts - derniereCle >= 2e6; if (cle) derniereCle = ts;
-    ve.encode(f, { keyFrame: cle }); f.close();
-    dernier = ts;
+    ve.encode(f, { keyFrame: n % (FPS * 2) === 0 || derniereImage < 0 }); f.close();
+    derniereImage = n;
+    return true;
   };
-  const sourdine = v.muted;
-  v.muted = true;
-  v.pause();
-  v.currentTime = debut;
-  await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-  o.dessiner(c, v, debut); image(0);
-  await v.play();
-  await new Promise<void>((ok) => {
-    const pas = () => {
-      const t = v.currentTime;
-      if (vErr) { ok(); return; }
-      if (t >= finT || v.ended) { v.pause(); ok(); return; }
-      o.dessiner(c, v, t); image(Math.round((t - debut) * 1e6));
-      o.progres(Math.min(0.97, ((t - debut) / dureeClip) * (o.ending ? 0.85 : 0.97)));
+  // la vidéo est lue au ralenti pendant la création : l'appareil a deux fois plus de temps pour chaque image,
+  // et si l'encodeur prend du retard la lecture attend (aucune image sautée, aucune saccade)
+  const VITESSE = 0.5;
+  const etat0 = { muted: v.muted, rate: v.playbackRate };
+  const attendre = async (el: HTMLVideoElement) => {
+    if (ve.encodeQueueSize <= 3) return;
+    el.pause();
+    while (ve.encodeQueueSize > 1 && !vErr) await new Promise((ok) => setTimeout(ok, 15));
+    await el.play().catch(() => {});
+  };
+  try {
+    v.muted = true;
+    v.pause();
+    v.currentTime = debut;
+    await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
+    o.dessiner(c, v, debut); image(0);
+    v.playbackRate = VITESSE;
+    await v.play();
+    await new Promise<void>((ok) => {
+      const pas = async () => {
+        const t = v.currentTime;
+        if (vErr) { ok(); return; }
+        if (t >= finT || v.ended) { v.pause(); ok(); return; }
+        const rel = t - debut;
+        if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t); image(rel); await attendre(v); }
+        o.progres(Math.min(0.97, (rel / dureeClip) * (o.ending ? 0.85 : 0.97)));
+        requestAnimationFrame(pas);
+      };
       requestAnimationFrame(pas);
-    };
-    requestAnimationFrame(pas);
-  });
-  v.pause(); v.muted = sourdine;
+    });
+  } finally {
+    v.pause(); v.muted = etat0.muted; v.playbackRate = etat0.rate;
+  }
   // cinématique de fin : fondu enchaîné de 0,4 s depuis la dernière image
   if (o.ending && !vErr) {
     const fv = o.ending.el, fige = document.createElement("canvas"); fige.width = W; fige.height = H; fige.getContext("2d")!.drawImage(canvas, 0, 0);
     const fm = fv.muted; fv.muted = true; fv.currentTime = 0;
     try {
+      fv.playbackRate = VITESSE;
       await fv.play();
       const limite = Date.now() + (dureeFin + 2) * 1000;
       await new Promise<void>((ok) => {
         const pas = () => {
           c.globalAlpha = 1; c.drawImage(fige, 0, 0);
           c.globalAlpha = Math.min(1, fv.currentTime / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1;
-          image(Math.round((dureeClip + fv.currentTime) * 1e6));
+          image(dureeClip + fv.currentTime);
           o.progres(0.85 + 0.12 * Math.min(1, fv.currentTime / Math.max(0.1, dureeFin)));
           if (fv.ended || fv.currentTime >= dureeFin - 0.02 || Date.now() > limite) { ok(); return; }
           requestAnimationFrame(pas);
@@ -148,12 +230,15 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
         requestAnimationFrame(pas);
       });
     } catch { /* cinématique illisible : la vidéo est livrée sans */ }
-    fv.pause(); fv.muted = fm;
+    fv.pause(); fv.muted = fm; fv.playbackRate = 1;
   }
   await ve.flush(); ve.close();
   if (vErr) throw vErr;
   if (!vDesc || !vChunks.length) throw new Error("aucune image encodée");
   for (let i = 1; i < vChunks.length; i++) if (vChunks[i].ts <= vChunks[i - 1].ts) throw new Error("images dans le désordre");
+  // contrôle du son : un mixage entièrement muet est signalé (le clip importé n'a pas de piste son lisible)
+  let crete = 0; for (let i = 0; i < g0.length; i += 64) crete = Math.max(crete, Math.abs(g0[i]));
+  if (crete < 1e-4 && son.duration > 0) console.warn("Export : le son du clip est muet");
   o.progres(0.99);
   return assembler({ W, H, vDesc, vChunks, asc, aChunks, dureeAudio: mix.length });
 }
@@ -198,6 +283,19 @@ function piste(id: number, video: boolean, W: number, H: number, echelle: number
         video ? pleine("vmhd", 0, 1, zeros(8)) : pleine("smhd", 0, 0, zeros(4)),
         boite("dinf", pleine("dref", 0, 0, u32(1), pleine("url ", 0, 1))),
         table)));
+}
+
+function assemblerAudio(asc: Uint8Array, trames: Uint8Array[], sr: number, ch: number): Uint8Array {
+  const mp4a = boite("mp4a", zeros(6), u16(1), zeros(8), u16(ch), u16(16), u16(0), u16(0), u32(sr << 16),
+    pleine("esds", 0, 0, desc(0x03, u16(1), u8(0), desc(0x04, u8(0x40), u8(0x15), zeros(3), u32(256000), u32(192000), desc(0x05, asc)), desc(0x06, u8(0x02)))));
+  const duree = trames.length * 1024, ms = Math.round((duree / sr) * 1000);
+  const ftyp = boite("ftyp", txt("M4A "), u32(0), txt("M4A "), txt("isom"), txt("mp42"));
+  const moov = (offs: number[]) => boite("moov",
+    pleine("mvhd", 0, 0, u32(0), u32(0), u32(1000), u32(ms), u32(0x00010000), u16(0x0100), zeros(10), MATRICE, zeros(24), u32(2)),
+    piste(1, false, 0, 0, sr, duree, ms, stbl(mp4a, trames.map(() => 1024), trames.map((t) => t.length), offs, null)));
+  const taille = moov(trames.map(() => 0)).length;
+  let pos = ftyp.length + taille + 8; const offs = trames.map((t) => { const o = pos; pos += t.length; return o; });
+  return joindre([ftyp, moov(offs), u32(pos - ftyp.length - taille), txt("mdat"), ...trames]);
 }
 
 export function assembler(p: { W: number; H: number; vDesc: Uint8Array; vChunks: { data: Uint8Array; ts: number; cle: boolean }[]; asc: Uint8Array; aChunks: { data: Uint8Array; ts: number }[]; dureeAudio: number }): Blob {

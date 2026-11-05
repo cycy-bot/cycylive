@@ -93,7 +93,8 @@ export default function GenerateurContenus() {
   const [jeu, setJeu] = useState("");
   const [sousTitres, setSousTitres] = useState<SousTitre[]>([]);
   const [transcription, setTranscription] = useState("");
-  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string }>({ etat: "repos", progres: 0 });
+  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string }>({ etat: "repos", progres: 0 });
+  const ctxDebloque = useRef<AudioContext | null>(null); // son « débloqué » pendant le clic (Safari refuse de le lancer plus tard)
   const [copie, setCopie] = useState("");
   // « Ajouter à la vidéothèque » (Studio créatrice de CycyBot)
   const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
@@ -373,7 +374,7 @@ export default function GenerateurContenus() {
   function brancherAudio() {
     const v = video.current;
     if (!v || audio.current) return;
-    const ctx = new AudioContext();
+    const ctx = ctxDebloque.current || new AudioContext();
     const src = ctx.createMediaElementSource(v);
     const dest = ctx.createMediaStreamDestination();
     const gain = ctx.createGain();
@@ -420,19 +421,22 @@ export default function GenerateurContenus() {
     const fv = finVideo.current;
     const avecFin = habille && modele.ending && Boolean(fv);
     if (avecFin && fv) { fv.muted = true; fv.play().then(() => { fv.pause(); fv.currentTime = 0; fv.muted = false; }).catch(() => { fv.muted = false; }); }
+    // le son est débloqué maintenant, pendant le clic : sinon Safari le laisse muet si l'enregistrement de secours prend le relais
+    if (!audio.current && !ctxDebloque.current) { try { ctxDebloque.current = new AudioContext(); ctxDebloque.current.resume().catch(() => {}); } catch { /* pas de son possible */ } }
     try { await exporterVideo(v, avecFin); }
     catch (er) { setExport({ etat: "erreur", progres: 0, message: "La création a échoué : " + (er instanceof Error ? er.message : String(er)) + ". Réessaie (garde l’onglet ouvert pendant la création)." }); }
   }
   // Fin de l'export : lien, vidéothèque et téléchargement automatique
-  function livrer(blob: Blob, ext: string) {
+  function livrer(blob: Blob, ext: string, mode = "") {
     const url = URL.createObjectURL(blob);
-    setExport({ etat: "fini", progres: 1, url, ext });
+    setExport({ etat: "fini", progres: 1, url, ext, mode });
     preparerVideotheque();
     const lien = document.createElement("a"); lien.href = url; lien.download = `${(etat.current.titre || "tiktok-cycylive").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 50)}.${ext}`;
     document.body.appendChild(lien); lien.click(); lien.remove();
   }
   async function exporterVideo(v: HTMLVideoElement, avecFin: boolean) {
     // 1) export image par image (MP4 propre, son calé) quand le navigateur sait le faire
+    let raison = webcodecsDispo() ? "" : "ce navigateur ne sait pas encoder image par image";
     if (webcodecsDispo()) {
       setExport({ etat: "en-cours", progres: 0 });
       try {
@@ -442,11 +446,12 @@ export default function GenerateurContenus() {
           ending: avecFin && finVideo.current ? { el: finVideo.current, url: ENDING } : null,
           progres: (x) => setExport((e) => ({ ...e, progres: x })),
         });
-        livrer(blob, "mp4");
+        livrer(blob, "mp4", "✓ Créée image par image : MP4, 60 images/s, son calé");
         return;
-      } catch (er) { console.warn("Export image par image impossible, enregistrement classique :", er); }
+      } catch (er) { raison = er instanceof Error ? er.message : String(er); console.warn("Export image par image impossible, enregistrement classique :", er); }
     }
     // 2) sinon : enregistrement en direct (ancien mode)
+    v.muted = false; v.playbackRate = 1;
     brancherAudio();
     const a = audio.current!;
     await a.ctx.resume();
@@ -454,7 +459,7 @@ export default function GenerateurContenus() {
     canvas.width = W; canvas.height = H;
     const c = canvas.getContext("2d")!;
     // 60 images/s : les zooms, flashs et textes animés restent fluides (même si le clip source est en 30)
-    const flux = canvas.captureStream(60);
+    const flux = canvas.captureStream(30); // mode de secours : 30 images/s, plus stable sur téléphone
     a.dest.stream.getAudioTracks().forEach((t) => flux.addTrack(t));
     const types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
     const type = types.find((t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t));
@@ -515,7 +520,7 @@ export default function GenerateurContenus() {
     rec.stop();
     await termine;
     a.gain.gain.value = 1;
-    livrer(new Blob(morceaux, { type: type.split(";")[0] }), type.includes("mp4") ? "mp4" : "webm");
+    livrer(new Blob(morceaux, { type: type.split(";")[0] }), type.includes("mp4") ? "mp4" : "webm", "Mode de secours (enregistrement en direct, 30 images/s) · raison : " + raison);
   }
 
   // ── Visuels fixes (miniature, story) à partir de l'image en cours ──
@@ -875,6 +880,7 @@ export default function GenerateurContenus() {
                       </div>
                     </div>
                   )}
+                  {export_.mode ? <p className={`text-xs ${export_.mode.startsWith("✓") ? "text-emerald-300/90" : "text-amber-200/90"}`}>{export_.mode}</p> : null}
                   {export_.ext === "webm" && <p className="text-xs text-ink-soft/70">Format WebM : accepté par TikTok et YouTube. Pour Instagram, exporte plutôt depuis Safari ou un Chrome récent (MP4).</p>}
                 </div>
               </div>
