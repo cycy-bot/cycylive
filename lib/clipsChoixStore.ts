@@ -1,4 +1,5 @@
-// Clips Twitch affichés sur le site : choisis dans l'admin (« Clips Twitch »).
+// Clips Twitch affichés sur le site. Le tri se fait dans CycyBot (Studio créatrice › 🎞️ Clips Twitch) :
+// le bot envoie ici la liste des clips partagés (mode « choix »), avec le live d'où vient chaque clip.
 // Mode « auto » : les plus récents, sauf ceux masqués. Mode « choix » : seulement ceux publiés, dans l'ordre.
 // « vus » : les clips déjà triés (CycyBot prévient seulement pour les nouveaux).
 import { Redis } from "@upstash/redis";
@@ -43,12 +44,12 @@ export function nettoyerChoixClips(brut: unknown): ChoixClips | null {
   if (!brut || typeof brut !== "object") return null;
   const b = brut as Record<string, unknown>;
   const publies: ClipTwitch[] = Array.isArray(b.publies)
-    ? b.publies.slice(0, 60).flatMap((x) => {
+    ? b.publies.slice(0, 300).flatMap((x) => {
         const c = (x || {}) as Record<string, unknown>;
         const url = txt(c.url, 300);
         if (!id(c.id) || !/^https:\/\/(clips\.twitch\.tv|www\.twitch\.tv)\//.test(url)) return [];
         const mini = txt(c.miniature, 400);
-        return [{ id: id(c.id), titre: txt(c.titre, 140), url, miniature: /^https:\/\//.test(mini) ? mini : "", vues: Math.max(0, Math.round(Number(c.vues) || 0)), duree: Math.max(0, Math.round(Number(c.duree) || 0)), date: txt(c.date, 40), jeu: txt(c.jeu, 80), auteur: txt(c.auteur, 60) }];
+        return [{ id: id(c.id), titre: txt(c.titre, 140), url, miniature: /^https:\/\//.test(mini) ? mini : "", vues: Math.max(0, Math.round(Number(c.vues) || 0)), duree: Math.max(0, Math.round(Number(c.duree) || 0)), date: txt(c.date, 40), jeu: txt(c.jeu, 80), auteur: txt(c.auteur, 60), live: /^\d{4}-\d{2}-\d{2}T/.test(txt(c.live, 40)) ? txt(c.live, 40) : "", liveJeux: txt(c.liveJeux, 120) }];
       })
     : [];
   const liste = (v: unknown, n: number) => (Array.isArray(v) ? [...new Set(v.map(id).filter(Boolean))].slice(-n) : []);

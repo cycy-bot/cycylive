@@ -35,7 +35,7 @@ const navItems: (LienNav | GroupeNav)[] = [
     items: [
       { label: "Valorant", href: "/gaming#valorant" },
       { label: "Autres jeux", href: "/gaming#autres-jeux" },
-      { label: "Clips", href: "/gaming#clips" },
+      { label: "Clips", href: "/gaming/clips" },
     ],
   },
   {

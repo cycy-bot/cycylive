@@ -11,6 +11,8 @@ export type ClipTwitch = {
   date: string; // ISO
   jeu: string;
   auteur: string;
+  live?: string; // début du live d'où vient le clip (ISO), donné par CycyBot
+  liveJeux?: string;
 };
 
 type ClipHelix = { id: string; url: string; title: string; view_count: number; created_at: string; thumbnail_url: string; duration: number; game_id: string; creator_name: string };

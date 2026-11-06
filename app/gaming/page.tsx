@@ -15,6 +15,8 @@ import { ajouterMiniatures } from "@/lib/miniatures";
 import { rangActuel, lireRang, positionRang, PALIERS } from "@/lib/rangValorant";
 import { derniersClipsTwitch, type ClipTwitch } from "@/lib/clipsTwitch";
 import AccentCosmique from "@/components/AccentCosmique";
+import CarteClip from "@/components/gaming/CarteClip";
+import Link from "next/link";
 import TexteRiche from "@/components/TexteRiche";
 import CarouselFleches from "@/components/CarouselFleches";
 import EmblemeRang from "@/components/gaming/EmblemeRang";
@@ -44,39 +46,7 @@ const liste = (valeur: string) =>
 
 const twitchLogin = liens.twitch.replace(/\/+$/, "").split("/").pop() || "cycylive";
 
-function ilYa(iso: string): string {
-  const j = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
-  if (j <= 0) return "aujourd'hui";
-  if (j === 1) return "hier";
-  if (j < 30) return `il y a ${j} jours`;
-  const m = Math.floor(j / 30);
-  return m < 12 ? `il y a ${m} mois` : new Date(iso).toLocaleDateString("fr-FR", { month: "short", year: "numeric" });
-}
-const mmss = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-
 const SOURCE = { henrik: "Actualisé automatiquement", bot: "En direct, comme !rank sur le live", manuel: "Mis à jour par Cycy" } as const;
-
-function CarteClip({ c }: { c: ClipTwitch }) {
-  return (
-    <a href={c.url} target="_blank" rel="noopener noreferrer" className="group block overflow-hidden rounded-2xl border border-violet/15 bg-card/80 transition-all hover:-translate-y-1 hover:border-violet/50 hover:shadow-glow-sm">
-      <div className="relative aspect-video overflow-hidden bg-nebula">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <ImageMiniature src={c.miniature} video={c.url} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-        <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/30" aria-hidden>
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-violet/90 text-white opacity-0 shadow-glow transition-opacity group-hover:opacity-100"><Icone nom="lecture" className="w-6 h-6" /></span>
-        </span>
-        <span className="absolute bottom-2 right-2 rounded-md bg-black/75 px-1.5 py-0.5 text-[11px] font-semibold text-white tabular-nums">{mmss(c.duree)}</span>
-        <span className="absolute left-2 top-2 rounded-md bg-black/60 px-1.5 py-0.5 text-[11px] text-white inline-flex items-center gap-1"><Icone nom="oeil" className="w-3.5 h-3.5" /> {c.vues.toLocaleString("fr-FR")}</span>
-      </div>
-      <div className="p-3.5">
-        <p className="line-clamp-2 text-sm font-medium text-ink" title={c.titre}>{c.titre}</p>
-        <p className="mt-1 truncate text-xs text-ink-soft/70">
-          {[c.jeu, ilYa(c.date), c.auteur ? `clippé par ${c.auteur}` : ""].filter(Boolean).join(" · ")}
-        </p>
-      </div>
-    </a>
-  );
-}
 
 export default async function GamingPage() {
   const [gaming, news, clipsManuels, profil, timeline, clipsRecents, choixClips] = await Promise.all([
@@ -96,9 +66,9 @@ export default async function GamingPage() {
       ajouterMiniatures(contenusDuJeu(jeu).map((c) => ({ id: c.id, plateforme: c.plateforme, titre: c.titre || "", url: c.url, format: c.plateforme === "YouTube" || c.plateforme === "Twitch" ? ("horizontal" as const) : ("vertical" as const) })))
     )
   );
-  const clipsValorant = await ajouterMiniatures(
-    clipsManuels.map((c) => ({ id: c.id, plateforme: "Twitch" as const, titre: c.titre, url: c.url, format: "vertical" as const }))
-  );
+  // carrousel Valorant : les derniers clips Valorant partagés
+  const clipsValorant = clipsAffiches(choixClips, clipsRecents, 300).filter((c) => /valorant/i.test(`${c.jeu} ${c.liveJeux || ""}`)).slice(0, 12);
+  void clipsManuels;
 
   const agents = liste(profil.agents);
   const maps = liste(profil.maps);
@@ -120,7 +90,7 @@ export default async function GamingPage() {
         intro={<TexteRiche html={gaming.intro} />}
         sommaire={[
           { href: "#valorant", label: "Valorant", icone: "cible" as const },
-          { href: "#clips", label: "Derniers clips", icone: "clap" as const },
+          { href: "/gaming/clips", label: "Les clips", icone: "clap" as const },
           ...(gaming.autresJeux.length ? [{ href: "#autres-jeux", label: "Autres jeux", icone: "joystick" as const }] : []),
         ]}
       />
@@ -299,52 +269,30 @@ export default async function GamingPage() {
               )}
             </div>
           )}
+
+          {clipsValorant.length > 0 && (
+            <div className="mt-8">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+                <TitreSection niveau={3} icone="clap" teinte="rose" taille="xs">Derniers clips Valorant</TitreSection>
+                <Link href="/gaming/clips" className="text-sm font-semibold text-rose-200 hover:text-ink">Tous les clips →</Link>
+              </div>
+              <CarouselFleches positionFleches="top-[38%]">
+                {clipsValorant.map((c) => <CarteClip key={c.id} c={c} className="snap-start shrink-0 w-72" />)}
+              </CarouselFleches>
+            </div>
+          )}
         </div>
       </section>
 
-      {/* ── Clips ── */}
-      <section id="clips" className="scroll-mt-24 mb-14" aria-labelledby="clips-titre">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <TitreSection id="clips-titre" icone="clap">Les derniers clips</TitreSection>
-            <p className="mt-1 text-ink-soft">Les meilleurs moments des lives, clippés par la commu. Tape <code className="text-lilac">!clip</code> pendant un live pour en créer un&nbsp;!</p>
-          </div>
-          <a href={`https://www.twitch.tv/${twitchLogin}/clips`} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-lilac hover:text-ink">
-            Tous les clips sur Twitch <Icone nom="externe" className="w-4 h-4" />
-          </a>
-        </div>
-        {clipsTwitch.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {clipsTwitch.map((c) => <CarteClip key={c.id} c={c} />)}
-          </div>
-        ) : (
-          <a href={`https://www.twitch.tv/${twitchLogin}/clips`} target="_blank" rel="noopener noreferrer" className="carte-holo flex items-center gap-4 rounded-2xl p-6 hover:shadow-glow-sm transition-all">
-            <Pastille nom="clap" taille="lg" />
-            <span className="text-ink-soft">Les clips arrivent ici automatiquement. En attendant, retrouve-les tous sur Twitch.</span>
-          </a>
-        )}
-
-        {clipsValorant.length > 0 && (
-          <div className="mt-8">
-            <TitreSection niveau={3} icone="cible" teinte="rose" taille="xs" className="mb-4">Mes clips Valorant préférés</TitreSection>
-            <CarouselFleches>
-              {clipsValorant.map((c) => (
-                <a key={c.id} href={c.url} target="_blank" rel="noopener noreferrer" className="snap-start shrink-0 w-40 carte-holo rounded-xl overflow-hidden hover:shadow-glow-sm transition-all">
-                  <div className="relative aspect-[9/16] bg-nebula flex items-center justify-center text-ink-soft/60 text-xs overflow-hidden">
-                    {c.miniature ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <ImageMiniature src={c.miniature} video={c.url} alt={c.titre} loading="lazy" className="absolute inset-0 w-full h-full object-cover" />
-                    ) : (
-                      <span>Clip</span>
-                    )}
-                  </div>
-                  <p className="p-3 text-sm text-ink line-clamp-2">{c.titre}</p>
-                </a>
-              ))}
-            </CarouselFleches>
-          </div>
-        )}
-      </section>
+      {/* ── Clips : leur page à part (/gaming/clips) ── */}
+      <Link href="/gaming/clips" className="group carte-holo mb-14 flex flex-wrap items-center gap-4 rounded-2xl p-5 md:p-6 hover:shadow-glow-sm transition-all">
+        <Pastille nom="clap" taille="lg" />
+        <span className="flex-1 min-w-[200px]">
+          <span className="block text-lg font-semibold text-ink">Les clips des lives</span>
+          <span className="block text-sm text-ink-soft">{clipsTwitch.length ? "Les meilleurs moments, rangés live par live." : "Les meilleurs moments des lives, clippés par la commu."}</span>
+        </span>
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-lilac group-hover:text-ink">Voir les clips <span aria-hidden>→</span></span>
+      </Link>
 
       {/* ── Autres jeux ── */}
       {gaming.autresJeux.length > 0 && (
