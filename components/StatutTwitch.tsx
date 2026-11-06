@@ -27,6 +27,7 @@ function formaterDateProchainLive(timestamp: string): string {
     weekday: "long",
     day: "numeric",
     month: "long",
+    timeZone: "Europe/Paris",
   }).format(date);
   // Majuscule en début de phrase ("jeudi 17 septembre" -> "Jeudi 17 septembre")
   return formatte.charAt(0).toUpperCase() + formatte.slice(1);
@@ -47,7 +48,7 @@ export default function StatutTwitch() {
   }, []);
 
   useEffect(() => {
-    if (!prochainLive) return;
+    if (!prochainLive || prochainLive.aVenir) return;
     const cible = new Date(prochainLive.timestamp).getTime();
 
     function tick() {
@@ -121,13 +122,15 @@ export default function StatutTwitch() {
                 <p className="text-ink-soft mb-1">
                   {prochainLive.estAujourdhui
                     ? "Ce soir"
-                    : formaterDateProchainLive(prochainLive.timestamp)}{" "}
-                  · {prochainLive.heure} ·{" "}
-                  <span className="text-lilac">{prochainLive.jeu}</span>
+                    : formaterDateProchainLive(prochainLive.timestamp)}
+                  {prochainLive.heure ? <> · {prochainLive.heure}</> : null}
+                  {prochainLive.jeu ? <> · <span className="text-lilac">{prochainLive.jeu}</span></> : null}
                 </p>
-                {compteARebours && (
+                {prochainLive.aVenir ? (
+                  <p className="text-violet-light text-sm mb-6">L’heure arrive bientôt, reste connecté·e !</p>
+                ) : compteARebours ? (
                   <p className="text-violet-light text-sm mb-6">{compteARebours}</p>
-                )}
+                ) : null}
               </>
             ) : chargementProchainLive ? (
               <p className="text-ink-soft/60 mb-6">Chargement...</p>

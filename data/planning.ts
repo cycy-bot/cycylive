@@ -301,6 +301,7 @@ export type ProchainLive = {
   jeu: string;
   estAujourdhui: boolean;
   timestamp: string; // date/heure exacte (ISO), pour calculer un compte à rebours
+  aVenir?: boolean; // jour de live prévu, mais l'heure n'est pas encore communiquée (pas de compte à rebours)
 };
 
 // Trouve le prochain live à venir à partir d'UN planning donné
@@ -323,8 +324,18 @@ export function calculerProchainLive(
         ? { jour: nomJour, off: true }
         : { jour: nomJour, off: false, heure: exception.heure || habituel?.heure, jeu: exception.jeu || habituel?.jeu, aVenir: exception.aVenir }
       : habituel;
-    // horaires « à venir » : pas de compte à rebours tant que l'heure n'est pas fixée
-    if (!jourPlanning || jourPlanning.off || !jourPlanning.heure || jourPlanning.aVenir) continue;
+    if (!jourPlanning || jourPlanning.off) continue;
+    // horaires « à venir » : le jour est annoncé, sans heure ni compte à rebours tant qu'elle n'est pas fixée
+    if (!jourPlanning.heure || jourPlanning.aVenir) {
+      return {
+        jour: jourPlanning.jour,
+        heure: "",
+        jeu: jourPlanning.jeu ?? LABEL_GENERIQUE,
+        estAujourdhui: decalage === 0,
+        timestamp: dateLiveAParis(date, 12, 0).toISOString(),
+        aVenir: true,
+      };
+    }
 
     const { heures, minutes } = parseHeure(jourPlanning.heure);
     const dateLive = dateLiveAParis(date, heures, minutes);

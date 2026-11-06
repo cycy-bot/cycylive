@@ -7,7 +7,7 @@ import SectionGalaxie from "@/components/cycybot/SectionGalaxie";
 import AccentCosmique from "@/components/AccentCosmique";
 import ConsoleCycyBot from "@/components/ConsoleCycyBot";
 import { IconDiscord, IconTwitch } from "@/components/Icons";
-import Icone, { Pastille } from "@/components/icones/Icone";
+import Icone, { Pastille, type Teinte } from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 
 export const metadata: Metadata = {
@@ -74,17 +74,18 @@ export default async function CycyBotPage() {
   const collections = discord?.figurines?.length
     ? discord.figurines.map((c) => ({ id: c.id, nom: c.nom, emoji: c.emoji, total: c.total, mystere: Boolean(c.mystere) || (c.id === "evenements" && !c.apercu.length), image: c.apercu[0]?.image || figurinesSecours.find((s) => s.id === c.id)?.image || "/figurines/boule-rose.webp" }))
     : figurinesSecours;
-  const stats = discord
-    ? [
-        { v: discord.stats.cards, l: "Cartes Astrales à collectionner" },
-        { v: discord.stats.collectors, l: "collectionneurs" },
-        { v: discord.stats.boostersOpened, l: "boosters ouverts" },
-        { v: discord.stats.eclatsCirculation, l: "Éclats en circulation" },
-        { v: discord.stats.expeditions, l: "expéditions lancées" },
-        { v: discord.stats.themes, l: "thèmes de passeport" },
-        { v: discord.stats.figurines ?? 0, l: "figurines Cosmo-Capsules" },
-        { v: discord.stats.capsules ?? 0, l: "capsules ouvertes" },
-      ].filter((s) => s.v > 0)
+  // La galaxie du Discord en chiffres (en direct depuis CycyBot), chacun avec son icône
+  const stats: { v: number; l: string; i: NomIcone; t: Teinte }[] = discord
+    ? ([
+        { v: discord.stats.cards, l: "Cartes Astrales à collectionner", i: "cartes", t: "violet" },
+        { v: discord.stats.collectors, l: "collectionneurs", i: "membres", t: "violet" },
+        { v: discord.stats.boostersOpened, l: "boosters ouverts", i: "colis", t: "rose" },
+        { v: discord.stats.eclatsCirculation, l: "Éclats en circulation", i: "eclats", t: "or" },
+        { v: discord.stats.expeditions, l: "expéditions lancées", i: "fusee", t: "violet" },
+        { v: discord.stats.themes, l: "thèmes de passeport", i: "palette", t: "rose" },
+        { v: discord.stats.figurines ?? 0, l: "figurines Cosmo-Capsules", i: "boule", t: "ciel" },
+        { v: discord.stats.capsules ?? 0, l: "capsules ouvertes", i: "cadeau", t: "violet" },
+      ] as { v: number; l: string; i: NomIcone; t: Teinte }[]).filter((s) => s.v > 0)
     : [];
 
   return (
@@ -156,17 +157,6 @@ export default async function CycyBotPage() {
         <ConsoleCycyBot lignes={donnees?.transmission?.length ? donnees.transmission : transmissionSecours} />
       </section>
 
-      {/* Chiffres en direct */}
-      {stats.length > 0 && (
-        <section aria-label="Cycy_Bot en chiffres" className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-16">
-          {stats.map((s) => (
-            <div key={s.l} className="carte-holo rounded-2xl px-4 py-3">
-              <p className="font-display text-2xl font-semibold text-ink">{nf(s.v)}</p>
-              <p className="text-xs text-ink-soft">{s.l}</p>
-            </div>
-          ))}
-        </section>
-      )}
 
       {discord?.anomaly && (
         <div className="mb-10 rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-4 text-sm text-ink" role="status">
@@ -224,6 +214,21 @@ export default async function CycyBotPage() {
           Sur le serveur, Cycy_Bot devient ton copilote : chaque message, chaque partie et chaque live te fait progresser
           d&apos;orbite en orbite.
         </p>
+
+        {/* La galaxie en chiffres (en direct) */}
+        {stats.length > 0 && (
+          <div aria-label="Le Discord en chiffres" className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+            {stats.map((s) => (
+              <div key={s.l} className="carte-holo rounded-2xl px-4 py-3.5 flex items-center gap-3">
+                <Pastille nom={s.i} teinte={s.t} />
+                <span className="min-w-0">
+                  <span className="block font-display text-2xl font-semibold text-ink leading-tight">{nf(s.v)}</span>
+                  <span className="block text-xs text-ink-soft leading-snug">{s.l}</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Passeport en vitrine */}
         <div className="grid md:grid-cols-2 gap-4 mb-4">
