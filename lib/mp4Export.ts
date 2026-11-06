@@ -26,7 +26,27 @@ type Opts = {
   dessiner: (c: CanvasRenderingContext2D, v: HTMLVideoElement, t: number) => void;
   ending: { el: HTMLVideoElement; url: string } | null; // cinématique de fin (fondu de 0,4 s)
   progres: (p: number) => void;
+  ctxAudio?: AudioContext | null; // contexte son « débloqué » au clic (Safari), pour le plan B du son
+  etape?: (texte: string) => void;
 };
+
+/** Résultat : la vidéo et l'état du son vérifié dans le fichier final. */
+export type ResultatMp4 = { blob: Blob; son: "ok" | "muet-source" | "plan-b" | "perdu"; detail?: string };
+
+const crete = (b: AudioBuffer) => { let m = 0; for (let c = 0; c < b.numberOfChannels; c++) { const d = b.getChannelData(c); for (let i = 0; i < d.length; i += 16) { const v = Math.abs(d[i]); if (v > m) m = v; } } return m; };
+
+// Configuration AAC-LC (AudioSpecificConfig) : type 2, fréquence, canaux — écrite nous-mêmes,
+// car certains navigateurs (Safari) donnent une description dans un autre format que celui du MP4.
+function ascAac(sr: number, ch: number): Uint8Array {
+  const idx = [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350].indexOf(sr);
+  const f = idx < 0 ? 3 : idx;
+  return new Uint8Array([(2 << 3) | (f >> 1), ((f & 1) << 7) | (ch << 3)]);
+}
+// Safari peut sortir des trames AAC avec un en-tête ADTS : il faut l'enlever dans un MP4
+function sansAdts(d: Uint8Array): Uint8Array {
+  if (d.length > 9 && d[0] === 0xff && (d[1] & 0xf6) === 0xf0) { const h = d[1] & 1 ? 7 : 9; const n = ((d[3] & 3) << 11) | (d[4] << 3) | (d[5] >> 5); if (n === d.length || n <= d.length) return d.subarray(h, n || d.length); }
+  return d;
+}
 
 const versU8 = (b: unknown): Uint8Array | null => {
   if (!b) return null;
@@ -38,13 +58,46 @@ const versU8 = (b: unknown): Uint8Array | null => {
 async function decoderSon(src: Blob | string): Promise<AudioBuffer> {
   const buf = typeof src === "string" ? await (await fetch(src)).arrayBuffer() : await src.arrayBuffer();
   const ctx = () => new OfflineAudioContext(2, SR, SR);
-  try { return await ctx().decodeAudioData(buf.slice(0)); }
-  catch (e) {
-    // Safari ne décode pas le son d'une vidéo .mov / .mp4 complète : on sort la piste AAC dans un petit fichier audio .m4a
+  let direct: AudioBuffer | null = null, err: unknown = null;
+  try { direct = await ctx().decodeAudioData(buf.slice(0)); } catch (e) { err = e; }
+  // Safari ne décode pas toujours le son d'une vidéo .mov / .mp4 complète (erreur, ou son vide) :
+  // on sort alors la piste AAC dans un petit fichier audio .m4a
+  if (!direct || crete(direct) < 1e-4) {
     const m4a = extraireAac(new Uint8Array(buf));
-    if (!m4a) throw e;
-    return await ctx().decodeAudioData(m4a.buffer as ArrayBuffer);
+    if (m4a) { try { const b = await ctx().decodeAudioData(m4a.buffer as ArrayBuffer); if (!direct || crete(b) > crete(direct)) return b; } catch (e) { err = err || e; } }
   }
+  if (direct) return direct;
+  throw err || new Error("son du clip illisible");
+}
+
+/** Plan B du son : le mixage est joué et enregistré par le navigateur (AAC), puis remis dans le MP4. */
+async function aacParEnregistrement(mix: AudioBuffer, ctxDonne?: AudioContext | null): Promise<{ asc: Uint8Array; trames: Uint8Array[]; sr: number } | null> {
+  const MR = (globalThis as any).MediaRecorder;
+  if (!MR) return null;
+  const type = ["audio/mp4;codecs=mp4a.40.2", "audio/mp4", "audio/aac"].find((t) => { try { return MR.isTypeSupported(t); } catch { return false; } });
+  if (!type) return null;
+  const ctx = ctxDonne || new AudioContext();
+  try { await ctx.resume(); } catch { /* déjà actif */ }
+  if (ctx.state !== "running") return null;
+  const dest = ctx.createMediaStreamDestination();
+  const src = ctx.createBufferSource(); src.buffer = mix; src.connect(dest);
+  const rec = new MR(dest.stream, { mimeType: type, audioBitsPerSecond: 192000 });
+  const parts: Blob[] = [];
+  rec.ondataavailable = (e: any) => { if (e.data && e.data.size) parts.push(e.data); };
+  const fini = new Promise((r) => { rec.onstop = r; });
+  rec.start();
+  await new Promise((r) => setTimeout(r, 120));
+  const joue = new Promise((r) => { src.onended = r; });
+  src.start();
+  await joue;
+  await new Promise((r) => setTimeout(r, 250));
+  rec.stop(); await fini;
+  const d = new Uint8Array(await new Blob(parts).arrayBuffer());
+  const p = lirePisteAac(d);
+  if (!p || !p.trames.length) return null;
+  // l'enregistrement commence ~0,12 s avant le son : on retire ces trames vides pour rester calé
+  const avance = Math.round((0.12 * (p.sr || SR)) / 1024);
+  return { sr: p.sr || SR, asc: p.asc, trames: p.trames.slice(Math.min(avance, Math.max(0, p.trames.length - 1))) };
 }
 
 // ── Lecture de la piste son AAC d'un fichier MP4 / MOV (iPhone, Android, OBS…) ──
@@ -63,6 +116,13 @@ function lireBoites(d: Uint8Array, debut: number, fin: number): { type: string; 
   return out;
 }
 export function extraireAac(d: Uint8Array): Uint8Array | null {
+  const p = lirePisteAac(d);
+  if (!p || !p.trames.length) return null;
+  return assemblerAudio(p.asc, p.trames, p.sr, p.ch);
+}
+
+/** Piste son AAC d'un MP4 / MOV / M4A (classique ou en fragments) : configuration + trames. */
+export function lirePisteAac(d: Uint8Array): { asc: Uint8Array; trames: Uint8Array[]; sr: number; ch: number } | null {
   try {
     const dv = new DataView(d.buffer, d.byteOffset, d.byteLength);
     const enfant = (b: { corps: number; fin: number }, t: string, saut = 0) => lireBoites(d, b.corps + saut, b.fin).find((x) => x.type === t);
@@ -95,11 +155,36 @@ export function extraireAac(d: Uint8Array): Uint8Array | null {
         let o = offs[c];
         for (let k = 0; k < n && s < nb; k++) { trames.push(d.subarray(o, o + tailles[s])); o += tailles[s]; s++; }
       }
-      if (!trames.length) return null;
-      // petit fichier audio MP4 (même écriture que l'export)
       const sr = (() => { const idx = ((asc[0] & 7) << 1) | (asc[1] >> 7); return [96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350][idx] || 44100; })();
       const ch = (asc[1] >> 3) & 15 || 2;
-      return assemblerAudio(asc, trames, sr, ch);
+      if (!trames.length) {
+        // MP4 en fragments (enregistrement du navigateur) : les trames sont dans les boîtes moof / mdat
+        const tkhd = enfant(trak, "tkhd"); const idPiste = tkhd ? dv.getUint32(tkhd.corps + (d[tkhd.corps] === 1 ? 20 : 12)) : 0;
+        for (const moof of lireBoites(d, 0, d.length).filter((x) => x.type === "moof")) {
+          for (const traf of lireBoites(d, moof.corps, moof.fin).filter((x) => x.type === "traf")) {
+            const tfhd = enfant(traf, "tfhd"); if (!tfhd) continue;
+            const fl = dv.getUint32(tfhd.corps) & 0xffffff; if (dv.getUint32(tfhd.corps + 4) !== idPiste && idPiste) continue;
+            let q = tfhd.corps + 8, base = moof.deb, tailleDef = 0;
+            if (fl & 1) { base = Number(dv.getBigUint64(q)); q += 8; }
+            if (fl & 2) q += 4; if (fl & 8) q += 4;
+            if (fl & 16) { tailleDef = dv.getUint32(q); q += 4; }
+            for (const trun of lireBoites(d, traf.corps, traf.fin).filter((x) => x.type === "trun")) {
+              const tf = dv.getUint32(trun.corps) & 0xffffff, n = dv.getUint32(trun.corps + 4);
+              let r = trun.corps + 8, off = base;
+              if (tf & 1) { off = base + dv.getInt32(r); r += 4; }
+              if (tf & 4) r += 4;
+              for (let i = 0; i < n; i++) {
+                if (tf & 0x100) r += 4;
+                let t = tailleDef; if (tf & 0x200) { t = dv.getUint32(r); r += 4; }
+                if (tf & 0x400) r += 4; if (tf & 0x800) r += 4;
+                if (t > 0 && off + t <= d.length) trames.push(d.subarray(off, off + t));
+                off += t;
+              }
+            }
+          }
+        }
+      }
+      return { asc, trames: trames.map(sansAdts), sr, ch };
     }
     return null;
   } catch { return null; }
@@ -115,7 +200,7 @@ async function choisirCodecVideo(W: number, H: number): Promise<any> {
 }
 
 /** Crée le MP4. Lève une erreur si le navigateur ne sait pas faire (l'appelant repasse alors à l'ancien mode). */
-export async function exporterMp4(o: Opts): Promise<Blob> {
+export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
   const { video: v, debut, W, H } = o;
   const finT = Math.min(o.fin || v.duration, v.duration || o.fin);
   const dureeClip = Math.max(0.1, finT - debut);
@@ -138,10 +223,11 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
   const aChunks: { data: Uint8Array; ts: number }[] = [];
   let aDesc: Uint8Array | null = null, aErr: unknown = null;
   const ae = new (WC().AudioEncoder)({
-    output: (ch: any, meta: any) => { const d = new Uint8Array(ch.byteLength); ch.copyTo(d); aChunks.push({ data: d, ts: ch.timestamp }); if (meta?.decoderConfig?.description) aDesc = versU8(meta.decoderConfig.description); },
+    output: (ch: any, meta: any) => { const d0 = new Uint8Array(ch.byteLength); ch.copyTo(d0); const d = sansAdts(d0); aChunks.push({ data: d, ts: ch.timestamp }); if (meta?.decoderConfig?.description) aDesc = versU8(meta.decoderConfig.description); },
     error: (e: unknown) => { aErr = e; },
   });
-  const aCfg = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 192_000 };
+  let aCfg: any = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 192_000, aac: { format: "aac" } };
+  if (!(await WC().AudioEncoder.isConfigSupported(aCfg).catch(() => ({ supported: false }))).supported) { aCfg = { codec: "mp4a.40.2", sampleRate: SR, numberOfChannels: 2, bitrate: 192_000 }; }
   if (!(await WC().AudioEncoder.isConfigSupported(aCfg)).supported) throw new Error("encodeur AAC indisponible");
   ae.configure(aCfg);
   const g0 = mix.getChannelData(0), g1 = mix.numberOfChannels > 1 ? mix.getChannelData(1) : g0;
@@ -153,8 +239,10 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
   }
   await ae.flush(); ae.close();
   if (aErr) throw aErr;
-  // configuration AAC-LC 48 kHz stéréo si l'encodeur ne l'a pas donnée
-  const asc: Uint8Array = aDesc || new Uint8Array([0x11, 0x90]);
+  // configuration AAC-LC 48 kHz stéréo, écrite nous-mêmes (la description de l'encodeur n'est gardée que si elle est bien de ce type)
+  const ascCalc = ascAac(SR, 2);
+  const da = aDesc as Uint8Array | null;
+  let asc: Uint8Array = da && da.length >= 2 && da.length <= 5 && (da[0] >> 3) === 2 ? da : ascCalc;
 
   // ── 3. Les images : lecture de la vidéo, chaque image horodatée sur le temps de la vidéo source ──
   const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
@@ -236,11 +324,25 @@ export async function exporterMp4(o: Opts): Promise<Blob> {
   if (vErr) throw vErr;
   if (!vDesc || !vChunks.length) throw new Error("aucune image encodée");
   for (let i = 1; i < vChunks.length; i++) if (vChunks[i].ts <= vChunks[i - 1].ts) throw new Error("images dans le désordre");
-  // contrôle du son : un mixage entièrement muet est signalé (le clip importé n'a pas de piste son lisible)
-  let crete = 0; for (let i = 0; i < g0.length; i += 64) crete = Math.max(crete, Math.abs(g0[i]));
-  if (crete < 1e-4 && son.duration > 0) console.warn("Export : le son du clip est muet");
-  o.progres(0.99);
-  return assembler({ W, H, vDesc, vChunks, asc, aChunks, dureeAudio: mix.length });
+  // ── 4. Contrôle du son dans le fichier final : on le relit comme le ferait un lecteur ──
+  const sourceMuette = crete(mix) < 1e-4;
+  let blob = assembler({ W, H, vDesc, vChunks, asc, aChunks, dureeAudio: mix.length });
+  if (sourceMuette) { o.progres(1); return { blob, son: "muet-source", detail: "le clip importé n’a pas de son lisible dans ce navigateur" }; }
+  const verifier = async (b: Blob) => {
+    try { const m4a = extraireAac(new Uint8Array(await b.arrayBuffer())); if (!m4a) return false; const r = await new OfflineAudioContext(2, SR, SR).decodeAudioData(m4a.buffer as ArrayBuffer); return crete(r) > 1e-4; }
+    catch { return false; }
+  };
+  if (await verifier(blob)) { o.progres(1); return { blob, son: "ok" }; }
+  // l'encodeur du navigateur a rendu un son illisible : plan B, le son est rejoué et enregistré (dure le temps du clip)
+  o.etape?.("Le son est réenregistré pour ce navigateur…");
+  const b2 = await aacParEnregistrement(mix, o.ctxAudio).catch(() => null);
+  if (b2) {
+    const n = b2.trames.length;
+    const essai = assembler({ W, H, vDesc, vChunks, asc: b2.asc, aChunks: b2.trames.map((t, i) => ({ data: t, ts: Math.round((i * 1024 * 1e6) / b2.sr) })), dureeAudio: n * 1024, srA: b2.sr });
+    if (await verifier(essai)) { o.progres(1); return { blob: essai, son: "plan-b" }; }
+  }
+  o.progres(1);
+  return { blob, son: "perdu", detail: "ce navigateur n’a pas réussi à encoder le son" };
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -298,28 +400,29 @@ function assemblerAudio(asc: Uint8Array, trames: Uint8Array[], sr: number, ch: n
   return joindre([ftyp, moov(offs), u32(pos - ftyp.length - taille), txt("mdat"), ...trames]);
 }
 
-export function assembler(p: { W: number; H: number; vDesc: Uint8Array; vChunks: { data: Uint8Array; ts: number; cle: boolean }[]; asc: Uint8Array; aChunks: { data: Uint8Array; ts: number }[]; dureeAudio: number }): Blob {
+export function assembler(p: { W: number; H: number; vDesc: Uint8Array; vChunks: { data: Uint8Array; ts: number; cle: boolean }[]; asc: Uint8Array; aChunks: { data: Uint8Array; ts: number }[]; dureeAudio: number; srA?: number }): Blob {
   const { W, H } = p;
+  const SRA = p.srA || SR;
   // temps vidéo dans l'échelle 90 kHz (arrondis cumulés sans dérive)
   const tv = p.vChunks.map((x) => Math.round((x.ts * VTS) / 1e6));
   const dv = tv.map((t, i) => (i + 1 < tv.length ? Math.max(1, tv[i + 1] - t) : Math.round(VTS / FPS)));
   const dureeV = tv[tv.length - 1] + dv[dv.length - 1];
   const da = p.aChunks.map(() => 1024);
   const dureeA = p.aChunks.length * 1024;
-  const dureeFilm = Math.round(Math.max(dureeV / VTS, dureeA / SR) * 1000);
+  const dureeFilm = Math.round(Math.max(dureeV / VTS, dureeA / SRA) * 1000);
   // ordre dans mdat : son et images entrelacés selon le temps
   const ordre: { v: boolean; i: number; t: number }[] = [
     ...p.vChunks.map((x, i) => ({ v: true, i, t: x.ts })),
     ...p.aChunks.map((x, i) => ({ v: false, i, t: x.ts })),
   ].sort((a, b) => a.t - b.t || Number(b.v) - Number(a.v));
   const avc1 = boite("avc1", zeros(6), u16(1), u16(0), u16(0), zeros(12), u16(W), u16(H), u32(0x00480000), u32(0x00480000), u32(0), u16(1), zeros(32), u16(0x0018), u16(0xffff), boite("avcC", p.vDesc));
-  const mp4a = boite("mp4a", zeros(6), u16(1), zeros(8), u16(2), u16(16), u16(0), u16(0), u32(SR << 16),
+  const mp4a = boite("mp4a", zeros(6), u16(1), zeros(8), u16(2), u16(16), u16(0), u16(0), u32(SRA << 16),
     pleine("esds", 0, 0, desc(0x03, u16(2), u8(0), desc(0x04, u8(0x40), u8(0x15), zeros(3), u32(192000), u32(192000), desc(0x05, p.asc)), desc(0x06, u8(0x02)))));
   const cles = p.vChunks.map((x, i) => (x.cle ? i + 1 : 0)).filter(Boolean);
   const construireMoov = (offV: number[], offA: number[]) => boite("moov",
     pleine("mvhd", 0, 0, u32(0), u32(0), u32(1000), u32(dureeFilm), u32(0x00010000), u16(0x0100), zeros(10), MATRICE, zeros(24), u32(3)),
     piste(1, true, W, H, VTS, dureeV, dureeFilm, stbl(avc1, dv, p.vChunks.map((x) => x.data.length), offV, cles)),
-    piste(2, false, W, H, SR, dureeA, dureeFilm, stbl(mp4a, da, p.aChunks.map((x) => x.data.length), offA, null)));
+    piste(2, false, W, H, SRA, dureeA, dureeFilm, stbl(mp4a, da, p.aChunks.map((x) => x.data.length), offA, null)));
   const ftyp = boite("ftyp", txt("isom"), u32(0x200), txt("isom"), txt("iso2"), txt("avc1"), txt("mp41"));
   // 1er passage pour connaître la taille de moov, puis les vraies positions des échantillons
   const tailleMoov = construireMoov(p.vChunks.map(() => 0), p.aChunks.map(() => 0)).length;

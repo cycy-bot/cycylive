@@ -11,7 +11,7 @@ import { liens } from "@/data/liens";
 import TimelineHabillage from "@/components/admin/TimelineHabillage";
 import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
 import { exporterMp4, webcodecsDispo } from "@/lib/mp4Export";
-import { enregistrerBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
+import { enregistrerBrouillon, lireEtatBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, surEnvoi, type BrouillonInfo, type EtatEnvoi } from "@/lib/brouillonsMontage";
 import { calquesDepuisModele, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, type Calque, type Modele } from "@/lib/habillageTikTok";
 
 type ClipTwitch = { id: string; titre: string; url: string; miniature: string; vues: number; duree: number; date: string; jeu: string };
@@ -102,7 +102,10 @@ export default function GenerateurContenus() {
   // Brouillons : reprendre un montage plus tard (clip + réglages gardés dans le navigateur)
   const [brouillons, setBrouillons] = useState<BrouillonInfo[]>([]);
   const [brouillonId, setBrouillonId] = useState("");
-  const [brEtat, setBrEtat] = useState<{ etat: "repos" | "enreg" | "ok" | "erreur"; maj?: number; message?: string }>({ etat: "repos" });
+  const [envoiClip, setEnvoiClip] = useState<EtatEnvoi | null>(null); // envoi du clip en ligne
+  const [attenteClip, setAttenteClip] = useState<BrouillonInfo | null>(null); // brouillon repris dont le clip est resté sur l'autre appareil
+  const reprendreApres = useRef<BrouillonInfo | null>(null);
+  const [brEtat, setBrEtat] = useState<{ etat: "repos" | "enreg" | "ok" | "erreur"; maj?: number; message?: string; enLigne?: boolean }>({ etat: "repos" });
   const fichierBlob = useRef<Blob | null>(null);
   const fichierEnregistre = useRef("");
   const restauration = useRef<Record<string, any> | null>(null); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -130,6 +133,14 @@ export default function GenerateurContenus() {
     }
     try { const m = JSON.parse(localStorage.getItem(CLE_MODELE) || "null"); if (m) setModele({ ...MODELE_DEFAUT, ...m }); } catch { /* modèle d’origine */ }
     listerBrouillons().then(setBrouillons).catch(() => {});
+    const fin = surEnvoi((e) => {
+      setEnvoiClip(e);
+      if (e.fini) { setBrouillons((l) => l.map((b) => (b.id === e.id ? { ...b, clipEnLigne: true, ligne: "partout" } : b))); setTimeout(() => setEnvoiClip((x) => (x && x.id === e.id && x.fini ? null : x)), 4000); }
+    });
+    // revenir sur l'onglet : les brouillons faits entre-temps sur un autre appareil apparaissent
+    const vu = () => { if (document.visibilityState === "visible") listerBrouillons().then(setBrouillons).catch(() => {}); };
+    document.addEventListener("visibilitychange", vu);
+    return () => { fin(); document.removeEventListener("visibilitychange", vu); };
   }, []);
 
   // ── Habillage : le modèle (positions, durées, animations, textes fixes) est gardé pour les prochaines vidéos ──
@@ -289,6 +300,12 @@ export default function GenerateurContenus() {
   }, [fichier, debut, fin, export_.etat]);
 
   function charger(f: File) {
+    // clip réimporté pour un brouillon fait sur un autre appareil : on reprend son montage avec ce fichier
+    if (reprendreApres.current) {
+      const b = reprendreApres.current; reprendreApres.current = null; setAttenteClip(null);
+      f.arrayBuffer().then((buf) => appliquerBrouillon(b, new Blob([buf], { type: f.type || "video/mp4" }), true)).catch(() => setBrEtat({ etat: "erreur", message: "Ce fichier est illisible." }));
+      return;
+    }
     if (fichier) URL.revokeObjectURL(fichier);
     fichierBlob.current = f; fichierEnregistre.current = ""; restauration.current = null;
     // copie en mémoire tout de suite : sur iPhone/iPad, le fichier de la galerie est temporaire
@@ -318,23 +335,38 @@ export default function GenerateurContenus() {
     try {
       const ancien = brouillons.find((b) => b.id === bid);
       const info: BrouillonInfo = { id: bid, nom: titre.trim() || nomFichier.replace(/\.[^.]+$/, "") || "Brouillon", nomFichier, maj: Date.now(), duree, miniature: miniatureApercu() || ancien?.miniature || "", etat: etatMontage() };
-      await enregistrerBrouillon(info, fichierEnregistre.current === bid ? undefined : fichierBlob.current);
+      const r = await enregistrerBrouillon(info, fichierEnregistre.current === bid ? undefined : fichierBlob.current);
       fichierEnregistre.current = bid;
       setBrouillonId(bid);
-      setBrEtat({ etat: "ok", maj: info.maj });
-      setBrouillons((l) => [info, ...l.filter((b) => b.id !== bid)]);
+      setBrEtat({ etat: "ok", maj: info.maj, enLigne: r.enLigne });
+      setBrouillons((l) => { const a = l.find((b) => b.id === bid); return [{ ...info, ligne: r.enLigne ? "partout" : "local", clipLocal: true, clipEnLigne: r.clipEnLigne ?? a?.clipEnLigne }, ...l.filter((b) => b.id !== bid)]; });
     } catch (er) {
       setBrEtat({ etat: "erreur", message: (auto ? "Enregistrement automatique impossible : " : "Brouillon non enregistré : ") + (er instanceof Error ? er.message : String(er)) });
     }
   }
-  async function reprendreBrouillon(b: BrouillonInfo) {
+  async function reprendreBrouillon(b0: BrouillonInfo) {
     try {
-      const blob = await lireFichierBrouillon(b.id);
-      if (!blob) throw new Error("le fichier du clip n’est plus là (données du navigateur effacées ?)");
+      setBrEtat({ etat: "enreg" });
+      const b = await lireEtatBrouillon(b0);
+      const blob = await lireFichierBrouillon(b.id, b);
+      if (!blob) {
+        // le clip est resté sur l'appareil où le brouillon a été fait : on le redemande, le montage est gardé
+        reprendreApres.current = b; setAttenteClip(b); setBrEtat({ etat: "repos" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      appliquerBrouillon(b, blob, false);
+    } catch (er) {
+      setBrEtat({ etat: "erreur", message: "Impossible de reprendre ce brouillon : " + (er instanceof Error ? er.message : String(er)) });
+    }
+  }
+  function appliquerBrouillon(b: BrouillonInfo, blob: Blob, clipReimporte: boolean) {
+    try {
       const r = b.etat as Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
       if (fichier) URL.revokeObjectURL(fichier);
       restauration.current = r; restaure.current = true;
-      fichierBlob.current = blob; fichierEnregistre.current = b.id;
+      // clip réimporté : il sera enregistré (ici et en ligne) au prochain enregistrement du brouillon
+      fichierBlob.current = blob; fichierEnregistre.current = clipReimporte ? "" : b.id;
       setBrouillonId(b.id); setBrEtat({ etat: "ok", maj: b.maj });
       setExport({ etat: "repos", progres: 0 }); setSel("");
       setNomFichier(b.nomFichier);
@@ -440,14 +472,19 @@ export default function GenerateurContenus() {
     if (webcodecsDispo()) {
       setExport({ etat: "en-cours", progres: 0 });
       try {
-        const blob = await exporterMp4({
+        const r = await exporterMp4({
           video: v, source: fichierBlob.current || v.currentSrc, debut, fin: fin || v.duration, W, H,
           dessiner: (c, vv, t) => dessiner(c, vv, t),
           ending: avecFin && finVideo.current ? { el: finVideo.current, url: ENDING } : null,
           progres: (x) => setExport((e) => ({ ...e, progres: x })),
+          ctxAudio: audio.current?.ctx || ctxDebloque.current,
         });
-        livrer(blob, "mp4", "✓ Créée image par image : MP4, 60 images/s, son calé");
-        return;
+        // le son est relu dans le fichier final : on n'annonce « son calé » que s'il y est vraiment
+        if (r.son === "ok" || r.son === "plan-b") {
+          livrer(r.blob, "mp4", r.son === "ok" ? "✓ Créée image par image : MP4, 60 images/s, son vérifié dans le fichier" : "✓ Créée image par image : MP4, 60 images/s · son réenregistré pour ce navigateur et vérifié");
+          return;
+        }
+        raison = (r.detail || "son introuvable dans le fichier") + " : la vidéo est refaite en direct, avec le son du lecteur";
       } catch (er) { raison = er instanceof Error ? er.message : String(er); console.warn("Export image par image impossible, enregistrement classique :", er); }
     }
     // 2) sinon : enregistrement en direct (ancien mode)
@@ -641,7 +678,7 @@ export default function GenerateurContenus() {
   const boutonBrouillon = (
     <button type="button" onClick={() => enregistrerEnBrouillon()} disabled={brEtat.etat === "enreg"} title={brouillonId ? "Le brouillon se met à jour tout seul à chaque modification" : "Garder ce montage pour le reprendre plus tard"}
       className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-all disabled:opacity-60 ${brouillonId ? "border-emerald-300/40 bg-emerald-400/10 text-emerald-100" : "border-violet/30 text-ink hover:bg-violet/10"}`}>
-      💾 {brEtat.etat === "enreg" ? "Enregistrement…" : brouillonId ? `Brouillon enregistré${brEtat.maj ? " · " + new Date(brEtat.maj).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}` : "Enregistrer en brouillon"}
+      💾 {brEtat.etat === "enreg" ? "Enregistrement…" : brouillonId ? `Brouillon enregistré${brEtat.enLigne ? " partout" : ""}${brEtat.maj ? " · " + new Date(brEtat.maj).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : ""}` : "Enregistrer en brouillon"}
     </button>
   );
 
@@ -652,6 +689,16 @@ export default function GenerateurContenus() {
   return (
     <div className="space-y-6">
       <video ref={finVideo} src={ENDING} preload="auto" playsInline className="hidden" />
+      {attenteClip && (
+        <section className="rounded-2xl border border-amber-300/40 bg-amber-400/10 p-4 text-sm text-amber-50" role="status">
+          <p className="font-semibold">🎞️ Reprendre « {attenteClip.nom} »</p>
+          <p className="mt-1 text-amber-50/85">Le montage est bien là, mais le clip est resté sur l’appareil où tu l’avais importé{attenteClip.nomFichier ? <> (<b>{attenteClip.nomFichier}</b>)</> : null}. Choisis le même fichier ci-dessous : titre, calques, coupe et sous-titres se remettent tout seuls.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <label className="cursor-pointer rounded-full bg-violet px-4 py-2 text-sm font-semibold text-white">Choisir le clip<input type="file" accept="video/*" className="sr-only" onChange={(e) => e.target.files?.[0] && charger(e.target.files[0])} /></label>
+            <button type="button" className="rounded-full border border-amber-200/40 px-4 py-2 text-sm" onClick={() => { reprendreApres.current = null; setAttenteClip(null); }}>Annuler</button>
+          </div>
+        </section>
+      )}
       {/* Brouillons */}
       {brouillons.length > 0 && (
         <section className="carte-holo rounded-2xl p-5 space-y-3">
@@ -663,6 +710,9 @@ export default function GenerateurContenus() {
                   {b.miniature ? <img src={b.miniature} alt="" className="aspect-[9/14] w-full object-cover bg-black" /> : <span className="flex aspect-[9/14] w-full items-center justify-center bg-violet/10 text-2xl">🎬</span>}
                   <span className="block px-2.5 pt-2 text-xs font-medium text-ink line-clamp-2 min-h-[2rem]">{b.nom}</span>
                   <span className="block px-2.5 text-[11px] text-ink-soft/70">{new Date(b.maj).toLocaleString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}{b.duree ? ` · ${Math.round(b.duree)} s` : ""}</span>
+                  <span className="block px-2.5 pt-0.5 text-[11px] text-ink-soft/80" title={b.ligne === "local" ? "Pas encore en ligne (envoi en cours ou pas de connexion)" : b.clipLocal || b.clipEnLigne ? "Montage et clip disponibles sur tous tes appareils" : "Le montage est partout ; le clip est resté sur l’appareil où il a été importé"}>
+                    {b.ligne === "local" ? "📱 Cet appareil" : b.clipLocal || b.clipEnLigne ? "☁️ Partout" : "☁️ Montage · 🎞️ clip à réimporter"}
+                  </span>
                 </button>
                 <div className="flex items-center justify-between px-2.5 pb-2 pt-1.5">
                   <button type="button" onClick={() => reprendreBrouillon(b)} className="text-xs font-semibold text-lilac">{b.id === brouillonId ? "En cours ✎" : "Reprendre"}</button>
@@ -709,6 +759,11 @@ export default function GenerateurContenus() {
               {boutonBrouillon}
             </div>
             {brEtat.etat === "erreur" && <p className="-mt-2 mb-3 text-xs text-red-300" role="alert">{brEtat.message}</p>}
+            {envoiClip && envoiClip.id === brouillonId && (
+              <p className={`-mt-2 mb-3 text-xs ${envoiClip.erreur ? "text-amber-200" : "text-ink-soft"}`} role="status">
+                {envoiClip.erreur ? `☁️ Le clip n’a pas pu être mis en ligne (${envoiClip.erreur}) : le montage, lui, est bien partout. Réessai à la prochaine ouverture.` : envoiClip.fini ? "☁️ Clip en ligne : ce brouillon s’ouvre sur tous tes appareils." : `☁️ Envoi du clip en ligne… ${envoiClip.pct} %`}
+              </p>
+            )}
             <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
               <div className="space-y-4 min-w-0">
                 <video ref={video} src={fichier} controls playsInline className={habille ? "w-full max-h-48 rounded-xl bg-black" : "w-full rounded-xl bg-black"} crossOrigin="anonymous"
