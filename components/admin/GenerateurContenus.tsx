@@ -9,6 +9,8 @@ import Icone from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import TimelineHabillage from "@/components/admin/TimelineHabillage";
+import TimelineCoupe from "@/components/admin/TimelineCoupe";
+import { COUPE_VIDE, dureeMontee, nettoyerCoupe, sautLecture, segmentsGardes, versMonte, versSource, type Coupe } from "@/lib/coupesMontage";
 import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
 import { exporterMp4, webcodecsDispo } from "@/lib/mp4Export";
 import { enregistrerBrouillon, lireEtatBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, surEnvoi, type BrouillonInfo, type EtatEnvoi } from "@/lib/brouillonsMontage";
@@ -83,7 +85,9 @@ export default function GenerateurContenus() {
   const [modele, setModele] = useState<Modele>(MODELE_DEFAUT);
   const [calques, setCalques] = useState<Calque[]>([]);
   const [sel, setSel] = useState("");
-  const [tCur, setTCur] = useState(0);
+  const [tCur, setTCur] = useState(0); // temps de la vidéo finale (après coupes)
+  const [tSrc, setTSrc] = useState(0); // temps de la vidéo source (tête de lecture du montage)
+  const [coupe, setCoupe] = useState<Coupe>(COUPE_VIDE); // ✂️ morceaux enlevés
   const [enLecture, setEnLecture] = useState(false);
   const [voirFin, setVoirFin] = useState(false);
   const [focusX, setFocusX] = useState(0.5);
@@ -119,8 +123,10 @@ export default function GenerateurContenus() {
   const zones = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({});
   const dernierT = useRef(0);
   const rafRef = useRef(0);
-  const etat = useRef({ dispo, focusX, zoom, cam, titre, sousTitres, polices, calques, debut, fin, sel });
-  etat.current = { dispo, focusX, zoom, cam, titre, sousTitres, polices, calques, debut, fin, sel };
+  // morceaux gardés (temps source) : la vidéo finale les met bout à bout
+  const segs = useMemo(() => segmentsGardes(coupe, debut, fin || duree), [coupe, debut, fin, duree]);
+  const etat = useRef({ dispo, focusX, zoom, cam, titre, sousTitres, polices, calques, debut, fin, sel, segs });
+  etat.current = { dispo, focusX, zoom, cam, titre, sousTitres, polices, calques, debut, fin, sel, segs };
   const habille = dispo === "vertical" || dispo === "facecam";
 
   useEffect(() => {
@@ -144,7 +150,7 @@ export default function GenerateurContenus() {
   }, []);
 
   // ── Habillage : le modèle (positions, durées, animations, textes fixes) est gardé pour les prochaines vidéos ──
-  const total = Math.max(0.5, (fin || duree) - debut);
+  const total = Math.max(0.5, segs.length ? dureeMontee(segs) : (fin || duree) - debut);
   useEffect(() => {
     if (!calques.length) return;
     const m = modeleDepuisCalques(calques, total, modele.ending);
@@ -168,12 +174,23 @@ export default function GenerateurContenus() {
   }
   function aller(tRel: number) {
     const v = video.current; if (!v) return;
-    v.currentTime = Math.max(debut, Math.min((fin || duree), debut + tRel));
-    setTCur(Math.max(0, tRel));
+    v.currentTime = segs.length ? versSource(tRel, segs) : Math.max(debut, Math.min((fin || duree), debut + tRel));
+    setTCur(Math.max(0, tRel)); setTSrc(v.currentTime);
+  }
+  // tête de lecture du montage (temps source)
+  function allerSource(t: number) {
+    const v = video.current; if (!v) return;
+    if (!v.paused) v.pause();
+    v.currentTime = t; setTSrc(t); setTCur(versMonte(t, segs));
   }
   function lectureOuPause() {
     const v = video.current; if (!v) return;
-    if (v.paused) { if (v.currentTime >= (fin || duree) - 0.05) v.currentTime = debut; v.play(); } else v.pause();
+    if (v.paused) {
+      const dernier = segs[segs.length - 1];
+      if (v.currentTime >= (dernier ? dernier.b : (fin || duree)) - 0.05) v.currentTime = segs[0]?.a ?? debut;
+      else { const saut = sautLecture(v.currentTime, segs); if (saut != null) v.currentTime = saut; }
+      v.play();
+    } else v.pause();
   }
   // Repère la ligne de séparation caméra / jeu : la ligne horizontale la plus marquée entre 25 et 55 % de la hauteur
   function detecterSeparation() {
@@ -224,7 +241,7 @@ export default function GenerateurContenus() {
     const vw = v.videoWidth || 1920, vh = v.videoHeight || 1080;
     ctx.fillStyle = "#0d0a17";
     ctx.fillRect(0, 0, W, H);
-    const rel = t - e.debut, duree_ = Math.max(0.5, (e.fin || v.duration || 1) - e.debut);
+    const rel = e.segs.length ? versMonte(t, e.segs) : t - e.debut, duree_ = Math.max(0.5, e.segs.length ? dureeMontee(e.segs) : (e.fin || v.duration || 1) - e.debut);
     if (e.dispo === "vertical") {
       dessinerVideo(ctx, v, rel, e.calques);
     } else if (e.dispo === "floute") {
@@ -266,7 +283,7 @@ export default function GenerateurContenus() {
       ctx.fillRect(0, hautH - 4, W, 8);
     }
     if (e.dispo === "vertical" || e.dispo === "facecam") {
-      zones.current = dessinerCalques(ctx, rel, duree_, e.calques, e.sousTitres, e.debut);
+      zones.current = dessinerCalques(ctx, rel, duree_, e.calques, e.sousTitres, e.debut, t);
       // repère du calque choisi (aperçu seulement)
       const z = apercu && e.sel ? zones.current[e.sel] : null;
       if (z) { ctx.save(); ctx.setLineDash([14, 10]); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,170,235,.95)"; ctx.strokeRect(z.x - 8, z.y - 8, z.w + 16, z.h + 16); ctx.restore(); }
@@ -290,8 +307,9 @@ export default function GenerateurContenus() {
       if (export_.etat === "en-cours") { rafRef.current = requestAnimationFrame(boucle); return; }
       const v = video.current, c = apercu.current?.getContext("2d");
       if (v && c && v.readyState >= 2) dessiner(c, v, v.currentTime, true);
-      if (v && Math.abs(v.currentTime - dernierT.current) > 0.03) { dernierT.current = v.currentTime; setTCur(Math.max(0, v.currentTime - debut)); }
-      if (v && fin && v.currentTime >= fin && !v.paused) { v.currentTime = debut; }
+      if (v && Math.abs(v.currentTime - dernierT.current) > 0.03) { dernierT.current = v.currentTime; setTSrc(v.currentTime); setTCur(Math.max(0, versMonte(v.currentTime, etat.current.segs))); }
+      // la lecture saute les morceaux enlevés (et reboucle après le dernier morceau gardé)
+      if (v && !v.paused) { const saut = sautLecture(v.currentTime, etat.current.segs); if (saut != null && Math.abs(saut - v.currentTime) > 0.01) v.currentTime = saut; }
       rafRef.current = requestAnimationFrame(boucle);
     };
     rafRef.current = requestAnimationFrame(boucle);
@@ -319,7 +337,7 @@ export default function GenerateurContenus() {
   }
 
   // ── Brouillons ──
-  const etatMontage = () => ({ titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele, clipChoisi, duree });
+  const etatMontage = () => ({ titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele, clipChoisi, duree, coupe });
   function miniatureApercu() {
     try {
       const src = apercu.current; if (!src) return "";
@@ -395,7 +413,7 @@ export default function GenerateurContenus() {
     const t = setTimeout(() => { enregistrerEnBrouillon(true); }, 1500);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele]);
+  }, [titre, jeu, dispo, focusX, zoom, cam, sousTitres, transcription, debut, fin, calques, modele, coupe]);
 
   function choisirClip(c: ClipTwitch) {
     setClipChoisi(c);
@@ -473,7 +491,7 @@ export default function GenerateurContenus() {
       setExport({ etat: "en-cours", progres: 0 });
       try {
         const r = await exporterMp4({
-          video: v, source: fichierBlob.current || v.currentSrc, debut, fin: fin || v.duration, W, H,
+          video: v, source: fichierBlob.current || v.currentSrc, debut, fin: fin || v.duration, W, H, segments: segs,
           dessiner: (c, vv, t) => dessiner(c, vv, t),
           ending: avecFin && finVideo.current ? { el: finVideo.current, url: ENDING } : null,
           progres: (x) => setExport((e) => ({ ...e, progres: x })),
@@ -511,25 +529,40 @@ export default function GenerateurContenus() {
     a.principal.gain.cancelScheduledValues(a.ctx.currentTime); a.principal.gain.value = 1;
     if (a.finGain) { a.finGain.gain.cancelScheduledValues(a.ctx.currentTime); a.finGain.gain.value = 0; }
     v.pause();
-    v.currentTime = debut;
-    await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-    // laisse le son de l'ancienne position se vider avant d'enregistrer (sinon on entendait la fin du clip au début)
-    await new Promise((ok) => setTimeout(ok, 350));
-    rec.start(250);
-    await v.play();
-    const finT = fin || v.duration;
-    await new Promise<void>((ok) => {
-      let dernierMaj = 0;
-      const pas = () => {
+    const morceauxGardes = segs.length ? segs : [{ a: debut, b: fin || v.duration }];
+    const dureeTot = Math.max(0.1, dureeMontee(morceauxGardes));
+    let fait = 0;
+    for (let k = 0; k < morceauxGardes.length; k++) {
+      const x = morceauxGardes[k];
+      v.currentTime = x.a;
+      await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
+      if (k === 0) {
+        // laisse le son de l'ancienne position se vider avant d'enregistrer (sinon on entendait la fin du clip au début)
+        await new Promise((ok) => setTimeout(ok, 350));
         dessiner(c, v, v.currentTime);
-        // la barre de progression n'est mise à jour que 5 fois par seconde : la redessiner à chaque image ralentissait l'enregistrement
-        const maint = performance.now();
-        if (maint - dernierMaj > 200) { dernierMaj = maint; setExport((x) => ({ ...x, progres: Math.min(avecFin ? 0.95 : 1, (v.currentTime - debut) / Math.max(0.1, finT - debut) * (avecFin ? 0.95 : 1)) })); }
-        if (v.currentTime >= finT || v.ended) { v.pause(); ok(); return; }
+        rec.start(250);
+      } else {
+        // morceau suivant : l'enregistrement reprend pile sur la nouvelle image (la partie coupée n'est jamais enregistrée)
+        dessiner(c, v, v.currentTime);
+        await new Promise((ok) => setTimeout(ok, 60));
+        if (rec.state === "paused") rec.resume();
+      }
+      await v.play();
+      await new Promise<void>((ok) => {
+        let dernierMaj = 0;
+        const pas = () => {
+          dessiner(c, v, v.currentTime);
+          // la barre de progression n'est mise à jour que 5 fois par seconde : la redessiner à chaque image ralentissait l'enregistrement
+          const maint = performance.now();
+          if (maint - dernierMaj > 200) { dernierMaj = maint; setExport((e) => ({ ...e, progres: Math.min(avecFin ? 0.95 : 1, ((fait + Math.max(0, v.currentTime - x.a)) / dureeTot) * (avecFin ? 0.95 : 1)) })); }
+          if (v.currentTime >= x.b || v.ended) { v.pause(); ok(); return; }
+          requestAnimationFrame(pas);
+        };
         requestAnimationFrame(pas);
-      };
-      requestAnimationFrame(pas);
-    });
+      });
+      fait += x.b - x.a;
+      if (k < morceauxGardes.length - 1 && rec.state === "recording") rec.pause();
+    }
     // cinématique de fin Cycylive : fondu enchaîné de 0,4 s depuis la dernière image, avec son jingle
     const fv = finVideo.current;
     if (avecFin && fv && a.finGain) {
@@ -773,12 +806,12 @@ export default function GenerateurContenus() {
                       const r = restauration.current;
                       if (r) {
                         // reprise d'un brouillon : on remet la coupe et les calques tels qu'ils étaient
-                        setDuree(d); setDebut(Math.min(r.debut || 0, d)); setFin(r.fin && r.fin <= d ? r.fin : d);
+                        setDuree(d); setDebut(Math.min(r.debut || 0, d)); setFin(r.fin && r.fin <= d ? r.fin : d); setCoupe(nettoyerCoupe(r.coupe));
                         setCalques(Array.isArray(r.calques) && r.calques.length ? r.calques : calquesDepuisModele(modele, d, r.titre || titre, ""));
                         setTimeout(() => { restauration.current = null; }, 0);
                         return;
                       }
-                      setDuree(d); setDebut(0); setFin(d);
+                      setDuree(d); setDebut(0); setFin(d); setCoupe(COUPE_VIDE);
                       setCalques(calquesDepuisModele(modele, d, titre, ""));
                       if (v.videoHeight > v.videoWidth * 1.4) setDispo("vertical");
                       else if (v.videoWidth > v.videoHeight) setDispo((x) => (x === "vertical" ? "floute" : x));
@@ -792,6 +825,10 @@ export default function GenerateurContenus() {
                   onLoadedData={(e) => { const v = e.currentTarget; if (restaure.current) { restaure.current = false; return; } if (v.videoHeight > v.videoWidth * 1.4) { const essai = (n: number) => { if (!detecterSeparation() && n > 0) setTimeout(() => essai(n - 1), 400); }; setTimeout(() => essai(5), 150); } }}
                   onError={() => setBrEtat({ etat: "erreur", message: "Ce clip ne peut pas être lu ici : réimporte-le depuis ta galerie (ou exporte-le en MP4)." })}
                   onPlay={() => setEnLecture(true)} onPause={() => setEnLecture(false)} />
+                {duree > 0 && (
+                  <TimelineCoupe src={fichier} fichier={fichierBlob.current} duree={duree} debut={debut} fin={fin || duree} coupe={coupe} setCoupe={setCoupe}
+                    t={tSrc} enLecture={enLecture} allerA={allerSource} lecture={lectureOuPause} />
+                )}
                 <div className="grid gap-2 sm:grid-cols-2">
                   {DISPOS.map((d) => (
                     <button key={d.valeur} type="button" onClick={() => setDispo(d.valeur)} className={`rounded-xl border px-3 py-2.5 text-left text-sm transition-all ${dispo === d.valeur ? "border-violet-light bg-violet/20 text-ink" : "border-violet/20 text-ink-soft hover:bg-violet/10"}`}>

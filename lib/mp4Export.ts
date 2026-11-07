@@ -24,6 +24,8 @@ type Opts = {
   W: number;
   H: number;
   dessiner: (c: CanvasRenderingContext2D, v: HTMLVideoElement, t: number) => void;
+  // morceaux gardés (temps de la vidéo source, dans l'ordre) : les parties coupées sont sautées, image ET son
+  segments?: { a: number; b: number }[];
   ending: { el: HTMLVideoElement; url: string } | null; // cinématique de fin (fondu de 0,4 s)
   progres: (p: number) => void;
   ctxAudio?: AudioContext | null; // contexte son « débloqué » au clic (Safari), pour le plan B du son
@@ -55,7 +57,7 @@ const versU8 = (b: unknown): Uint8Array | null => {
   return new Uint8Array((b as ArrayBuffer).slice(0));
 };
 
-async function decoderSon(src: Blob | string): Promise<AudioBuffer> {
+export async function decoderSon(src: Blob | string): Promise<AudioBuffer> {
   const buf = typeof src === "string" ? await (await fetch(src)).arrayBuffer() : await src.arrayBuffer();
   const ctx = () => new OfflineAudioContext(2, SR, SR);
   let direct: AudioBuffer | null = null, err: unknown = null;
@@ -203,7 +205,10 @@ async function choisirCodecVideo(W: number, H: number): Promise<any> {
 export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
   const { video: v, debut, W, H } = o;
   const finT = Math.min(o.fin || v.duration, v.duration || o.fin);
-  const dureeClip = Math.max(0.1, finT - debut);
+  const segs = (o.segments && o.segments.length ? o.segments : [{ a: debut, b: finT }])
+    .map((x) => ({ a: Math.max(0, x.a), b: Math.min(finT, x.b) })).filter((x) => x.b - x.a > 0.04);
+  if (!segs.length) throw new Error("aucun morceau gardé");
+  const dureeClip = Math.max(0.1, segs.reduce((n, x) => n + (x.b - x.a), 0));
 
   // ── 1. Le son : décodé puis mixé hors ligne ──
   const son = await decoderSon(o.source);
@@ -212,7 +217,19 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
   const dureeFin = o.ending ? (Number.isFinite(o.ending.el.duration) && o.ending.el.duration > 0 ? o.ending.el.duration : sonFin?.duration || 0) : 0;
   const total = dureeClip + dureeFin;
   const off = new OfflineAudioContext(2, Math.ceil(total * SR), SR);
-  const s1 = off.createBufferSource(); s1.buffer = son; s1.connect(off.destination); s1.start(0, debut, dureeClip);
+  // chaque morceau gardé est posé à la suite, avec un fondu de 6 ms à chaque raccord (pas de « clic » à la coupe)
+  { let pos = 0; const F = 0.006;
+    for (const x of segs) {
+      const d = x.b - x.a, g = off.createGain(), s1 = off.createBufferSource();
+      s1.buffer = son; s1.connect(g); g.connect(off.destination);
+      const multi = segs.length > 1;
+      g.gain.setValueAtTime(multi && pos > 0 ? 0 : 1, pos);
+      if (multi && pos > 0) g.gain.linearRampToValueAtTime(1, pos + F);
+      if (multi && x !== segs[segs.length - 1]) { g.gain.setValueAtTime(1, Math.max(pos + F, pos + d - F)); g.gain.linearRampToValueAtTime(0, pos + d); }
+      s1.start(pos, x.a, d);
+      pos += d;
+    }
+  }
   if (sonFin) {
     const g = off.createGain(); g.gain.setValueAtTime(0, dureeClip); g.gain.linearRampToValueAtTime(1, dureeClip + 0.4);
     const s2 = off.createBufferSource(); s2.buffer = sonFin; s2.connect(g); g.connect(off.destination); s2.start(dureeClip);
@@ -277,24 +294,29 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
   };
   try {
     v.muted = true;
-    v.pause();
-    v.currentTime = debut;
-    await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-    o.dessiner(c, v, debut); image(0);
-    v.playbackRate = VITESSE;
-    await v.play();
-    await new Promise<void>((ok) => {
-      const pas = async () => {
-        const t = v.currentTime;
-        if (vErr) { ok(); return; }
-        if (t >= finT || v.ended) { v.pause(); ok(); return; }
-        const rel = t - debut;
-        if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t); image(rel); await attendre(v); }
-        o.progres(Math.min(0.97, (rel / dureeClip) * (o.ending ? 0.85 : 0.97)));
+    let decal = 0; // temps déjà monté (morceaux précédents)
+    for (const x of segs) {
+      v.pause();
+      v.currentTime = x.a;
+      await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
+      o.dessiner(c, v, x.a); image(decal);
+      v.playbackRate = VITESSE;
+      await v.play();
+      await new Promise<void>((ok) => {
+        const pas = async () => {
+          const t = v.currentTime;
+          if (vErr) { ok(); return; }
+          if (t >= x.b || v.ended) { v.pause(); ok(); return; }
+          const rel = decal + Math.max(0, t - x.a);
+          if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t); image(rel); await attendre(v); }
+          o.progres(Math.min(0.97, (rel / dureeClip) * (o.ending ? 0.85 : 0.97)));
+          requestAnimationFrame(pas);
+        };
         requestAnimationFrame(pas);
-      };
-      requestAnimationFrame(pas);
-    });
+      });
+      if (vErr) break;
+      decal += x.b - x.a;
+    }
   } finally {
     v.pause(); v.muted = etat0.muted; v.playbackRate = etat0.rate;
   }

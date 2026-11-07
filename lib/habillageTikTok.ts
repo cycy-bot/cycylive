@@ -211,7 +211,9 @@ export function dessinerVideo(ctx: CanvasRenderingContext2D, v: HTMLVideoElement
 }
 
 /** Dessine tous les calques à l'instant t (secondes depuis le début de la vidéo coupée). Renvoie les zones cliquables. */
-export function dessinerCalques(ctx: CanvasRenderingContext2D, t: number, total: number, calques: Calque[], sousTitres: SousTitre[], debutCoupe = 0): Record<string, Boite> {
+// tSource : temps de la vidéo source (les sous-titres y sont calés) ; sans coupe, c'est t + debutCoupe
+export function dessinerCalques(ctx: CanvasRenderingContext2D, t: number, total: number, calques: Calque[], sousTitres: SousTitre[], debutCoupe = 0, tSource?: number): Record<string, Boite> {
+  const ts = tSource ?? t + debutCoupe;
   const zones: Record<string, Boite> = {};
   const barre = calques.find((c) => c.type === "barre");
   const sep = (barre?.y ?? MODELE_DEFAUT.sep) * H;
@@ -235,9 +237,9 @@ export function dessinerCalques(ctx: CanvasRenderingContext2D, t: number, total:
     for (const c of calques) {
       if (c.type !== type || !c.visible) continue;
       if (type === "soustitres") {
-        const st = sousTitres.find((x) => t + debutCoupe >= x.debut && t + debutCoupe < x.fin);
+        const st = sousTitres.find((x) => ts >= x.debut && ts < x.fin);
         if (!st?.texte) continue;
-        const rel = t + debutCoupe - st.debut, an = animation(c.anim, rel, st.fin - st.debut);
+        const rel = ts - st.debut, an = animation(c.anim, rel, st.fin - st.debut);
         ctx.save(); ctx.globalAlpha = an.a; ctx.translate(W / 2, c.y * H + an.dy); ctx.scale(an.s, an.s); ctx.translate(-W / 2, -c.y * H);
         zones[c.id] = sousTitre(ctx, st.texte, c.y * H); ctx.restore();
         continue;
