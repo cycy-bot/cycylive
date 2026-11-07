@@ -9,11 +9,12 @@
 // WebCodecs pris sur l'objet global : le projet ne dépend pas des définitions de types d'une version précise
 const WC = (): any => globalThis as any;
 const SR = 48000;
-const FPS = 60;
+let FPS = 30; // images par seconde de la vidéo créée (réglé à chaque export)
 const VTS = 90000; // échelle de temps de la piste vidéo
 
 export function webcodecsDispo(): boolean {
-  return typeof window !== "undefined" && "VideoEncoder" in window && "AudioEncoder" in window && "VideoFrame" in window && "AudioData" in window && typeof OfflineAudioContext !== "undefined";
+  // l'encodeur de son n'est pas obligatoire : sans lui, le son mixé est enregistré par le navigateur puis remis dans le MP4
+  return typeof window !== "undefined" && "VideoEncoder" in window && "VideoFrame" in window && typeof OfflineAudioContext !== "undefined";
 }
 
 /** Résultat : la vidéo et l'état du son vérifié dans le fichier final. */
@@ -196,14 +197,21 @@ export type OptsMp4 = {
   progres?: (p: number) => void;
   ctxAudio?: AudioContext | null; // contexte son « débloqué » au clic (Safari), pour le plan B du son
   etape?: (texte: string) => void;
+  fps?: number;
 };
 
 /** Crée le MP4. Lève une erreur si le navigateur ne sait pas faire (l'appelant repasse alors au mode de secours). */
 export async function exporterMp4(o: OptsMp4): Promise<ResultatMp4> {
   const { W, H, mix, canvas } = o;
+  FPS = o.fps || 30;
   // ── 1. Encodage du son (AAC) ──
   const aChunks: { data: Uint8Array; ts: number }[] = [];
-  let aDesc: Uint8Array | null = null, aErr: unknown = null;
+  let aDesc: Uint8Array | null = null;
+  let sansEncodeur = false;
+  try { await encoderSon(); } catch { sansEncodeur = true; aChunks.length = 0; }
+  async function encoderSon() {
+  let aErr: unknown = null;
+  if (!("AudioEncoder" in window) || !("AudioData" in window)) throw new Error("pas d’encodeur de son");
   const ae = new (WC().AudioEncoder)({
     output: (ch: any, meta: any) => { const d0 = new Uint8Array(ch.byteLength); ch.copyTo(d0); const d = sansAdts(d0); aChunks.push({ data: d, ts: ch.timestamp }); if (meta?.decoderConfig?.description) aDesc = versU8(meta.decoderConfig.description); },
     error: (e: unknown) => { aErr = e; },
@@ -221,11 +229,13 @@ export async function exporterMp4(o: OptsMp4): Promise<ResultatMp4> {
   }
   await ae.flush(); ae.close();
   if (aErr) throw aErr;
+  if (!aChunks.length) throw new Error("son vide");
+  }
   const ascCalc = ascAac(SR, 2);
   const da = aDesc as Uint8Array | null;
   const asc: Uint8Array = da && da.length >= 2 && da.length <= 5 && (da[0] >> 3) === 2 ? da : ascCalc;
 
-  // ── 2. Les images, sur une grille fixe de 60 images/s ──
+  // ── 2. Les images, sur une grille fixe (FPS images par seconde) ──
   const vChunks: { data: Uint8Array; ts: number; cle: boolean }[] = [];
   let vDesc: Uint8Array | null = null, vErr: unknown = null;
   const ve = new (WC().VideoEncoder)({
@@ -262,7 +272,7 @@ export async function exporterMp4(o: OptsMp4): Promise<ResultatMp4> {
     try { const m4a = extraireAac(new Uint8Array(await b.arrayBuffer())); if (!m4a) return false; const r = await new OfflineAudioContext(2, SR, SR).decodeAudioData(m4a.buffer as ArrayBuffer); return crete(r) > 1e-4; }
     catch { return false; }
   };
-  if (await verifier(blob)) { o.progres?.(1); return { blob, son: "ok" }; }
+  if (!sansEncodeur && await verifier(blob)) { o.progres?.(1); return { blob, son: "ok" }; }
   o.etape?.("Le son est réenregistré pour ce navigateur…");
   const b2 = await aacParEnregistrement(mix, o.ctxAudio).catch(() => null);
   if (b2) {

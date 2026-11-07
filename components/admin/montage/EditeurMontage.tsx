@@ -18,8 +18,8 @@ import {
   cropValide, type Cadre, type ClipTwitch, type Crop, type TypeTransition, type Disposition, type DocMontage, type Incrust, type Media, type Morceau, type PisteSon, type TypeMedia,
 } from "@/lib/montage/projet";
 import { useHistorique } from "@/lib/montage/historique";
-import { useApercusMedias } from "@/lib/montage/apercus";
-import { clePiste, Lecteur, type Source } from "@/lib/montage/lecteur";
+import { sonDe, useApercusMedias } from "@/lib/montage/apercus";
+import { allerA as allerAImage, clePiste, Lecteur, type Source } from "@/lib/montage/lecteur";
 import { mixer } from "@/lib/montage/mixage";
 import Recadrage from "@/components/admin/montage/Recadrage";
 import TimelineMontage, { monteDepuisSource, type Outil, type Selection } from "@/components/admin/montage/TimelineMontage";
@@ -27,6 +27,7 @@ import TimelineMontage, { monteDepuisSource, type Outil, type Selection } from "
 const CLE_MODELE = "cycy-modele-tiktok";
 const ENDING = "/videos/ending-cycylive.mp4";
 const W = 1080, H = 1920;
+const FPS_EXPORT = 30; // images par seconde de la vidéo créée
 const chaine = (liens.twitch.match(/twitch\.tv\/([^/?#]+)/) || [])[1] || "cycylive";
 const DISPOS: { valeur: Disposition; label: string; aide: string; icone: NomIcone }[] = [
   { valeur: "vertical", label: "Déjà verticale", aide: "Vidéo déjà en 9:16 : on l’habille", icone: "smartphone" },
@@ -125,7 +126,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   const [quitter, setQuitter] = useState(false);
   const [menu, setMenu] = useState(false);
   const [panneauExport, setPanneauExport] = useState(Boolean(projet.exporter));
-  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string; etape?: string }>({ etat: "repos", progres: 0 });
+  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string; etape?: string; debut?: number }>({ etat: "repos", progres: 0 });
   const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
   const [copie, setCopie] = useState("");
   const [recadre, setRecadre] = useState<{ type: "morceau" | "incrust"; id: string } | null>(null);
@@ -244,13 +245,64 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const tot = dureeTotale(etat.current.doc.morceaux), x = Math.max(0, Math.min(tot, r));
     tRef.current = x; pilote.current = { k: -1, t0: performance.now(), rel0: x }; setTM(x);
   }, []);
-  function arreter() { lectureRef.current = false; setEnLecture(false); lecteur.current?.pauseTout(); }
+  // Lecture : le son du montage est mixé à l'avance (exact, sans coupure aux raccords) et sert d'horloge ;
+  // les vidéos le suivent en douceur. Si le son ne peut pas être préparé, les vidéos donnent l'horloge.
+  const mode = useRef<"elements" | "attente" | "son">("elements");
+  const lectureSon = useRef<{ src: AudioBufferSourceNode; t0: number; cle: unknown[] } | null>(null);
+  const mixCache = useRef<{ cle: unknown[]; buf: AudioBuffer } | null>(null);
+  const [prepSon, setPrepSon] = useState(false);
+  const cleSon = (d: DocMontage) => [d.morceaux, d.incrustations, d.sons, d.medias];
+  const memeCle = (a: unknown[], b: unknown[]) => a.length === b.length && a.every((x, i) => x === b[i]);
+  async function mixApercu(d: DocMontage) {
+    const cle = cleSon(d);
+    if (mixCache.current && memeCle(mixCache.current.cle, cle)) return mixCache.current.buf;
+    const sons = new Map<string, AudioBuffer | null>();
+    const utiles = new Set<string>([...d.morceaux.filter((m) => !m.muet).map(mediaDe), ...d.incrustations.filter((c) => !c.muet).map((c) => c.media), ...d.sons.map((x) => x.media)]);
+    for (const mid of utiles) { if (mid !== PRINCIPAL && mediaParId.get(mid)?.type === "image") continue; const u = urls.current.get(mid); sons.set(mid, u ? await sonDe(u) : null); }
+    const buf = await mixer(d, sons, null);
+    mixCache.current = { cle, buf };
+    return buf;
+  }
+  function couperSon() { try { lectureSon.current?.src.stop(); } catch { /* déjà arrêté */ } lectureSon.current = null; }
+  function arreter() { lectureRef.current = false; mode.current = "elements"; setEnLecture(false); couperSon(); lecteur.current?.pauseTout(); }
+  /** Lance le son mixé, calé sur l'image que montre la vidéo. */
+  async function lancerSon(): Promise<boolean> {
+    const l = lecteur.current, ctx = l?.ctx; if (!l || !ctx) return false;
+    const d = etat.current.doc;
+    const buf = await mixApercu(d).catch(() => null);
+    if (!buf || !lectureRef.current) return false;
+    await ctx.resume().catch(() => {});
+    let r = tRef.current;
+    const e = etatA(d, r);
+    if (e.morceau && l.typeDe(mediaDe(e.morceau)) === "video") {
+      // la vidéo démarre d'abord ; le son part exactement de l'image qu'elle montre
+      const el = l.media(clePiste(e.morceau, e.k), mediaDe(e.morceau), "video") as HTMLVideoElement | null;
+      l.synchroniser(d, r, true, { muet: true, doux: true });
+      if (el && (el.paused || el.readyState < 3)) await new Promise<void>((ok) => { const fin = () => { el.removeEventListener("playing", fin); ok(); }; el.addEventListener("playing", fin); setTimeout(fin, 600); });
+      if (!lectureRef.current) return false;
+      if (el && !el.seeking) r = debuts(d.morceaux)[e.k] + Math.max(0, el.currentTime - e.morceau.a) / vitesse(e.morceau);
+    }
+    const src = ctx.createBufferSource(); src.buffer = buf; src.connect(ctx.destination);
+    const quand = ctx.currentTime + 0.02;
+    src.start(quand, Math.max(0, Math.min(buf.duration - 0.01, r)));
+    couperSon();
+    lectureSon.current = { src, t0: quand - r, cle: cleSon(d) };
+    mode.current = "son";
+    return true;
+  }
+  async function demarrer() {
+    mode.current = "attente"; lectureRef.current = true; setEnLecture(true);
+    const t = setTimeout(() => setPrepSon(true), 200);
+    const ok = await lancerSon();
+    clearTimeout(t); setPrepSon(false);
+    if (!ok && lectureRef.current) { mode.current = "elements"; pilote.current = { k: -1, t0: performance.now(), rel0: tRef.current }; }
+  }
   function lectureOuPause() {
     lecteur.current?.debloquer();
     if (lectureRef.current) { arreter(); return; }
     if (tRef.current >= etat.current.total - 0.05) allerA(0);
     pilote.current = { k: -1, t0: performance.now(), rel0: tRef.current };
-    lectureRef.current = true; setEnLecture(true);
+    demarrer();
   }
   useEffect(() => {
     let dernier = -1;
@@ -261,7 +313,17 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       const d = etat.current.doc, tot = dureeTotale(d.morceaux);
       if (!d.morceaux.length) return;
       let rel = tRef.current;
-      if (lectureRef.current) {
+      if (lectureRef.current && mode.current !== "elements") {
+        const ls = lectureSon.current, ctx = l.ctx;
+        if (mode.current === "son" && ls && ctx) {
+          const lat = (ctx as AudioContext & { outputLatency?: number }).outputLatency || ctx.baseLatency || 0;
+          rel = Math.max(0, ctx.currentTime - ls.t0 - lat);
+          if (rel >= tot) { rel = tot; arreter(); }
+          else if (!memeCle(ls.cle, cleSon(d))) { mode.current = "attente"; lancerSon().then((ok) => { if (!ok && lectureRef.current) mode.current = "elements"; }); } // le montage a changé : nouveau son
+          tRef.current = rel;
+          if (lectureRef.current) l.synchroniser(d, Math.min(rel, tot - 1e-3), true, { muet: true, doux: true });
+        }
+      } else if (lectureRef.current) {
         const e = etatA(d, rel), m = e.morceau!, mid = mediaDe(m), cle = clePiste(m, e.k), p = pilote.current;
         if (l.typeDe(mid) === "video") {
           const el = l.media(cle, mid, "video") as HTMLVideoElement | null;
@@ -284,7 +346,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
         l.synchroniser(d, Math.min(rel, tot - 1e-3), lectureRef.current, { pilote: cle });
       } else l.synchroniser(d, Math.min(rel, tot - 1e-3), false);
       dessiner(c, Math.min(rel, tot - 1e-3), true);
-      if (process.env.NEXT_PUBLIC_DEBUG_MONTAGE) (window as unknown as { __t: number }).__t = rel;
+      if (process.env.NEXT_PUBLIC_DEBUG_MONTAGE) Object.assign(window, { __t: rel, __montage: { l, doc: () => etat.current.doc, figer: (x: boolean) => { exportEnCours.current = x; } } });
       if (Math.abs(rel - dernier) > 0.02) { dernier = rel; setTM(rel); }
     };
     rafRef.current = requestAnimationFrame(boucle);
@@ -685,8 +747,8 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const utiles = new Set<string>([...d.morceaux.filter((m) => !m.muet).map(mediaDe), ...d.incrustations.filter((c) => !c.muet).map((c) => c.media), ...d.sons.map((s) => s.media)]);
     for (const mid of utiles) {
       if (mid !== PRINCIPAL && mediaParId.get(mid)?.type === "image") continue;
-      const b = fichiers.current.get(mid);
-      sons.set(mid, b ? await decoderSon(b).catch(() => null) : null);
+      const u = urls.current.get(mid);
+      sons.set(mid, u ? await sonDe(u) : null);
     }
     let fin: { son: AudioBuffer | null; duree: number } | null = null;
     if (avecFin && finVideo.current) {
@@ -701,7 +763,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const fv = finVideo.current, avecFin = habille && doc.ending && Boolean(fv);
     if (avecFin && fv) { fv.muted = true; fv.play().then(() => { fv.pause(); fv.currentTime = 0; }).catch(() => {}); }
     exportEnCours.current = true;
-    setExport({ etat: "en-cours", progres: 0, etape: "Préparation du son…" });
+    setExport({ etat: "en-cours", progres: 0, etape: "Préparation du son…", debut: Date.now() });
     try { await exporterVideo(avecFin); }
     catch (er) { setExport({ etat: "erreur", progres: 0, message: "La création a échoué : " + (er instanceof Error ? er.message : String(er)) + ". Réessaie (garde l’onglet ouvert pendant la création)." }); }
     finally { exportEnCours.current = false; l.pauseTout(); allerA(tRef.current); }
@@ -734,6 +796,21 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     } catch { /* cinématique illisible : la vidéo est livrée sans */ }
     fv.pause(); fv.playbackRate = 1;
   }
+  /** Cinématique de fin, image par image (fondu de 0,4 s depuis la dernière image). */
+  async function finImageParImage(c: CanvasRenderingContext2D, canvas: HTMLCanvasElement, base: number, surImage: (t: number) => void, souffler: () => Promise<void>, avance: (p: number) => void) {
+    const fv = finVideo.current; if (!fv) return;
+    const fige = document.createElement("canvas"); fige.width = W; fige.height = H; fige.getContext("2d")!.drawImage(canvas, 0, 0);
+    fv.muted = true; fv.pause();
+    if (!(fv.readyState >= 1)) await new Promise((ok) => { fv.addEventListener("loadedmetadata", ok, { once: true }); setTimeout(ok, 3000); });
+    const dureeFin = Number.isFinite(fv.duration) && fv.duration > 0 ? fv.duration : 4, N = Math.round(dureeFin * FPS_EXPORT);
+    for (let n = 0; n < N; n++) {
+      const t = n / FPS_EXPORT;
+      await allerAImage(fv, Math.min(dureeFin - 0.01, t));
+      c.globalAlpha = 1; c.drawImage(fige, 0, 0); c.globalAlpha = Math.min(1, t / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1;
+      surImage(base + t); avance((n + 1) / N);
+      await souffler();
+    }
+  }
   async function exporterVideo(avecFin: boolean) {
     const l = lecteur.current!, d = etat.current.doc, m = d.morceaux, deb = debuts(m), tot = dureeTotale(m);
     const mix = await preparerSon(avecFin);
@@ -742,59 +819,29 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const part = avecFin ? 0.9 : 1;
     let raison = webcodecsDispo() ? "" : "ce navigateur ne sait pas encoder image par image";
     if (webcodecsDispo()) {
-      setExport({ etat: "en-cours", progres: 0, etape: "Création des images…" });
+      setExport((x) => ({ ...x, etat: "en-cours", progres: 0, etape: "Création image par image…", debut: Date.now() }));
       try {
-        const R = 0.5; // lu au ralenti pendant la création : aucune image sautée
-        const r = await exporterMp4({
+                const r = await exporterMp4({
           W, H, mix, canvas, ctxAudio: l.ctx, etape: (t) => setExport((x) => ({ ...x, etape: t })),
           progres: (x) => setExport((e) => ({ ...e, progres: x })),
+          fps: FPS_EXPORT,
           rendre: async ({ image: img, charge, vider, erreur }) => {
-            let dm = 0;
-            const signal = (rel: number) => { const t = performance.now(); if (t - dm > 200) { dm = t; setExport((e) => ({ ...e, progres: Math.min(0.97, (rel / tot) * part) })); } };
-            const souffler = async (reprendre: () => void) => { if (!charge()) return; l.pauseTout(); await vider(); reprendre(); };
-            for (let k = 0; k < m.length && !erreur(); k++) {
-              const x = m[k], mid = mediaDe(x), cle = clePiste(x, k), len = duree(x), debut = deb[k];
-              await l.allerEtAttendre(d, debut + 1e-4);
-              if (l.typeDe(mid) === "video") {
-                const el = l.media(cle, mid, "video") as HTMLVideoElement;
-                el.currentTime = x.a; await new Promise((ok) => { if (!el.seeking) ok(0); else el.addEventListener("seeked", ok, { once: true }); });
-                dessiner(c, debut); img(debut);
-                el.playbackRate = vitesse(x) * R; await el.play().catch(() => {});
-                await new Promise<void>((ok) => {
-                  const pas = async () => {
-                    if (erreur()) { el.pause(); ok(); return; }
-                    if (el.currentTime >= x.b - 1e-3 || el.ended) { el.pause(); ok(); return; }
-                    const rel = debut + Math.max(0, el.currentTime - x.a) / vitesse(x);
-                    l.synchroniser(d, rel, true, { pilote: cle, rythme: R, tolerance: 0.08, muet: true });
-                    dessiner(c, rel); img(rel);
-                    signal(rel);
-                    await souffler(() => { el.play().catch(() => {}); });
-                    requestAnimationFrame(pas);
-                  };
-                  requestAnimationFrame(pas);
-                });
-              } else {
-                // photo : horloge à la place de la vidéo
-                let t0 = performance.now(), base = debut;
-                await new Promise<void>((ok) => {
-                  const pas = async () => {
-                    if (erreur()) { ok(); return; }
-                    const rel = Math.min(debut + len, base + ((performance.now() - t0) / 1000) * R);
-                    l.synchroniser(d, Math.min(rel, debut + len - 1e-3), true, { rythme: R, tolerance: 0.08, muet: true });
-                    dessiner(c, Math.min(rel, debut + len - 1e-3)); img(rel); signal(rel);
-                    if (rel >= debut + len - 1e-4) { ok(); return; }
-                    if (charge()) { const ici = rel; l.pauseTout(); await vider(); base = ici; t0 = performance.now(); }
-                    requestAnimationFrame(pas);
-                  };
-                  requestAnimationFrame(pas);
-                });
-              }
-            }
+            // image par image : chaque vidéo est placée exactement sur la bonne image avant d'être dessinée.
+            // Les raccords tombent donc pile (aucune image perdue, répétée ou accélérée), quelle que soit la machine.
             l.pauseTout();
-            if (avecFin && !erreur()) { setExport((x) => ({ ...x, etape: "Cinématique de fin…" })); await jouerFin(c, canvas, tot, R, (t) => img(t), (p) => setExport((e) => ({ ...e, progres: part + (0.97 - part) * p }))); }
+            const N = Math.max(1, Math.round(tot * FPS_EXPORT));
+            let dm = 0;
+            for (let n = 0; n < N && !erreur(); n++) {
+              const rel = Math.min(tot - 1e-4, n / FPS_EXPORT);
+              await l.caler(d, rel);
+              dessiner(c, rel); img(n / FPS_EXPORT);
+              if (charge()) await vider();
+              const t = performance.now(); if (t - dm > 200) { dm = t; setExport((e) => ({ ...e, progres: Math.min(0.97, (n / N) * part) })); }
+            }
+            if (avecFin && !erreur()) { setExport((x) => ({ ...x, etape: "Cinématique de fin…" })); await finImageParImage(c, canvas, N / FPS_EXPORT, (t) => img(t), async () => { if (charge()) await vider(); }, (p) => setExport((e) => ({ ...e, progres: part + (0.97 - part) * p }))); }
           },
         });
-        if (r.son === "ok" || r.son === "plan-b" || r.son === "muet-source") { livrer(r.blob, "mp4", r.son === "ok" ? "✓ MP4, 60 images/s, son vérifié dans le fichier" : r.son === "plan-b" ? "✓ MP4, 60 images/s · son réenregistré pour ce navigateur et vérifié" : "✓ MP4, 60 images/s · montage sans son"); return; }
+        if (r.son === "ok" || r.son === "plan-b" || r.son === "muet-source") { livrer(r.blob, "mp4", r.son === "ok" ? "✓ MP4 image par image (raccords exacts), son vérifié dans le fichier" : r.son === "plan-b" ? "✓ MP4 image par image (raccords exacts) · son enregistré par ce navigateur et vérifié" : "✓ MP4 image par image · montage sans son"); return; }
         raison = (r.detail || "son introuvable dans le fichier") + " : la vidéo est refaite en direct";
       } catch (er) { raison = er instanceof Error ? er.message : String(er); }
     }
@@ -988,8 +1035,8 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#0a0614] text-ink">
-      <video ref={finVideo} src={ENDING} preload="auto" playsInline className="hidden" />
-      <video ref={video} src={url} playsInline preload="auto" className="hidden"
+      <video ref={finVideo} src={ENDING} preload="auto" playsInline muted className="pointer-events-none fixed left-0 top-0 h-[2px] w-[2px] opacity-[0.01]" />
+      <video ref={video} src={url} playsInline preload="auto" className="pointer-events-none fixed left-0 top-0 h-[2px] w-[2px] opacity-[0.01]"
         onLoadedMetadata={(e) => auChargement(e.currentTarget)}
         onError={() => setSauve({ etat: "erreur", message: "Ce clip ne peut pas être lu ici : réimporte-le en MP4." })} />
 
@@ -1108,6 +1155,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
             <div className="flex flex-1 items-center justify-center gap-1">
               <button type="button" onClick={() => image(-1)} className={btnOutil()} title="Image précédente (←)"><Icone nom="retour" className="h-4 w-4" /></button>
               <button type="button" onClick={lectureOuPause} className="flex h-10 w-10 items-center justify-center rounded-full bg-white text-[#2a1555] shadow-glow-sm hover:scale-105" aria-label={enLecture ? "Pause" : "Lecture"} title="Lecture / pause (espace)"><Icone nom={enLecture ? "pause" : "lecture"} className="h-6 w-6" /></button>
+              {prepSon && <span className="text-[11px] text-ink-soft">Préparation du son…</span>}
               <button type="button" onClick={() => image(1)} className={btnOutil()} title="Image suivante (→)"><Icone nom="fleche" className="h-4 w-4" /></button>
             </div>
             <div className="flex w-44 items-center gap-1.5">
@@ -1375,7 +1423,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
               <button type="button" onClick={exporter} disabled={export_.etat === "en-cours" || !pret} className="inline-flex items-center gap-2 rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-glow-sm hover:bg-violet-light disabled:opacity-50">
                 <Icone nom="clap" className="h-4 w-4" /> {export_.etat === "en-cours" ? `Création… ${Math.round(export_.progres * 100)} %` : export_.etat === "fini" ? "Recréer la vidéo" : "Créer et télécharger"}
               </button>
-              {export_.etat === "en-cours" && export_.etape && <span className="text-xs text-ink-soft">{export_.etape}</span>}
+              {export_.etat === "en-cours" && export_.etape && <span className="text-xs text-ink-soft">{export_.etape}{export_.debut && export_.progres > 0.04 ? ` · encore ≈ ${Math.max(1, Math.round(((Date.now() - export_.debut) * (1 - export_.progres)) / export_.progres / 60000))} min` : ""}</span>}
             </div>
             {export_.etat === "en-cours" && <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-violet transition-all" style={{ width: `${Math.round(export_.progres * 100)}%` }} /></div>}
             {export_.etat === "erreur" && <p className="mt-3 text-sm text-red-300" role="alert">{export_.message}</p>}

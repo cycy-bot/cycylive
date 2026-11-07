@@ -11,7 +11,7 @@ import { duree, etatA, mediaDe, vitesse, type DocMontage, type Media, type Morce
  * pendant qu'un morceau joue, le suivant est déjà calé sur sa première image dans l'autre élément,
  * et le raccord se fait sans attendre (pas de micro-pause à la coupe).
  */
-const AVANCE = 0.35; // élan du morceau suivant (s)
+const AVANCE = 0.6; // élan du morceau suivant (s)
 export const clePiste = (m: Morceau, k: number) => "p:" + mediaDe(m) + ":" + (k % 2);
 
 type ElSon = HTMLVideoElement | HTMLAudioElement;
@@ -32,7 +32,7 @@ export class Lecteur {
   ctx: AudioContext | null = null;
   constructor(private url: (mid: string) => string | undefined, private medias: () => Media[]) {
     this.boite = document.createElement("div");
-    this.boite.style.cssText = "position:fixed;width:2px;height:2px;overflow:hidden;opacity:0;pointer-events:none;left:-10px;top:-10px";
+    this.boite.style.cssText = "position:fixed;width:2px;height:2px;overflow:hidden;opacity:0.01;pointer-events:none;left:0;top:0";
     document.body.appendChild(this.boite);
   }
   /** Branche un élément existant (la vidéo du projet). */
@@ -85,13 +85,23 @@ export class Lecteur {
    * Recale tout sur l'instant r. `lecture` : les éléments jouent ; sinon ils montrent l'image exacte.
    * `pilote` : la clé de l'élément qui donne le temps (il n'est pas recalé). `rythme` : vitesse générale (export).
    */
-  synchroniser(d: Pick<DocMontage, "morceaux" | "incrustations" | "sons">, r: number, lecture: boolean, o: { pilote?: string; rythme?: number; tolerance?: number; muet?: boolean } = {}) {
+  synchroniser(d: Pick<DocMontage, "morceaux" | "incrustations" | "sons">, r: number, lecture: boolean, o: { pilote?: string; rythme?: number; tolerance?: number; muet?: boolean; doux?: boolean } = {}) {
     const e = etatA(d, r), rythme = o.rythme ?? 1, tol = o.tolerance ?? 0.25;
     const vus = new Set<ElSon>();
+    // doux : l'horloge est le son ; la vidéo la suit en accélérant / ralentissant très légèrement (sans saut d'image)
+    const suivre = (el: ElSon, src: number, rate: number) => {
+      if (el.paused) { if (Math.abs(el.currentTime - src) > 0.04) el.currentTime = src; if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate; el.play().catch(() => {}); return; }
+      if (el.seeking) return;
+      const ecart = src - el.currentTime;
+      if (Math.abs(ecart) > 0.35) { el.currentTime = src; return; }
+      const r2 = Math.abs(ecart) > 0.02 ? rate * (1 + Math.max(-0.08, Math.min(0.08, ecart * 1.2))) : rate;
+      if (Math.abs(el.playbackRate - r2) > 1e-3) el.playbackRate = r2;
+    };
     const caler = (el: ElSon, src: number, vit: number, vol: number, cle: string) => {
       vus.add(el);
       this.volume(el, o.muet ? 0 : vol);
       const rate = vit * rythme;
+      if (lecture && o.doux) { suivre(el, src, rate); return; }
       if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate;
       if (cle === o.pilote) return;
       if (lecture) {
@@ -116,11 +126,15 @@ export class Lecteur {
         vus.add(el);
         const reste = e.morceau ? (e.morceau.b - e.src) / vitesse(e.morceau) : Infinity;
         const elan = lecture && reste < AVANCE ? suiv.a - reste * vitesse(suiv) : -1;
-        if (Math.abs(el.playbackRate - vitesse(suiv) * rythme) > 1e-3) el.playbackRate = vitesse(suiv) * rythme;
         if (elan >= 0) {
           this.volume(el, 0);
-          if (el.paused) { if (Math.abs(el.currentTime - elan) > 0.03) el.currentTime = elan; el.play().catch(() => {}); }
+          if (o.doux) suivre(el, elan, vitesse(suiv) * rythme);
+          else {
+            if (Math.abs(el.playbackRate - vitesse(suiv) * rythme) > 1e-3) el.playbackRate = vitesse(suiv) * rythme;
+            if (el.paused) { if (Math.abs(el.currentTime - elan) > 0.03) el.currentTime = elan; el.play().catch(() => {}); }
+          }
         } else {
+          if (Math.abs(el.playbackRate - vitesse(suiv) * rythme) > 1e-3) el.playbackRate = vitesse(suiv) * rythme;
           if (!el.paused && o.pilote !== cleS) el.pause();
           if (el.paused && !el.seeking && Math.abs(el.currentTime - suiv.a) > 0.02) el.currentTime = suiv.a;
         }
@@ -131,11 +145,32 @@ export class Lecteur {
       const el = this.media("i:" + c.id, c.media, "video");
       if (el) caler(el, src, vitesse(c), c.muet ? 0 : c.vol, "i:" + c.id);
     }
-    for (const { s, src } of e.sons) {
+    if (!(o.doux && o.muet)) for (const { s, src } of e.sons) {
       const el = this.media("s:" + s.id, s.media, this.typeDe(s.media) === "video" ? "video" : "son");
       if (el) caler(el, src, vitesse(s), s.vol * fondu((src - s.a) / vitesse(s), duree(s), s.fE, s.fS), "s:" + s.id);
     }
     for (const el of this.els.values()) if (!vus.has(el) && !el.paused) el.pause();
+  }
+  /**
+   * Export image par image : chaque vidéo utile est placée EXACTEMENT sur l'image de l'instant r (et on attend
+   * qu'elle soit affichée). Rien ne dépend de la fluidité de la lecture : pas de saut, pas d'accélération.
+   */
+  async caler(d: Pick<DocMontage, "morceaux" | "incrustations" | "sons">, r: number) {
+    const e = etatA(d, r), attentes: Promise<void>[] = [], vus = new Set<ElSon>();
+    const placer = (el: HTMLVideoElement, t: number) => {
+      vus.add(el); if (!el.paused) el.pause();
+      // + 3 ms : on vise l'intérieur de l'image (un instant pile sur la frontière peut donner l'image d'avant)
+      const cible = Math.max(0, Math.min((Number.isFinite(el.duration) ? el.duration : 1e9) - 0.002, t + 0.003));
+      if (!el.seeking && el.readyState >= 2 && Math.abs(el.currentTime - cible) < 1 / 480) return;
+      // image suivante toute proche : on avance en lisant (bien plus rapide qu'un saut), sinon on saute
+      const aRvfc = "requestVideoFrameCallback" in el;
+      if (aRvfc && rvfcMarche !== false && !el.seeking && el.readyState >= 2 && cible > el.currentTime && cible - el.currentTime < 0.5) attentes.push(avancerA(el, cible));
+      else attentes.push(allerA(el, cible));
+    };
+    if (e.morceau && this.typeDe(mediaDe(e.morceau)) === "video") { const el = this.media(clePiste(e.morceau, e.k), mediaDe(e.morceau), "video"); if (el) placer(el as HTMLVideoElement, e.src); }
+    for (const { c, src } of e.incrust) if (this.typeDe(c.media) === "video") { const el = this.media("i:" + c.id, c.media, "video"); if (el) placer(el as HTMLVideoElement, src); }
+    for (const el of this.els.values()) if (!vus.has(el) && !el.paused) el.pause();
+    await Promise.all(attentes);
   }
   pauseTout() { for (const el of this.els.values()) if (!el.paused) el.pause(); }
   /** Attend que les éléments utiles à l'instant r aient leur image (export). */
@@ -162,4 +197,44 @@ export class Lecteur {
     this.boite.remove();
     try { this.ctx?.close(); } catch { /* rien */ }
   }
+}
+
+/** Place une vidéo sur un instant précis et attend que l'image soit prête à être dessinée. */
+export function allerA(el: HTMLVideoElement, t: number): Promise<void> {
+  return new Promise((ok) => {
+    let fini = false;
+    const fin = () => { if (!fini) { fini = true; clearTimeout(secours); ok(); } };
+    const secours = setTimeout(fin, 4000);
+    el.addEventListener("seeked", () => {
+      const v = el as HTMLVideoElement & { requestVideoFrameCallback?: (f: () => void) => number };
+      if (v.requestVideoFrameCallback) { v.requestVideoFrameCallback(() => fin()); setTimeout(fin, 50); } else fin();
+    }, { once: true });
+    el.currentTime = t;
+  });
+}
+
+// ce navigateur prévient-il quand une image s'affiche ? (sinon on n'avance que par sauts)
+let rvfcMarche: boolean | null = null;
+/** Avance une vidéo jusqu'à l'image de l'instant t en la lisant, puis la met en pause sur cette image exacte. */
+function avancerA(el: HTMLVideoElement, t: number): Promise<void> {
+  type Rvfc = HTMLVideoElement & { requestVideoFrameCallback: (f: (n: number, m: { mediaTime: number }) => void) => number };
+  const v = el as Rvfc;
+  return new Promise((ok) => {
+    let fini = false;
+    const fin = async (precis: boolean) => {
+      if (fini) return; fini = true; clearTimeout(secours); el.pause();
+      if (!precis) await allerA(el, t); // image dépassée ou lecture bloquée : on y va directement
+      ok();
+    };
+    // lecture qui ne repart pas (ou navigateur qui ne prévient pas) : on n'insiste plus, on passe aux sauts
+    const secours = setTimeout(() => { rvfcMarche = false; fin(false); }, 300);
+    const image = (_n: number, m: { mediaTime: number }) => {
+      if (fini) return;
+      if (m.mediaTime >= t - 0.006) { fin(m.mediaTime <= t + 0.012); return; }
+      v.requestVideoFrameCallback(image);
+    };
+    v.requestVideoFrameCallback(image);
+    el.muted = true;
+    el.play().catch(() => fin(false));
+  });
 }

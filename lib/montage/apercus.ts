@@ -80,8 +80,16 @@ function pelliculeDe(src: string, duree: number): Promise<Pellicule> {
     v.addEventListener("error", () => { clearTimeout(limite); finir(); }, { once: true });
   });
 }
+// son décodé de chaque média, gardé en mémoire (onde de la timeline, lecture et export s'en servent)
+const sons = new Map<string, Promise<AudioBuffer | null>>();
+export function sonDe(url: string): Promise<AudioBuffer | null> {
+  let p = sons.get(url);
+  if (!p) { p = decoderSon(url).catch(() => null); sons.set(url, p); }
+  return p;
+}
 async function ondeDe(url: string) {
-  const b = await decoderSon(url);
+  const b = await sonDe(url);
+  if (!b) throw new Error("sans son");
   const parSeconde = 50, N = Math.max(1, Math.ceil(b.duration * parSeconde));
   const d = b.getChannelData(0), pas = Math.max(1, Math.floor(d.length / N)), out = new Float32Array(N);
   let max = 1e-4;
