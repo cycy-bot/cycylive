@@ -39,6 +39,8 @@ type Props = {
   dureeMax: (media?: string) => number;
   pellicules: Map<string, Pellicule>;
   ondes: Map<string, TOnde>;
+  aimant: boolean; // les bords se collent à la tête de lecture et aux autres éléments
+  onTransition: (k: number) => void; // toucher le raccord avant le morceau k
   zoom: number; // pixels par seconde
   setZoom: (z: number) => void;
 };
@@ -70,6 +72,7 @@ export default function TimelineMontage(p: Props) {
   // la piste vidéo (en bas) reste visible à l'ouverture
   useEffect(() => { const d = defile.current; if (d) d.scrollTop = d.scrollHeight; }, []);
   const [drop, setDrop] = useState<{ id: string; vers: number; x: number } | null>(null);
+  const [guide, setGuide] = useState<number | null>(null);
   const deb = useMemo(() => debuts(morceaux), [morceaux]);
   const total = morceaux.reduce((n, x) => n + duree(x), 0);
   const finObjets = Math.max(0, ...p.incrustations.map((x) => x.debut + duree(x)), ...p.sons.map((x) => x.debut + duree(x)));
@@ -96,6 +99,25 @@ export default function TimelineMontage(p: Props) {
     b.addEventListener("touchstart", tDebut, { passive: true }); b.addEventListener("touchmove", tBouge, { passive: false }); b.addEventListener("touchend", tFin);
     return () => { b.removeEventListener("wheel", roue); b.removeEventListener("touchstart", tDebut); b.removeEventListener("touchmove", tBouge); b.removeEventListener("touchend", tFin); };
   }, [zoom, p]);
+
+  // aimant : le temps le plus proche parmi la tête de lecture, les raccords et les bords des autres éléments
+  function aimanter(v: number, id: string): number | null {
+    if (!p.aimant) return null;
+    const cibles = [0, t, total, ...deb, ...calques.filter((c) => c.id !== id && c.type !== "barre" && c.type !== "encart" && c.type !== "soustitres").flatMap((c) => [c.debut, c.fin]),
+      ...p.incrustations.filter((c) => c.id !== id).flatMap((c) => [c.debut, c.debut + duree(c)]), ...p.sons.filter((c) => c.id !== id).flatMap((c) => [c.debut, c.debut + duree(c)])];
+    let best: number | null = null, ecart = 10 / zoom;
+    for (const c of cibles) { const e = Math.abs(c - v); if (e < ecart) { ecart = e; best = c; } }
+    return best;
+  }
+  /** Déplacement d'un élément de longueur len : son début ou sa fin se colle (le plus proche). */
+  function aimanterBloc(debut: number, len: number, id: string): number {
+    const a = aimanter(debut, id), b = aimanter(debut + len, id);
+    const da = a == null ? Infinity : Math.abs(a - debut), db = b == null ? Infinity : Math.abs(b - (debut + len));
+    if (da === Infinity && db === Infinity) { setGuide(null); return debut; }
+    if (da <= db) { setGuide(a); return a!; }
+    setGuide(b); return b! - len;
+  }
+  const aimanterBord = (v: number, id: string) => { const a = aimanter(v, id); setGuide(a); return a ?? v; };
 
   const tempsDepuis = (clientX: number) => {
     const b = defile.current!; const r = b.getBoundingClientRect();
@@ -128,7 +150,7 @@ export default function TimelineMontage(p: Props) {
       if (!bouge && Math.abs(dx) < 6) return;
       bouge = true;
       if (mode === "a") p.setMorceaux((l) => rognerMorceau(l, m.id, "a", a0 + (dx / zoom) * vit, maxi), "rogner-" + m.id);
-      else if (mode === "b") p.setMorceaux((l) => rognerMorceau(l, m.id, "b", b0 + (dx / zoom) * vit, maxi), "rogner-" + m.id);
+      else if (mode === "b") { const fin = aimanterBord(deb[k] + (b0 - a0) / vit + dx / zoom, m.id); p.setMorceaux((l) => rognerMorceau(l, m.id, "b", a0 + (fin - deb[k]) * vit, maxi), "rogner-" + m.id); }
       else if (morceaux.length > 1) {
         // glisser : où le poser ? (entre deux morceaux)
         const x = px(deb[k]) + px(duree(m) / 2) + dx;
@@ -137,7 +159,7 @@ export default function TimelineMontage(p: Props) {
         setDrop({ id: m.id, vers, x: px(gauche) });
       }
     };
-    const annule = () => { cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule); setDrop(null); p.finGeste(); };
+    const annule = () => { cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule); setDrop(null); setGuide(null); p.finGeste(); };
     const lacher = (ev: PointerEvent) => {
       cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule);
       if (mode === "corps") {
@@ -149,7 +171,7 @@ export default function TimelineMontage(p: Props) {
           setDrop((d) => { if (d) p.setMorceaux((l) => deplacerMorceau(l, m.id, d.vers)); return null; });
         }
       }
-      p.finGeste();
+      setGuide(null); p.finGeste();
     };
     cible.addEventListener("pointermove", bouger); cible.addEventListener("pointerup", lacher); cible.addEventListener("pointercancel", annule);
   }
@@ -168,15 +190,15 @@ export default function TimelineMontage(p: Props) {
     const bouger = (ev: PointerEvent) => {
       const dx = ev.clientX - x0; if (libre) return; if (!bouge && Math.abs(dx) < 5) return; bouge = true;
       const dt = dx / zoom;
-      if (mode === "bouger") { const len = f0 - d0, nd = Math.max(0, Math.min(total - Math.min(len, total), d0 + dt)); maj({ debut: +nd.toFixed(3), fin: +(nd + len).toFixed(3) }); if (c.type === "flash") p.onSeek(nd); }
-      else if (mode === "debut") maj({ debut: +Math.max(0, Math.min(f0 - 0.15, d0 + dt)).toFixed(3) });
-      else maj({ fin: +Math.min(total, Math.max(d0 + 0.15, f0 + dt)).toFixed(3) });
+      if (mode === "bouger") { const len = f0 - d0, nd = Math.max(0, Math.min(total - Math.min(len, total), aimanterBloc(d0 + dt, len, c.id))); maj({ debut: +nd.toFixed(3), fin: +(nd + len).toFixed(3) }); if (c.type === "flash") p.onSeek(nd); }
+      else if (mode === "debut") maj({ debut: +Math.max(0, Math.min(f0 - 0.15, aimanterBord(d0 + dt, c.id))).toFixed(3) });
+      else maj({ fin: +Math.min(total, Math.max(d0 + 0.15, aimanterBord(f0 + dt, c.id))).toFixed(3) });
     };
-    const annule = () => { cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule); p.finGeste(); };
+    const annule = () => { cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule); setGuide(null); p.finGeste(); };
     const lacher = (ev: PointerEvent) => {
       cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule);
       if (!bouge && mode === "bouger") p.onSeek(c.type === "flash" ? c.debut : tempsDepuis(ev.clientX));
-      p.finGeste();
+      setGuide(null); p.finGeste();
     };
     cible.addEventListener("pointermove", bouger); cible.addEventListener("pointerup", lacher); cible.addEventListener("pointercancel", annule);
   }
@@ -194,11 +216,11 @@ export default function TimelineMontage(p: Props) {
     const bouger = (ev: PointerEvent) => {
       const dx = ev.clientX - x0; if (libre) return; if (!bouge && Math.abs(dx) < 5) return; bouge = true;
       const dt = dx / zoom;
-      if (mode === "bouger") appliquer({ debut: +Math.max(0, d0 + dt).toFixed(3) });
-      else if (mode === "b") appliquer({ b: +Math.min(maxi, Math.max(a0 + 0.1, b0 + dt * vit)).toFixed(3) });
+      if (mode === "bouger") appliquer({ debut: +Math.max(0, aimanterBloc(d0 + dt, duree(x), x.id)).toFixed(3) });
+      else if (mode === "b") { const fin = aimanterBord(d0 + (b0 - a0) / vit + dt, x.id); appliquer({ b: +Math.min(maxi, Math.max(a0 + 0.1, a0 + (fin - d0) * vit)).toFixed(3) }); }
       else {
         // bord gauche : le début bouge, la fin reste en place
-        const dd = Math.max(-d0, Math.min(duree(x) - 0.1, dt));
+        const dd = Math.max(-d0, Math.min(duree(x) - 0.1, aimanterBord(d0 + dt, x.id) - d0));
         if (photo) appliquer({ debut: +(d0 + dd).toFixed(3), b: +Math.max(0.1, b0 - dd).toFixed(3) });
         else { const na = Math.max(0, Math.min(b0 - 0.1, a0 + dd * vit)), reel = (na - a0) / vit; appliquer({ a: +na.toFixed(3), debut: +(d0 + reel).toFixed(3) }); }
       }
@@ -206,7 +228,7 @@ export default function TimelineMontage(p: Props) {
     const fin = (ev: PointerEvent, ok: boolean) => {
       cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule);
       if (ok && !bouge && mode === "bouger") p.onSeek(tempsDepuis(ev.clientX));
-      p.finGeste();
+      setGuide(null); p.finGeste();
     };
     const lacher = (ev: PointerEvent) => fin(ev, true), annule = (ev: PointerEvent) => fin(ev, false);
     cible.addEventListener("pointermove", bouger); cible.addEventListener("pointerup", lacher); cible.addEventListener("pointercancel", annule);
@@ -319,6 +341,12 @@ export default function TimelineMontage(p: Props) {
               </div>
             );
           })}
+          {/* raccords : toucher pour choisir une transition */}
+          {morceaux.map((m, k) => k === 0 ? null : (
+            <button key={"tr" + m.id} type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => p.onTransition(k)} title={m.tr ? "Transition : " + m.tr.type : "Ajouter une transition"}
+              className={`absolute top-1/2 z-20 flex h-6 w-6 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-md border text-[11px] font-bold shadow ${m.tr ? "border-white bg-lilac text-[#2a1555]" : "border-white/40 bg-[#1a1033]/90 text-white/80 hover:bg-violet"}`}
+              style={{ left: px(deb[k]) }}>{m.tr ? "⇄" : "+"}</button>
+          ))}
           {drop && <span className="pointer-events-none absolute top-0 bottom-0 z-30 w-1 -translate-x-1/2 rounded bg-lilac shadow-glow" style={{ left: drop.x }} />}
         </>)}
 
@@ -337,6 +365,7 @@ export default function TimelineMontage(p: Props) {
           })}
         </>))}
         {tete}
+        {guide != null && <div className="pointer-events-none absolute top-0 bottom-0 z-30 w-px bg-amber-300" style={{ left: LABEL + px(guide) }} />}
       </div>
     </div>
   );

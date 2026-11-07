@@ -199,17 +199,19 @@ function punch(t: number, flashs: Calque[]) {
 }
 
 /** Dessine la vidéo (remplit le 1080×1920) avec, s'il y a lieu, le zoom de kill sur la partie jeu. */
-export function dessinerVideo(ctx: CanvasRenderingContext2D, v: HTMLVideoElement | HTMLImageElement, t: number, calques: Calque[]) {
-  const vw = (v instanceof HTMLVideoElement ? v.videoWidth : v.naturalWidth) || W, vh = (v instanceof HTMLVideoElement ? v.videoHeight : v.naturalHeight) || H, s = Math.max(W / vw, H / vh);
+export function dessinerVideo(ctx: CanvasRenderingContext2D, v: HTMLVideoElement | HTMLImageElement, t: number, calques: Calque[], r?: { sx: number; sy: number; sw: number; sh: number }) {
+  const nw = (v instanceof HTMLVideoElement ? v.videoWidth : v.naturalWidth) || W, nh = (v instanceof HTMLVideoElement ? v.videoHeight : v.naturalHeight) || H;
+  const zone = r || { sx: 0, sy: 0, sw: nw, sh: nh };
+  const vw = zone.sw, vh = zone.sh, s = Math.max(W / vw, H / vh);
   const dw = vw * s, dh = vh * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
-  ctx.drawImage(v, dx, dy, dw, dh);
+  ctx.drawImage(v, zone.sx, zone.sy, zone.sw, zone.sh, dx, dy, dw, dh);
   const z = punch(t, calques.filter((c) => c.type === "flash"));
   if (z > 1.001) {
     const sep = (calques.find((c) => c.type === "barre")?.y ?? MODELE_DEFAUT.sep) * H;
     const cy = sep + (H - sep) * 0.46;
     ctx.save(); ctx.beginPath(); ctx.rect(0, sep + 4, W, H - sep); ctx.clip();
     ctx.translate(W / 2, cy); ctx.scale(z, z); ctx.translate(-W / 2, -cy);
-    ctx.drawImage(v, dx, dy, dw, dh); ctx.restore();
+    ctx.drawImage(v, zone.sx, zone.sy, zone.sw, zone.sh, dx, dy, dw, dh); ctx.restore();
   }
 }
 

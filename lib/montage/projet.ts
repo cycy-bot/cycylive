@@ -18,6 +18,10 @@ export const PRINCIPAL = "principal";
 export const DUREE_PHOTO = 3; // durée d'une photo posée sur la piste (s)
 export const MAX_PHOTO = 600;
 export type Cadre = "projet" | "ajuster" | "remplir";
+/** Recadrage : la partie gardée du média (fractions de sa largeur / hauteur) et le format choisi. */
+export type Crop = { x: number; y: number; w: number; h: number; ratio?: string };
+export type TypeTransition = "fondu" | "noir" | "flash" | "zoom" | "glisse";
+export type Transition = { type: TypeTransition; d: number };
 export type Morceau = {
   id: string; a: number; b: number; // temps du média
   media?: string; // absent = la vidéo du projet
@@ -26,12 +30,15 @@ export type Morceau = {
   cadre?: Cadre; // projet = disposition du projet ; ajuster = en entier sur fond flouté ; remplir = plein écran
   lum?: number; con?: number; sat?: number; // réglages de l'image (1 = d'origine)
   kb?: boolean; // photo : zoom lent (effet « Ken Burns »)
+  crop?: Crop;
+  tr?: Transition; // transition à l'entrée de ce morceau (depuis le précédent)
 };
 export type FormeIncrust = "rect" | "arrondi" | "rond";
 export type Incrust = {
   id: string; media: string; debut: number; a: number; b: number; v?: number; // debut : temps monté
   x: number; y: number; w: number; // centre (fraction de l'écran) et largeur (fraction de la largeur)
   forme: FormeIncrust; contour: boolean; opacite: number; vol: number; muet?: boolean; anim: "aucune" | "fondu" | "pop";
+  crop?: Crop;
 };
 export type PisteSon = { id: string; media: string; debut: number; a: number; b: number; vol: number; fE: number; fS: number; v?: number };
 export type ClipTwitch = { id: string; titre: string; url: string; miniature: string; vues: number; duree: number; date: string; jeu: string };
@@ -102,6 +109,8 @@ export const dureeMedia = (medias: Media[], id: string | undefined, principal: n
   const x = medias.find((y) => y.id === id); if (!x) return principal;
   return x.type === "image" ? MAX_PHOTO : x.duree;
 };
+/** Taille utile d'un média une fois recadré. */
+export const cropValide = (c?: Crop) => (c && c.w > 0.01 && c.h > 0.01 && (c.w < 0.999 || c.h < 0.999 || c.x > 0.001 || c.y > 0.001) ? c : undefined);
 export const nouvelIdMedia = () => "x" + Math.random().toString(36).slice(2, 10);
 
 // ── Opérations sur la piste vidéo ──
@@ -110,7 +119,7 @@ export function couper(m: Morceau[], r: number): { morceaux: Morceau[]; droite?:
   if (k < 0) return { morceaux: m };
   const x = m[k];
   if (src - x.a < MIN || x.b - src < MIN) return { morceaux: m };
-  const g = { ...x, b: src, fS: 0 }, d = { ...x, id: nouvelIdMorceau(), a: src, b: x.b, fE: 0 };
+  const g = { ...x, b: src, fS: 0 }, d: Morceau = { ...x, id: nouvelIdMorceau(), a: src, b: x.b, fE: 0, tr: undefined };
   return { morceaux: [...m.slice(0, k), g, d, ...m.slice(k + 1)], droite: d.id };
 }
 export const supprimerMorceau = (m: Morceau[], id: string) => (m.length <= 1 ? m : m.filter((x) => x.id !== id));

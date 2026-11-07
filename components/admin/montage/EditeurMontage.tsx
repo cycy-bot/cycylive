@@ -15,12 +15,13 @@ import { enregistrerBrouillon, envoyerMedias, garderMedia, lireMedia, type Broui
 import { ANIMS, calquesDepuisModele, COULEURS, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, NOMS, nouveauFlash, nouveauTexte, nouvelId, type Calque, type Modele } from "@/lib/habillageTikTok";
 import {
   aTempsMonte, ajusterCalques, couper, debuts, DOC_VIDE, docDepuisEtat, dupliquerMorceau, duree, DUREE_PHOTO, dureeMedia, dureeTotale, etatA, mediaDe, nouvelIdMedia, nouvelIdMorceau, PRINCIPAL, supprimerMorceau, vitesse,
-  type Cadre, type ClipTwitch, type Disposition, type DocMontage, type Incrust, type Media, type Morceau, type PisteSon, type TypeMedia,
+  cropValide, type Cadre, type ClipTwitch, type Crop, type TypeTransition, type Disposition, type DocMontage, type Incrust, type Media, type Morceau, type PisteSon, type TypeMedia,
 } from "@/lib/montage/projet";
 import { useHistorique } from "@/lib/montage/historique";
 import { useApercusMedias } from "@/lib/montage/apercus";
-import { Lecteur, type Source } from "@/lib/montage/lecteur";
+import { clePiste, Lecteur, type Source } from "@/lib/montage/lecteur";
 import { mixer } from "@/lib/montage/mixage";
+import Recadrage from "@/components/admin/montage/Recadrage";
 import TimelineMontage, { monteDepuisSource, type Outil, type Selection } from "@/components/admin/montage/TimelineMontage";
 
 const CLE_MODELE = "cycy-modele-tiktok";
@@ -36,6 +37,10 @@ const DISPOS: { valeur: Disposition; label: string; aide: string; icone: NomIcon
 const CADRES: { v: Cadre; l: string }[] = [{ v: "projet", l: "Comme le projet" }, { v: "ajuster", l: "En entier (fond flouté)" }, { v: "remplir", l: "Plein écran" }];
 const VITESSES = [0.25, 0.5, 1, 1.5, 2, 3];
 const ZOOMS = [25, 50, 75, 100, 125, 150, 200];
+// curseur de l'aperçu : 100 % au milieu
+const zoomDepuisCurseur = (v: number) => Math.round(v <= 50 ? 25 + v * 1.5 : 100 + (v - 50) * 2);
+const curseurDepuisZoom = (z: number) => (z <= 100 ? (z - 25) / 1.5 : 50 + (z - 100) / 2);
+const TRANSITIONS: { v: TypeTransition | ""; l: string }[] = [{ v: "", l: "Coupe franche" }, { v: "fondu", l: "Fondu enchaîné" }, { v: "noir", l: "Fondu au noir" }, { v: "flash", l: "Flash blanc" }, { v: "zoom", l: "Zoom" }, { v: "glisse", l: "Glisser" }];
 
 export type ProjetOuvert = { id: string; nom: string; nomFichier: string; cree: number; archive: boolean; fichier: Blob; etat: Record<string, unknown> | null; fichierEnLigne: boolean; clip: ClipTwitch | null; nouveau: boolean; exporter?: boolean };
 
@@ -123,6 +128,8 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string; etape?: string }>({ etat: "repos", progres: 0 });
   const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
   const [copie, setCopie] = useState("");
+  const [recadre, setRecadre] = useState<{ type: "morceau" | "incrust"; id: string } | null>(null);
+  const [aimant, setAimant] = useState(true);
   const [, setVersionMedias] = useState(0);
   const pressePapier = useRef<{ type: "morceau"; m: Morceau } | { type: "calque"; c: Calque } | { type: "incrust"; c: Incrust } | { type: "son"; s: PisteSon } | null>(null);
   const fichierEnLigne = useRef(projet.fichierEnLigne);
@@ -165,7 +172,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     try { const m = JSON.parse(localStorage.getItem(CLE_MODELE) || "null"); if (m) setModele({ ...MODELE_DEFAUT, ...m }); } catch { /* modèle d'origine */ }
     const avant = document.body.style.overflow; document.body.style.overflow = "hidden";
     const l = new Lecteur((mid) => urls.current.get(mid), () => etat.current.doc.medias);
-    if (video.current) l.adopter("p:" + PRINCIPAL, video.current);
+    if (video.current) l.adopter("p:" + PRINCIPAL + ":0", PRINCIPAL, video.current);
     lecteur.current = l;
     return () => {
       document.body.style.overflow = avant;
@@ -255,14 +262,15 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       if (!d.morceaux.length) return;
       let rel = tRef.current;
       if (lectureRef.current) {
-        const e = etatA(d, rel), m = e.morceau!, mid = mediaDe(m), cle = "p:" + mid, p = pilote.current;
+        const e = etatA(d, rel), m = e.morceau!, mid = mediaDe(m), cle = clePiste(m, e.k), p = pilote.current;
         if (l.typeDe(mid) === "video") {
           const el = l.media(cle, mid, "video") as HTMLVideoElement | null;
           if (el) {
             const deb = debuts(d.morceaux)[e.k];
             if (p.k === e.k && !el.seeking && (el.ended || el.currentTime >= m.b - 0.012)) rel = deb + duree(m) + 1e-4; // fin du morceau : au suivant
             else if (p.k !== e.k || el.paused) {
-              if (Math.abs(el.currentTime - e.src) > 0.04) el.currentTime = e.src;
+              // déjà lancé en avance (raccord) : on le prend tel quel s'il est juste
+              if (Math.abs(el.currentTime - e.src) > (el.paused ? 0.04 : 0.15)) el.currentTime = e.src;
               el.playbackRate = vitesse(m); el.play().catch(() => {});
               pilote.current = { k: e.k, t0: performance.now(), rel0: rel };
             } else if (!el.seeking) rel = deb + Math.max(0, el.currentTime - m.a) / vitesse(m);
@@ -276,6 +284,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
         l.synchroniser(d, Math.min(rel, tot - 1e-3), lectureRef.current, { pilote: cle });
       } else l.synchroniser(d, Math.min(rel, tot - 1e-3), false);
       dessiner(c, Math.min(rel, tot - 1e-3), true);
+      if (process.env.NEXT_PUBLIC_DEBUG_MONTAGE) (window as unknown as { __t: number }).__t = rel;
       if (Math.abs(rel - dernier) > 0.02) { dernier = rel; setTM(rel); }
     };
     rafRef.current = requestAnimationFrame(boucle);
@@ -284,42 +293,46 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   }, []);
 
   // ── dessin d'une image (aperçu et export) ──
-  function dessinerFond(ctx: CanvasRenderingContext2D, s: Source, m: Morceau, rel0: number, d: DocMontage, e: typeof etat.current) {
-    const el = s.el, vw = s.w, vh = s.h, mid = mediaDe(m);
+  // la source, une fois recadrée : on dessine toujours une zone (ox, oy, w, h) de l'image d'origine
+  type Zone = { el: HTMLVideoElement | HTMLImageElement; ox: number; oy: number; w: number; h: number };
+  const zoneDe = (s: Source, crop?: Crop): Zone => { const c = cropValide(crop); return c ? { el: s.el, ox: c.x * s.w, oy: c.y * s.h, w: Math.max(1, c.w * s.w), h: Math.max(1, c.h * s.h) } : { el: s.el, ox: 0, oy: 0, w: s.w, h: s.h }; };
+  const peindre = (ctx: CanvasRenderingContext2D, z: Zone, dx: number, dy: number, dw: number, dh: number, sx = 0, sy = 0, sw = z.w, sh = z.h) => ctx.drawImage(z.el, z.ox + sx, z.oy + sy, sw, sh, dx, dy, dw, dh);
+  function dessinerFond(ctx: CanvasRenderingContext2D, s: Source, m: Morceau, rel0: number, d: DocMontage, e: typeof etat.current, fx: { k: number; dx: number } = { k: 1, dx: 0 }) {
+    const z = zoneDe(s, m.crop), vw = z.w, vh = z.h, mid = mediaDe(m);
     const cadre: Cadre = m.cadre || (mid === PRINCIPAL ? "projet" : "ajuster");
     const filtres = [m.lum && m.lum !== 1 ? `brightness(${m.lum})` : "", m.con && m.con !== 1 ? `contrast(${m.con})` : "", m.sat != null && m.sat !== 1 ? `saturate(${m.sat})` : ""].filter(Boolean).join(" ");
     ctx.save(); if (filtres) ctx.filter = filtres;
-    // zoom lent (photos)
-    const kb = m.kb ? 1 + 0.08 * Math.max(0, Math.min(1, (aTempsMonte(d.morceaux, rel0).src - m.a) / Math.max(0.1, m.b - m.a))) : 1;
+    if (fx.dx) ctx.translate(fx.dx, 0);
+    // zoom lent (photos) et zoom de transition
+    const kb = (m.kb ? 1 + 0.08 * Math.max(0, Math.min(1, (aTempsMonte(d.morceaux, rel0).src - m.a) / Math.max(0.1, m.b - m.a))) : 1) * fx.k;
     if (kb !== 1) { ctx.translate(W / 2, H / 2); ctx.scale(kb, kb); ctx.translate(-W / 2, -H / 2); }
-    if (cadre === "remplir") { const k = Math.max(W / vw, H / vh); ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); }
-    else if (cadre === "ajuster") {
-      const k = Math.max(W / vw, H / vh);
-      ctx.save(); ctx.filter = (filtres ? filtres + " " : "") + "blur(36px) brightness(.55) saturate(1.2)"; ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); ctx.restore();
-      const k2 = Math.min(W / vw, H / vh); ctx.drawImage(el, (W - vw * k2) / 2, (H - vh * k2) / 2, vw * k2, vh * k2);
-    } else if (d.dispo === "vertical") dessinerVideo(ctx, el, rel0, d.calques);
+    const flou = () => { const k = Math.max(W / vw, H / vh); ctx.save(); ctx.filter = (filtres ? filtres + " " : "") + "blur(36px) brightness(.55) saturate(1.2)"; peindre(ctx, z, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); ctx.restore(); };
+    if (cadre === "remplir") { const k = Math.max(W / vw, H / vh); peindre(ctx, z, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); }
+    else if (cadre === "ajuster") { flou(); const k2 = Math.min(W / vw, H / vh); peindre(ctx, z, (W - vw * k2) / 2, (H - vh * k2) / 2, vw * k2, vh * k2); }
+    else if (d.dispo === "vertical") dessinerVideo(ctx, z.el, rel0, d.calques, { sx: z.ox, sy: z.oy, sw: z.w, sh: z.h });
     else if (d.dispo === "floute") {
-      const k = Math.max(W / vw, H / vh);
-      ctx.save(); ctx.filter = (filtres ? filtres + " " : "") + "blur(36px) brightness(.55) saturate(1.2)"; ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); ctx.restore();
+      flou();
       const fh = (W * vh) / vw, y = (H - fh) / 2 + 60;
-      ctx.save(); ctx.shadowColor = "rgba(161,92,255,.6)"; ctx.shadowBlur = 40; ctx.drawImage(el, 0, y, W, fh); ctx.restore();
+      ctx.save(); ctx.shadowColor = "rgba(161,92,255,.6)"; ctx.shadowBlur = 40; peindre(ctx, z, 0, y, W, fh); ctx.restore();
       if (d.titre) { ctx.filter = "none"; texteContour(ctx, d.titre, W / 2, y - 150, 76, e.polices.display, W - 120, 2); }
     } else if (d.dispo === "recadre") {
-      const sh = vh / d.zoom, sw = (sh * W) / H, sx = Math.max(0, Math.min(vw - sw, (vw - sw) * d.focusX)), sy = (vh - sh) / 2;
-      ctx.drawImage(el, sx, sy, sw, sh, 0, 0, W, H);
+      const sh = vh / d.zoom, sw = Math.min(vw, (sh * W) / H), sx = Math.max(0, Math.min(vw - sw, (vw - sw) * d.focusX)), sy = (vh - sh) / 2;
+      peindre(ctx, z, 0, 0, W, H, sx, sy, sw, sh);
       ctx.filter = "none";
       const g = ctx.createLinearGradient(0, 0, 0, 420); g.addColorStop(0, "rgba(13,10,23,.75)"); g.addColorStop(1, "rgba(13,10,23,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 420);
       if (d.titre) texteContour(ctx, d.titre, W / 2, 220, 72, e.polices.display, W - 120, 2);
     } else {
       const hautH = Math.round(H * 0.38), cw = vw * d.cam.taille, ch = (cw * hautH) / W;
       const cx = Math.max(0, Math.min(vw - cw, vw * d.cam.x)), cy = Math.max(0, Math.min(vh - ch, vh * d.cam.y));
-      ctx.drawImage(el, cx, cy, cw, ch, 0, 0, W, hautH);
+      peindre(ctx, z, 0, 0, W, hautH, cx, cy, cw, ch);
       const basH = H - hautH, sh = vh / d.zoom, sw = Math.min(vw, (sh * W) / basH), sx = Math.max(0, Math.min(vw - sw, (vw - sw) * d.focusX));
-      ctx.drawImage(el, sx, (vh - sh) / 2, sw, sh, 0, hautH, W, basH);
+      peindre(ctx, z, 0, hautH, W, basH, sx, (vh - sh) / 2, sw, sh);
       ctx.filter = "none"; ctx.fillStyle = "#b57cff"; ctx.fillRect(0, hautH - 4, W, 8);
     }
     ctx.restore();
   }
+  // dernière image du morceau précédent (pour les transitions « fondu » et « glisser »)
+  const fige = useRef<{ k: number; c: HTMLCanvasElement | null }>({ k: -1, c: null });
   function dessiner(ctx: CanvasRenderingContext2D, rel: number, enApercu = false) {
     const e = etat.current, d = e.doc, l = lecteur.current;
     ctx.fillStyle = "#0d0a17"; ctx.fillRect(0, 0, W, H);
@@ -327,14 +340,29 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const tot = Math.max(0.5, dureeTotale(d.morceaux));
     const x = etatA(d, rel), z: Record<string, Boite> = {};
     if (x.morceau) {
-      const mid = mediaDe(x.morceau), s = l.source("p:" + mid, mid);
-      if (s && s.w > 0) dessinerFond(ctx, s, x.morceau, rel, d, e);
-      else if (manquantsRef.current.has(mid)) { ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.font = `600 40px ${e.polices.sans}`; ctx.textAlign = "center"; ctx.fillText("Média introuvable : réimporte-le", W / 2, H / 2); }
+      const m = x.morceau, mid = mediaDe(m), s = l.source(clePiste(m, x.k), mid);
+      const deb = debuts(d.morceaux)[x.k], t0 = rel - deb, len = duree(m);
+      const tr = x.k > 0 && m.tr && t0 < m.tr.d ? m.tr : null, p = tr ? easeOut(t0 / tr.d) : 1;
+      const avant = tr && (tr.type === "fondu" || tr.type === "glisse") && fige.current.k === x.k - 1 ? fige.current.c : null;
+      if (s && s.w > 0) {
+        if (avant && tr?.type === "glisse") ctx.drawImage(avant, -W * p, 0);
+        dessinerFond(ctx, s, m, rel, d, e, { k: tr?.type === "zoom" ? 1 + 0.18 * (1 - p) : 1, dx: avant && tr?.type === "glisse" ? W * (1 - p) : 0 });
+        if (avant && tr?.type === "fondu") { ctx.save(); ctx.globalAlpha = 1 - p; ctx.drawImage(avant, 0, 0); ctx.restore(); }
+        if (tr?.type === "noir") { ctx.fillStyle = `rgba(0,0,0,${(1 - p).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+        if (tr?.type === "flash") { ctx.fillStyle = `rgba(255,250,255,${((1 - p) ** 2).toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
+        // garde la dernière image si le morceau suivant commence par un fondu
+        const suiv = d.morceaux[x.k + 1];
+        if (suiv?.tr && (suiv.tr.type === "fondu" || suiv.tr.type === "glisse") && t0 > len - 0.25) {
+          if (!fige.current.c) { fige.current.c = document.createElement("canvas"); fige.current.c.width = W; fige.current.c.height = H; }
+          const g = fige.current.c.getContext("2d")!; g.drawImage(ctx.canvas, 0, 0, W, H); fige.current.k = x.k;
+        }
+      } else if (manquantsRef.current.has(mid)) { ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.font = `600 40px ${e.polices.sans}`; ctx.textAlign = "center"; ctx.fillText("Média introuvable : réimporte-le", W / 2, H / 2); }
     }
     // incrustations (photo / vidéo par-dessus)
     for (const { c } of x.incrust) {
-      const s = l.source("i:" + c.id, c.media); if (!s || !s.w) continue;
-      const w = c.w * W, h = (w * s.h) / s.w;
+      const s0 = l.source("i:" + c.id, c.media); if (!s0 || !s0.w) continue;
+      const zs = zoneDe(s0, c.crop);
+      const w = c.w * W, h = (w * zs.h) / zs.w;
       const t0 = rel - c.debut, len = duree(c);
       let a = c.opacite, k = 1;
       if (c.anim !== "aucune") { const pe = Math.min(1, t0 / 0.3), ps = Math.min(1, (len - t0) / 0.3), p = Math.max(0, Math.min(pe, ps)); a *= c.anim === "fondu" ? p : Math.min(1, p * 1.6); if (c.anim === "pop") k = 0.6 + 0.4 * easeOut(p) + (p < 1 ? 0.06 * Math.sin(p * Math.PI) : 0); }
@@ -344,7 +372,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.scale(k, k);
       if (c.contour) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 30; cheminForme(ctx, -bw / 2 - 6, -bh / 2 - 6, bw + 12, bh + 12, c.forme); ctx.fillStyle = "#fff"; ctx.fill(); ctx.restore(); }
       cheminForme(ctx, -bw / 2, -bh / 2, bw, bh, c.forme); ctx.clip();
-      const kk = Math.max(bw / w, bh / h); ctx.drawImage(s.el, -(w * kk) / 2, -(h * kk) / 2, w * kk, h * kk);
+      const kk = Math.max(bw / w, bh / h); peindre(ctx, zs, -(w * kk) / 2, -(h * kk) / 2, w * kk, h * kk);
       ctx.restore();
       z[c.id] = { x: cx - bw / 2, y: cy - bh / 2, w: bw, h: bh };
     }
@@ -563,6 +591,30 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   const ajouterTexte = () => { const c = nouveauTexte(tRef.current, total); setCalques((l) => [...l, c]); setSel({ type: "calque", id: c.id }); };
   const image = (n: number) => { arreter(); allerA(tRef.current + n / 30); };
 
+  // ── recadrer ──
+  function ouvrirRecadrage() {
+    arreter();
+    if (sel?.type === "incrust") { const c = doc.incrustations.find((x) => x.id === sel.id); if (c) { if (tRef.current < c.debut || tRef.current >= c.debut + duree(c)) allerA(c.debut + 0.05); setRecadre({ type: "incrust", id: c.id }); } return; }
+    let k = sel?.type === "morceau" ? doc.morceaux.findIndex((m) => m.id === sel.id) : -1;
+    if (k < 0) k = aTempsMonte(doc.morceaux, tRef.current).k;
+    if (k < 0) return;
+    const deb = debuts(doc.morceaux)[k];
+    if (tRef.current < deb || tRef.current >= deb + duree(doc.morceaux[k])) allerA(deb + 0.05);
+    setSel({ type: "morceau", id: doc.morceaux[k].id }); setRecadre({ type: "morceau", id: doc.morceaux[k].id });
+  }
+  const recadrage = (() => {
+    if (!recadre || !lecteur.current) return null;
+    const l = lecteur.current;
+    if (recadre.type === "incrust") {
+      const c = doc.incrustations.find((x) => x.id === recadre.id); if (!c) return null;
+      const s0 = l.source("i:" + c.id, c.media); if (!s0) return null;
+      return { titre: nomMedia(c.media), el: () => l.source("i:" + c.id, c.media)?.el || null, w: s0.w, h: s0.h, depart: c.crop, appliquer: (cr: Crop | undefined) => majIncrust(c.id, { crop: cr }) };
+    }
+    const k = doc.morceaux.findIndex((x) => x.id === recadre.id), m = doc.morceaux[k]; if (!m) return null;
+    const cle = clePiste(m, k), s0 = l.source(cle, mediaDe(m)); if (!s0) return null;
+    return { titre: nomMedia(mediaDe(m)), el: () => l.source(cle, mediaDe(m))?.el || null, w: s0.w, h: s0.h, depart: m.crop, appliquer: (cr: Crop | undefined) => majMorceau(m.id, { crop: cr }) };
+  })();
+
   // raccourcis clavier
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -584,6 +636,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       else if (k === "home") { e.preventDefault(); arreter(); allerA(0); }
       else if (k === "end") { e.preventDefault(); arreter(); allerA(total); }
       else if (k === "a") setOutil("selection");
+      else if (k === "c") ouvrirRecadrage();
       else if (k === "escape") setSel(null);
     };
     window.addEventListener("keydown", touche);
@@ -700,7 +753,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
             const signal = (rel: number) => { const t = performance.now(); if (t - dm > 200) { dm = t; setExport((e) => ({ ...e, progres: Math.min(0.97, (rel / tot) * part) })); } };
             const souffler = async (reprendre: () => void) => { if (!charge()) return; l.pauseTout(); await vider(); reprendre(); };
             for (let k = 0; k < m.length && !erreur(); k++) {
-              const x = m[k], mid = mediaDe(x), cle = "p:" + mid, len = duree(x), debut = deb[k];
+              const x = m[k], mid = mediaDe(x), cle = clePiste(x, k), len = duree(x), debut = deb[k];
               await l.allerEtAttendre(d, debut + 1e-4);
               if (l.typeDe(mid) === "video") {
                 const el = l.media(cle, mid, "video") as HTMLVideoElement;
@@ -785,7 +838,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   // images fixes (miniature YouTube / story) à partir de l'image en cours
   function visuel(type: "miniature" | "story") {
     const src = apercu.current; if (!src) return;
-    const x = etatA(doc, tRef.current), mid = x.morceau ? mediaDe(x.morceau) : PRINCIPAL, s = lecteur.current?.source("p:" + mid, mid);
+    const x = etatA(doc, tRef.current), mid = x.morceau ? mediaDe(x.morceau) : PRINCIPAL, s = lecteur.current?.source(x.morceau ? clePiste(x.morceau, x.k) : "p:" + PRINCIPAL + ":0", mid);
     if (!s) return;
     const [w, h] = type === "miniature" ? [1280, 720] : [1080, 1920];
     const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
@@ -1058,7 +1111,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
               <button type="button" onClick={() => image(1)} className={btnOutil()} title="Image suivante (→)"><Icone nom="fleche" className="h-4 w-4" /></button>
             </div>
             <div className="flex w-44 items-center gap-1.5">
-              <input type="range" min={25} max={200} step={5} value={zoomApercu} onChange={(e) => setZoomApercu(+e.target.value)} className="w-full accent-violet-500" aria-label="Taille de l’aperçu" />
+              <input type="range" min={0} max={100} step={1} value={curseurDepuisZoom(zoomApercu)} onChange={(e) => setZoomApercu(zoomDepuisCurseur(+e.target.value))} onDoubleClick={() => setZoomApercu(100)} className="w-full accent-violet-500" aria-label="Taille de l’aperçu" />
               <select value={ZOOMS.includes(zoomApercu) ? zoomApercu : ""} onChange={(e) => setZoomApercu(+e.target.value || 100)} className="rounded-md border border-white/15 bg-black/40 px-1 py-1 text-xs" aria-label="Pourcentage">
                 {!ZOOMS.includes(zoomApercu) && <option value="">{zoomApercu} %</option>}
                 {ZOOMS.map((z) => <option key={z} value={z}>{z} %</option>)}
@@ -1139,6 +1192,14 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
                     </div>
                   </>
                 )}
+                {doc.morceaux.indexOf(morceauSel) > 0 && (
+                  <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
+                    <label className={etiquette}>Transition avec le morceau d’avant<select value={morceauSel.tr?.type || ""} onChange={(e) => majMorceau(morceauSel.id, { tr: e.target.value ? { type: e.target.value as TypeTransition, d: morceauSel.tr?.d || 0.4 } : undefined })} className={`${champ} mt-1`}>{TRANSITIONS.map((t) => <option key={t.v} value={t.v}>{t.l}</option>)}</select></label>
+                    {morceauSel.tr && glisser("Durée", morceauSel.tr.d, 0.15, 1.2, 0.05, (x) => majMorceau(morceauSel.id, { tr: { ...morceauSel.tr!, d: x } }, "tr-" + morceauSel.id), `${morceauSel.tr.d.toFixed(2)} s`)}
+                    {morceauSel.tr && <button type="button" onClick={() => { const tr = morceauSel.tr!; setMorceaux((l) => l.map((m, i) => (i > 0 ? { ...m, tr: { ...tr } } : m))); }} className="text-xs text-lilac underline">Mettre cette transition à tous les raccords</button>}
+                  </div>
+                )}
+                <button type="button" onClick={ouvrirRecadrage} className="flex w-full items-center gap-2 rounded-xl border border-violet/30 px-3 py-2 text-left text-sm hover:bg-violet/10"><Icone nom="recadrer" className="h-4 w-4 text-lilac" /> Recadrer{morceauSel.crop ? ` · ${morceauSel.crop.ratio && morceauSel.crop.ratio !== "libre" ? morceauSel.crop.ratio : "libre"}` : ""}</button>
                 <label className={etiquette}>Cadrage<select value={morceauSel.cadre || (mid === PRINCIPAL ? "projet" : "ajuster")} onChange={(e) => majMorceau(morceauSel.id, { cadre: e.target.value as Cadre })} className={`${champ} mt-1`}>{CADRES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}</select></label>
                 <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
                   <span className="block text-xs font-medium text-ink">Image</span>
@@ -1164,6 +1225,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
                   <label className={etiquette}>Durée (s)<input type="number" step={0.1} min={0.2} value={+duree(incrustSel).toFixed(2)} onChange={(e) => majIncrust(incrustSel.id, { b: Math.min(dureeMax(incrustSel.media), incrustSel.a + Math.max(0.2, +e.target.value) * vitesse(incrustSel)) })} className={`${champ} mt-1`} /></label>
                   <button type="button" onClick={() => majIncrust(incrustSel.id, { debut: +tM.toFixed(3) }, "tete-" + incrustSel.id)} className="col-span-2 rounded-lg border border-violet/30 px-2 py-1.5 text-xs text-ink-soft hover:bg-violet/10">⌖ Commencer à la tête de lecture</button>
                 </div>
+                <button type="button" onClick={ouvrirRecadrage} className="flex w-full items-center gap-2 rounded-xl border border-violet/30 px-3 py-2 text-left text-sm hover:bg-violet/10"><Icone nom="recadrer" className="h-4 w-4 text-lilac" /> Recadrer{incrustSel.crop ? ` · ${incrustSel.crop.ratio && incrustSel.crop.ratio !== "libre" ? incrustSel.crop.ratio : "libre"}` : ""}</button>
                 {glisser("Taille", incrustSel.w, 0.08, 1.4, 0.01, (x) => majIncrust(incrustSel.id, { w: x }, "taille-" + incrustSel.id), `${Math.round(incrustSel.w * 100)} %`)}
                 {glisser("Opacité", incrustSel.opacite, 0.1, 1, 0.02, (x) => majIncrust(incrustSel.id, { opacite: x }, "op-" + incrustSel.id), `${Math.round(incrustSel.opacite * 100)} %`)}
                 <div>
@@ -1259,11 +1321,13 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
           <button type="button" onClick={coller} className={btnOutil()} title="Coller à la tête de lecture (⌘/Ctrl V)"><Icone nom="coller" className="h-5 w-5" /></button>
           <button type="button" onClick={dupliquer} disabled={!sel} className={btnOutil()} title="Dupliquer (⌘/Ctrl D)"><Icone nom="dupliquer" className="h-5 w-5" /></button>
           <button type="button" onClick={supprimer} disabled={!sel || (sel.type === "morceau" && doc.morceaux.length <= 1)} className={btnOutil()} title="Supprimer (Suppr)"><Icone nom="corbeille" className="h-5 w-5" /></button>
+          <button type="button" onClick={ouvrirRecadrage} disabled={!pret} className={btnOutil()} title="Recadrer le morceau ou l’incrustation (C)"><Icone nom="recadrer" className="h-5 w-5" /><span className="text-xs">Recadrer</span></button>
           <span className="mx-1 h-6 w-px bg-white/10" />
           <button type="button" onClick={ajouterTexte} className={btnOutil()} title="Texte à la tête de lecture"><Icone nom="lettres" className="h-5 w-5" /><span className="text-xs">Texte</span></button>
           <button type="button" onClick={ajouterFlash} className={btnOutil()} title="Flash de kill à la tête de lecture"><Icone nom="eclair" className="h-5 w-5" /><span className="text-xs">Flash</span></button>
           <button type="button" onClick={() => setOnglet("audios")} className={btnOutil(onglet === "audios")} title="Ajouter un son ou une musique"><Icone nom="note" className="h-5 w-5" /><span className="hidden xl:inline text-xs">Son</span></button>
           <div className="ml-auto flex shrink-0 items-center gap-1">
+            <button type="button" onClick={() => setAimant((x) => !x)} className={btnOutil(aimant)} title="Aimant : les éléments se collent à la tête de lecture et aux autres éléments" aria-pressed={aimant}><Icone nom="aimant" className="h-5 w-5" /></button>
             <button type="button" onClick={() => setZoomTl((z) => Math.max(8, z / 1.4))} className={btnOutil()} aria-label="Dézoomer la timeline"><Icone nom="loupeMoins" className="h-5 w-5" /></button>
             <input type="range" min={8} max={400} value={zoomTl} onChange={(e) => setZoomTl(+e.target.value)} className="w-28 accent-violet-500" aria-label="Zoom de la timeline" />
             <button type="button" onClick={() => setZoomTl((z) => Math.min(600, z * 1.4))} className={btnOutil()} aria-label="Zoomer la timeline"><Icone nom="loupePlus" className="h-5 w-5" /></button>
@@ -1275,10 +1339,13 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
             <TimelineMontage dureeSource={dureeSource} morceaux={doc.morceaux} calques={habille ? doc.calques : doc.calques.filter((c) => c.type === "texte" || c.type === "flash")} sousTitres={doc.sousTitres} t={tM} sel={sel} setSel={setSel} outil={outil}
               setMorceaux={setMorceaux} setCalques={setCalques} finGeste={couperGeste} onSeek={(r) => { arreter(); allerA(r); }} onCouperA={couperA}
               medias={doc.medias} incrustations={doc.incrustations} sons={doc.sons} setIncrust={setIncrust} setSons={setSons} dureeMax={dureeMax}
-              pellicules={apercus.pellicules} ondes={apercus.ondes} zoom={zoomTl} setZoom={setZoomTl} />
+              pellicules={apercus.pellicules} ondes={apercus.ondes} zoom={zoomTl} setZoom={setZoomTl} aimant={aimant}
+              onTransition={(k) => { const m = doc.morceaux[k]; if (m) { setSel({ type: "morceau", id: m.id }); if (!m.tr) majMorceau(m.id, { tr: { type: "fondu", d: 0.4 } }); } }} />
           )}
         </div>
       </div>
+
+      {recadrage && <Recadrage key={recadre?.id} titre={recadrage.titre} el={recadrage.el} w={recadrage.w} h={recadrage.h} depart={recadrage.depart} onFermer={() => setRecadre(null)} onAppliquer={(cr) => { recadrage.appliquer(cr); couperGeste(); setRecadre(null); }} />}
 
       {/* ── quitter sans enregistrer ? ── */}
       {quitter && (

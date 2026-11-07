@@ -4,7 +4,15 @@
 // chaque son), et un mixage en direct (Web Audio) pour que les volumes marchent aussi sur iPad (où le volume
 // d'un élément vidéo ne se règle pas). Les éléments sont recalés sur le temps du montage à chaque image.
 
-import { duree, etatA, mediaDe, vitesse, type DocMontage, type Media } from "@/lib/montage/projet";
+import { duree, etatA, mediaDe, vitesse, type DocMontage, type Media, type Morceau } from "@/lib/montage/projet";
+
+/**
+ * Élément d'un morceau de la piste vidéo. Deux éléments par média, en alternance (morceaux pairs / impairs) :
+ * pendant qu'un morceau joue, le suivant est déjà calé sur sa première image dans l'autre élément,
+ * et le raccord se fait sans attendre (pas de micro-pause à la coupe).
+ */
+const AVANCE = 0.35; // élan du morceau suivant (s)
+export const clePiste = (m: Morceau, k: number) => "p:" + mediaDe(m) + ":" + (k % 2);
 
 type ElSon = HTMLVideoElement | HTMLAudioElement;
 export type Source = { el: HTMLVideoElement | HTMLImageElement; w: number; h: number; pret: boolean };
@@ -28,7 +36,8 @@ export class Lecteur {
     document.body.appendChild(this.boite);
   }
   /** Branche un élément existant (la vidéo du projet). */
-  adopter(cle: string, el: HTMLVideoElement) { el.dataset.src = this.url(cle.slice(2)) || el.currentSrc || el.src; this.els.set(cle, el); this.brancher(el); }
+  private adopte: HTMLVideoElement | null = null;
+  adopter(cle: string, mid: string, el: HTMLVideoElement) { el.dataset.src = this.url(mid) || el.currentSrc || el.src; this.adopte = el; this.els.set(cle, el); this.brancher(el); }
   /** À appeler pendant un clic (Safari) : crée le mixage en direct. */
   debloquer() {
     if (this.ctx) { this.ctx.resume().catch(() => {}); return; }
@@ -94,9 +103,28 @@ export class Lecteur {
       }
     };
     if (e.morceau && this.typeDe(mediaDe(e.morceau)) === "video") {
-      const m = e.morceau, cle = "p:" + mediaDe(m), el = this.media(cle, mediaDe(m), "video");
+      const m = e.morceau, cle = clePiste(m, e.k), el = this.media(cle, mediaDe(m), "video");
       const t0 = e.src - m.a;
       if (el) caler(el, e.src, vitesse(m), m.muet ? 0 : (m.vol ?? 1) * fondu(t0 / vitesse(m), duree(m), m.fE, m.fS), cle);
+    }
+    // le morceau suivant attend, déjà calé sur sa première image ; pendant la lecture, il démarre (muet)
+    // un peu avant le raccord pour que l'enchaînement soit immédiat
+    const suiv = e.k >= 0 ? d.morceaux[e.k + 1] : undefined;
+    if (suiv && this.typeDe(mediaDe(suiv)) === "video") {
+      const cleS = clePiste(suiv, e.k + 1), el = this.media(cleS, mediaDe(suiv), "video");
+      if (el) {
+        vus.add(el);
+        const reste = e.morceau ? (e.morceau.b - e.src) / vitesse(e.morceau) : Infinity;
+        const elan = lecture && reste < AVANCE ? suiv.a - reste * vitesse(suiv) : -1;
+        if (Math.abs(el.playbackRate - vitesse(suiv) * rythme) > 1e-3) el.playbackRate = vitesse(suiv) * rythme;
+        if (elan >= 0) {
+          this.volume(el, 0);
+          if (el.paused) { if (Math.abs(el.currentTime - elan) > 0.03) el.currentTime = elan; el.play().catch(() => {}); }
+        } else {
+          if (!el.paused && o.pilote !== cleS) el.pause();
+          if (el.paused && !el.seeking && Math.abs(el.currentTime - suiv.a) > 0.02) el.currentTime = suiv.a;
+        }
+      }
     }
     for (const { c, src } of e.incrust) {
       if (this.typeDe(c.media) !== "video") continue;
@@ -114,7 +142,7 @@ export class Lecteur {
   async attendrePret(d: Pick<DocMontage, "morceaux" | "incrustations" | "sons">, r: number, limite = 2500) {
     const e = etatA(d, r), fin = Date.now() + limite;
     const attendus: (HTMLVideoElement | HTMLImageElement)[] = [];
-    if (e.morceau) { const s = this.source("p:" + mediaDe(e.morceau), mediaDe(e.morceau)); if (s) attendus.push(s.el); }
+    if (e.morceau) { const s = this.source(clePiste(e.morceau, e.k), mediaDe(e.morceau)); if (s) attendus.push(s.el); }
     for (const { c } of e.incrust) { const s = this.source("i:" + c.id, c.media); if (s) attendus.push(s.el); }
     while (Date.now() < fin) {
       const ok = attendus.every((x) => (x instanceof HTMLImageElement ? x.complete : !x.seeking && x.readyState >= 2));
@@ -130,7 +158,7 @@ export class Lecteur {
   }
   detruire() {
     this.pauseTout();
-    for (const [cle, el] of this.els) if (!cle.startsWith("p:principal")) { el.removeAttribute("src"); el.load(); }
+    for (const el of this.els.values()) if (el !== this.adopte) { el.removeAttribute("src"); el.load(); }
     this.boite.remove();
     try { this.ctx?.close(); } catch { /* rien */ }
   }
