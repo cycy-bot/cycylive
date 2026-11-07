@@ -639,6 +639,66 @@ export const BANQUE = {
     <path {...F} d="M3.5 11 20.5 3.5 15 20.5l-3.2-6.3Z" />
     <path {...T} d="m11.8 14.2 8.7-10.7" />
   </>),
+  // ── Montage vidéo (Studio montage) ──
+  ciseaux: I("Couper / diviser", "Navigation", <>
+    <circle {...F} cx="6.5" cy="17.5" r="3" />
+    <circle {...F} cx="6.5" cy="6.5" r="3" />
+    <path {...T} d="M9 8.3 20 18.5M9 15.7 20 5.5" />
+    <circle {...P} cx="12.6" cy="12" r="1.2" />
+  </>),
+  copier: I("Copier", "Navigation", <>
+    <rect {...F} x="8.5" y="8.5" width="12" height="12" rx="2.8" />
+    <path {...T} d="M15.5 5.6V5a1.5 1.5 0 0 0-1.5-1.5H5A1.5 1.5 0 0 0 3.5 5v9A1.5 1.5 0 0 0 5 15.5h.6" />
+    {eclat(14.5, 14.5, 2)}
+  </>),
+  coller: I("Coller", "Navigation", <>
+    <rect {...F} x="5" y="4.5" width="14" height="16.5" rx="3" />
+    <path {...T} d="M9 4.5V3.8A1.3 1.3 0 0 1 10.3 2.5h3.4A1.3 1.3 0 0 1 15 3.8v.7a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1ZM9 11h6M9 15h4" />
+  </>),
+  recadrer: I("Recadrer / rogner", "Navigation", <>
+    <rect {...F} x="6.5" y="6.5" width="11" height="11" rx="1.5" />
+    <path {...T} d="M6.5 2.5v14a1 1 0 0 0 1 1h14M2.5 6.5h14a1 1 0 0 1 1 1v14" />
+    {eclat(12, 12, 1.8)}
+  </>),
+  annuler: I("Annuler (retour en arrière)", "Navigation", <>
+    <path {...T} d="M8.5 5.5 4 10l4.5 4.5" />
+    <path {...T} d="M4 10h10a5.5 5.5 0 0 1 0 11h-3" />
+  </>),
+  retablir: I("Rétablir", "Navigation", <>
+    <path {...T} d="M15.5 5.5 20 10l-4.5 4.5" />
+    <path {...T} d="M20 10H10a5.5 5.5 0 0 0 0 11h3" />
+  </>),
+  telecharger: I("Télécharger / exporter", "Navigation", <>
+    <path {...F} d="M3.5 15.5v2A3 3 0 0 0 6.5 20.5h11a3 3 0 0 0 3-3v-2" />
+    <path {...T} d="M12 3.5v11M7.5 10l4.5 4.5 4.5-4.5" />
+    <circle {...P} cx="17.5" cy="17.5" r="1.1" />
+  </>),
+  archive: I("Archiver", "Navigation", <>
+    <rect {...F} x="3" y="4" width="18" height="5" rx="1.8" />
+    <path {...T} d="M4.5 9v9a2.5 2.5 0 0 0 2.5 2.5h10a2.5 2.5 0 0 0 2.5-2.5V9M10 13h4" />
+  </>),
+  points: I("Plus d’options", "Navigation", <>
+    <circle {...P} cx="5.5" cy="12" r="1.8" />
+    <circle {...P} cx="12" cy="12" r="1.8" />
+    <circle {...P} cx="18.5" cy="12" r="1.8" />
+  </>),
+  selection: I("Sélectionner", "Navigation", <>
+    <path {...F} d="M5 3.5 19 10l-6.2 1.8L10 18Z" />
+    <path {...T} d="m13 12 5.5 5.5" />
+  </>),
+  dupliquer: I("Dupliquer", "Navigation", <>
+    <rect {...F} x="3.5" y="3.5" width="12" height="12" rx="2.8" />
+    <rect {...T} x="8.5" y="8.5" width="12" height="12" rx="2.8" />
+    <path {...T} d="M14.5 12v5M12 14.5h5" />
+  </>),
+  loupePlus: I("Zoomer", "Navigation", <>
+    <circle {...F} cx="10.5" cy="10.5" r="6.5" />
+    <path {...T} d="m15.5 15.5 5 5M10.5 7.8v5.4M7.8 10.5h5.4" />
+  </>),
+  loupeMoins: I("Dézoomer", "Navigation", <>
+    <circle {...F} cx="10.5" cy="10.5" r="6.5" />
+    <path {...T} d="m15.5 15.5 5 5M7.8 10.5h5.4" />
+  </>),
 } satisfies Record<string, DefIcone>;
 
 export type NomIcone = keyof typeof BANQUE;

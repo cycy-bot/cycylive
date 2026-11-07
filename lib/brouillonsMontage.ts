@@ -14,6 +14,8 @@ export type BrouillonInfo = {
   duree: number;
   miniature: string; // petite image (data URL)
   etat: Record<string, unknown>;
+  cree?: number; // date de création du projet
+  archive?: boolean;
   // synchronisation (calculé, pas enregistré)
   ligne?: "local" | "en-ligne" | "partout";
   etatEnLigne?: boolean; // le montage le plus récent est en ligne (à télécharger en reprenant)
@@ -192,10 +194,16 @@ export async function lireFichierBrouillon(id: string, info?: BrouillonInfo): Pr
 }
 
 /** Enregistre le brouillon ici et en ligne. Le clip n'est fourni qu'une fois par brouillon. */
-export async function enregistrerBrouillon(info: BrouillonInfo, fichier?: Blob): Promise<{ enLigne: boolean; clipEnLigne?: boolean }> {
+export async function enregistrerBrouillon(info: BrouillonInfo, fichier?: Blob, { immediat = false } = {}): Promise<{ enLigne: boolean; clipEnLigne?: boolean }> {
   const brut = propre(info);
   let errLocal: unknown = null;
   try { await enregistrerLocal(brut, fichier); } catch (e) { errLocal = e; }
+  if (immediat && !fichier) {
+    // « Enregistrer » : envoyé en ligne tout de suite (chaque enregistrement compte)
+    const a = enAttente.get(info.id); if (a) { clearTimeout(a.t); enAttente.delete(info.id); }
+    try { await envoyerInfo(brut); return { enLigne: true }; }
+    catch (e) { if (errLocal) throw errLocal; void e; return { enLigne: false }; }
+  }
   if (fichier) {
     // premier enregistrement : tout de suite, puis le clip
     try { const r = await envoyerInfo(brut); if (r.disque) envoyerClip(brut, fichier); return { enLigne: true, clipEnLigne: r.disque }; }

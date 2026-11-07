@@ -87,7 +87,7 @@ export default function AdminPage() {
   const courante = ONGLETS.find((o) => o.valeur === onglet) ?? ONGLETS[0];
   const resumes: Partial<Record<Onglet, string>> = {
     live: "Stories Instagram et TikTok en un clic",
-    generateur: "Clip → vidéo verticale, miniature et textes",
+    generateur: "Tes projets vidéo, montés comme sur CapCut",
     miniatures: "Miniatures YouTube dans ta charte, prêtes à télécharger",
     planning: `${planning.filter((j) => !j.off).length} jour(s) de live par semaine`,
     calendrier: `${Object.keys(calendrier.exceptions).length} exception(s) · ${calendrier.evenements.length} événement(s)`,
@@ -122,7 +122,7 @@ export default function AdminPage() {
       <div className={dansInterface ? "" : "lg:grid lg:grid-cols-[230px_minmax(0,1fr)] lg:gap-10"}>
       {!dansInterface && <NavigationAdmin rubriques={ONGLETS} active={onglet} modifiees={ongletsModifies.map((o) => o.valeur)} onChoisir={changerOnglet} />}
 
-      <div className={dansInterface ? "min-w-0 max-w-5xl" : "min-w-0 max-w-3xl"}>
+      <div className={onglet === "generateur" ? "min-w-0 max-w-none" : dansInterface ? "min-w-0 max-w-5xl" : "min-w-0 max-w-3xl"}>
       {ongletsModifies.length > 0 && (
         <div className={(dansInterface ? "sticky top-2" : "sticky top-[9.5rem] lg:top-24") + " z-30 mb-6 flex flex-wrap items-center gap-2 rounded-xl border border-amber-400/30 bg-[#2a2010]/95 backdrop-blur px-3 py-2 text-xs text-amber-100"}>
           <span>✎ Pas encore enregistré : {ongletsModifies.map((o) => o.label).join(", ")}. Pense au bouton « Enregistrer » de la section.</span>

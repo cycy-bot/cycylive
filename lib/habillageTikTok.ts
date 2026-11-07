@@ -12,6 +12,7 @@ export type Calque = {
   anim: Anim; texte: string; sous: string;
   intensite: number; zoom: boolean; onde: boolean; // flash
   lie: boolean;                        // encart : reste collé à la barre (séparation)
+  echelle?: number;                    // taille (1 = normale), réglée en tirant le coin sur l'aperçu
 };
 export type SousTitre = { id: string; debut: number; fin: number; texte: string };
 
@@ -99,6 +100,8 @@ function lignes(ctx: CanvasRenderingContext2D, texte: string, largeur: number) {
   for (const mot of texte.split(/\s+/).filter(Boolean)) { const essai = l ? `${l} ${mot}` : mot; if (ctx.measureText(essai).width > largeur && l) { out.push(l); l = mot; } else l = essai; }
   if (l) out.push(l); return out;
 }
+// zone cliquable d'un élément agrandi / réduit (autour de son centre)
+const agrandir = (b: Boite, cx: number, cy: number, k: number): Boite => (k === 1 ? b : { x: cx + (b.x - cx) * k, y: cy + (b.y - cy) * k, w: b.w * k, h: b.h * k });
 const pilule = (ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) => { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); };
 type Boite = { x: number; y: number; w: number; h: number };
 
@@ -239,9 +242,9 @@ export function dessinerCalques(ctx: CanvasRenderingContext2D, t: number, total:
       if (type === "soustitres") {
         const st = sousTitres.find((x) => ts >= x.debut && ts < x.fin);
         if (!st?.texte) continue;
-        const rel = ts - st.debut, an = animation(c.anim, rel, st.fin - st.debut);
-        ctx.save(); ctx.globalAlpha = an.a; ctx.translate(W / 2, c.y * H + an.dy); ctx.scale(an.s, an.s); ctx.translate(-W / 2, -c.y * H);
-        zones[c.id] = sousTitre(ctx, st.texte, c.y * H); ctx.restore();
+        const rel = ts - st.debut, an = animation(c.anim, rel, st.fin - st.debut), k = c.echelle || 1;
+        ctx.save(); ctx.globalAlpha = an.a; ctx.translate(W / 2, c.y * H + an.dy); ctx.scale(an.s * k, an.s * k); ctx.translate(-W / 2, -c.y * H);
+        zones[c.id] = agrandir(sousTitre(ctx, st.texte, c.y * H), W / 2, c.y * H, k); ctx.restore();
         continue;
       }
       if (t < c.debut || t > c.fin) continue;
@@ -256,11 +259,14 @@ export function dessinerCalques(ctx: CanvasRenderingContext2D, t: number, total:
       const an = animation(c.anim, t - c.debut, c.fin - c.debut);
       if (an.a <= 0.01) continue;
       const cx = (type === "encart" ? 0.5 : c.x) * W, cy = (type === "encart" && c.lie ? sep / H : c.y) * H + an.dy;
-      ctx.save(); ctx.globalAlpha = an.a; ctx.translate(cx, cy); ctx.scale(an.s, an.s); ctx.translate(-cx, -cy);
-      if (type === "encart") zones[c.id] = encart(ctx, c.texte || "CYCYLIVE  ·  TWITCH", cy);
-      else if (type === "carte" && c.texte) zones[c.id] = carteTitre(ctx, c.texte, c.sous, cx, cy);
-      else if (type === "etiquette" && c.texte) zones[c.id] = etiquette(ctx, c.texte, cx, cy);
-      else if (type === "texte" && c.texte) zones[c.id] = texteLibre(ctx, c.texte, cx, cy);
+      const k = c.echelle || 1;
+      ctx.save(); ctx.globalAlpha = an.a; ctx.translate(cx, cy); ctx.scale(an.s * k, an.s * k); ctx.translate(-cx, -cy);
+      let b: Boite | null = null;
+      if (type === "encart") b = encart(ctx, c.texte || "CYCYLIVE  ·  TWITCH", cy);
+      else if (type === "carte" && c.texte) b = carteTitre(ctx, c.texte, c.sous, cx, cy);
+      else if (type === "etiquette" && c.texte) b = etiquette(ctx, c.texte, cx, cy);
+      else if (type === "texte" && c.texte) b = texteLibre(ctx, c.texte, cx, cy);
+      if (b) zones[c.id] = agrandir(b, type === "encart" ? W / 2 : cx, cy, k);
       ctx.restore();
     }
   }

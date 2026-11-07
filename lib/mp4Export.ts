@@ -23,7 +23,8 @@ type Opts = {
   fin: number;
   W: number;
   H: number;
-  dessiner: (c: CanvasRenderingContext2D, v: HTMLVideoElement, t: number) => void;
+  // t : temps de la vidéo source ; rel : temps de la vidéo finale (montée)
+  dessiner: (c: CanvasRenderingContext2D, v: HTMLVideoElement, t: number, rel: number) => void;
   // morceaux gardés (temps de la vidéo source, dans l'ordre) : les parties coupées sont sautées, image ET son
   segments?: { a: number; b: number }[];
   ending: { el: HTMLVideoElement; url: string } | null; // cinématique de fin (fondu de 0,4 s)
@@ -299,7 +300,7 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
       v.pause();
       v.currentTime = x.a;
       await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-      o.dessiner(c, v, x.a); image(decal);
+      o.dessiner(c, v, x.a, decal); image(decal);
       v.playbackRate = VITESSE;
       await v.play();
       await new Promise<void>((ok) => {
@@ -308,7 +309,7 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
           if (vErr) { ok(); return; }
           if (t >= x.b || v.ended) { v.pause(); ok(); return; }
           const rel = decal + Math.max(0, t - x.a);
-          if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t); image(rel); await attendre(v); }
+          if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t, rel); image(rel); await attendre(v); }
           o.progres(Math.min(0.97, (rel / dureeClip) * (o.ending ? 0.85 : 0.97)));
           requestAnimationFrame(pas);
         };
