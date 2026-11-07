@@ -5,14 +5,16 @@
 //    tirer un bord = rogner, glisser = changer l'ordre. Un morceau supprimé disparaît : tout se resserre.
 //  • au-dessus : une piste par élément (titre, encart, barre, sous-titres, étiquette, textes) et les flashs.
 //    Glisser = déplacer, tirer un bord = changer la durée.
+//  • incrustations (photo / vidéo par-dessus) et sons / musiques : chacun sur sa piste (plusieurs lignes si
+//    des éléments se chevauchent). Glisser = déplacer, tirer un bord = rogner.
 //  • la tête de lecture traverse tout ; la règle et le zoom en haut.
 import { useEffect, useMemo, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { COULEURS, NOMS, type Calque, type SousTitre } from "@/lib/habillageTikTok";
-import { debuts, deplacerMorceau, rognerMorceau, type Morceau } from "@/lib/montage/projet";
-import type { Pellicule } from "@/lib/montage/apercus";
+import { debuts, deplacerMorceau, duree, mediaDe, rognerMorceau, vitesse, PRINCIPAL, type Incrust, type Media, type Morceau, type PisteSon } from "@/lib/montage/projet";
+import type { Onde as TOnde, Pellicule } from "@/lib/montage/apercus";
 
-export type Selection = { type: "morceau" | "calque"; id: string } | null;
+export type Selection = { type: "morceau" | "calque" | "incrust" | "son"; id: string } | null;
 export type Outil = "selection" | "lame";
 
 type Props = {
@@ -29,8 +31,14 @@ type Props = {
   finGeste: () => void;
   onSeek: (t: number) => void;
   onCouperA: (t: number) => void;
-  pellicule: Pellicule;
-  onde: { cretes: Float32Array; parSeconde: number } | null;
+  medias: Media[];
+  incrustations: Incrust[];
+  sons: PisteSon[];
+  setIncrust: (f: (c: Incrust[]) => Incrust[], fusion?: string) => void;
+  setSons: (f: (c: PisteSon[]) => PisteSon[], fusion?: string) => void;
+  dureeMax: (media?: string) => number;
+  pellicules: Map<string, Pellicule>;
+  ondes: Map<string, TOnde>;
   zoom: number; // pixels par seconde
   setZoom: (z: number) => void;
 };
@@ -42,19 +50,30 @@ const ordreCalques: Calque["type"][] = ["carte", "texte", "etiquette", "soustitr
 /** Premier temps monté où l'on voit l'instant source `src` (ou null s'il a été coupé). */
 export function monteDepuisSource(m: Morceau[], src: number): number | null {
   const d = debuts(m);
-  for (let k = 0; k < m.length; k++) if (src >= m[k].a - 1e-6 && src <= m[k].b + 1e-6) return d[k] + (src - m[k].a);
+  for (let k = 0; k < m.length; k++) if (mediaDe(m[k]) === PRINCIPAL && src >= m[k].a - 1e-6 && src <= m[k].b + 1e-6) return d[k] + (src - m[k].a) / vitesse(m[k]);
   return null;
+}
+/** Range les éléments sur des lignes sans chevauchement. */
+function lignesSans<T extends { id: string; debut: number; a: number; b: number; v?: number }>(l: T[]): T[][] {
+  const out: { fin: number; el: T[] }[] = [];
+  for (const x of [...l].sort((p, q) => p.debut - q.debut)) {
+    const r = out.find((o) => o.fin <= x.debut + 1e-6);
+    if (r) { r.el.push(x); r.fin = x.debut + duree(x); } else out.push({ fin: x.debut + duree(x), el: [x] });
+  }
+  return out.map((o) => o.el);
 }
 
 export default function TimelineMontage(p: Props) {
-  const { morceaux, calques, sousTitres, t, sel, setSel, outil, pellicule, onde, zoom } = p;
+  const { morceaux, calques, sousTitres, t, sel, setSel, outil, pellicules, ondes, zoom, medias } = p;
+  const mediaParId = useMemo(() => new Map(medias.map((x) => [x.id, x])), [medias]);
   const defile = useRef<HTMLDivElement>(null);
   // la piste vidéo (en bas) reste visible à l'ouverture
   useEffect(() => { const d = defile.current; if (d) d.scrollTop = d.scrollHeight; }, []);
   const [drop, setDrop] = useState<{ id: string; vers: number; x: number } | null>(null);
   const deb = useMemo(() => debuts(morceaux), [morceaux]);
-  const total = morceaux.reduce((n, x) => n + (x.b - x.a), 0);
-  const largeur = Math.max(200, total * zoom + 80);
+  const total = morceaux.reduce((n, x) => n + duree(x), 0);
+  const finObjets = Math.max(0, ...p.incrustations.map((x) => x.debut + duree(x)), ...p.sons.map((x) => x.debut + duree(x)));
+  const largeur = Math.max(200, Math.max(total, finObjets) * zoom + 80);
   const px = (s: number) => s * zoom;
 
   // la tête de lecture reste visible pendant la lecture
@@ -98,7 +117,7 @@ export default function TimelineMontage(p: Props) {
     e.stopPropagation();
     // au doigt, un morceau pas encore choisi laisse défiler la piste (on le choisit d'un toucher, puis on le glisse)
     if (!(e.pointerType === "touch" && mode === "corps" && !(sel?.type === "morceau" && sel.id === m.id))) e.preventDefault();
-    const x0 = e.clientX, a0 = m.a, b0 = m.b;
+    const x0 = e.clientX, a0 = m.a, b0 = m.b, vit = vitesse(m), maxi = p.dureeMax(m.media);
     const cible = e.currentTarget as HTMLElement; try { cible.setPointerCapture(e.pointerId); } catch { /* rien */ }
     let bouge = false;
     const libre = e.pointerType === "touch" && mode === "corps" && !(sel?.type === "morceau" && sel.id === m.id);
@@ -108,13 +127,13 @@ export default function TimelineMontage(p: Props) {
       if (libre) return;
       if (!bouge && Math.abs(dx) < 6) return;
       bouge = true;
-      if (mode === "a") p.setMorceaux((l) => rognerMorceau(l, m.id, "a", a0 + dx / zoom, p.dureeSource), "rogner-" + m.id);
-      else if (mode === "b") p.setMorceaux((l) => rognerMorceau(l, m.id, "b", b0 + dx / zoom, p.dureeSource), "rogner-" + m.id);
+      if (mode === "a") p.setMorceaux((l) => rognerMorceau(l, m.id, "a", a0 + (dx / zoom) * vit, maxi), "rogner-" + m.id);
+      else if (mode === "b") p.setMorceaux((l) => rognerMorceau(l, m.id, "b", b0 + (dx / zoom) * vit, maxi), "rogner-" + m.id);
       else if (morceaux.length > 1) {
         // glisser : où le poser ? (entre deux morceaux)
-        const x = px(deb[k]) + px((b0 - a0) / 2) + dx;
-        let vers = 0; for (let j = 0; j < morceaux.length; j++) if (j !== k && px(deb[j] + (morceaux[j].b - morceaux[j].a) / 2) < x) vers++;
-        const gauche = morceaux.filter((_, j) => j !== k).slice(0, vers).reduce((n, y) => n + (y.b - y.a), 0);
+        const x = px(deb[k]) + px(duree(m) / 2) + dx;
+        let vers = 0; for (let j = 0; j < morceaux.length; j++) if (j !== k && px(deb[j] + duree(morceaux[j]) / 2) < x) vers++;
+        const gauche = morceaux.filter((_, j) => j !== k).slice(0, vers).reduce((n, y) => n + duree(y), 0);
         setDrop({ id: m.id, vers, x: px(gauche) });
       }
     };
@@ -162,9 +181,58 @@ export default function TimelineMontage(p: Props) {
     cible.addEventListener("pointermove", bouger); cible.addEventListener("pointerup", lacher); cible.addEventListener("pointercancel", annule);
   }
 
+  // ── incrustations et sons : déplacer, rogner ──
+  function saisirObjet(e: React.PointerEvent, x: Incrust | PisteSon, genre: "incrust" | "son", mode: "bouger" | "a" | "b") {
+    e.stopPropagation();
+    const deja = sel?.type === genre && sel.id === x.id;
+    if (!(e.pointerType === "touch" && !deja && mode === "bouger")) e.preventDefault();
+    setSel({ type: genre, id: x.id });
+    const x0 = e.clientX, d0 = x.debut, a0 = x.a, b0 = x.b, vit = vitesse(x), maxi = p.dureeMax(x.media), photo = mediaParId.get(x.media)?.type === "image";
+    const cible = e.currentTarget as HTMLElement; try { cible.setPointerCapture(e.pointerId); } catch { /* rien */ }
+    let bouge = false; const libre = e.pointerType === "touch" && !deja && mode === "bouger";
+    const appliquer = (q: Partial<Incrust & PisteSon>) => (genre === "incrust" ? p.setIncrust((l) => l.map((y) => (y.id === x.id ? { ...y, ...q } : y)), "obj-" + x.id) : p.setSons((l) => l.map((y) => (y.id === x.id ? { ...y, ...q } : y)), "obj-" + x.id));
+    const bouger = (ev: PointerEvent) => {
+      const dx = ev.clientX - x0; if (libre) return; if (!bouge && Math.abs(dx) < 5) return; bouge = true;
+      const dt = dx / zoom;
+      if (mode === "bouger") appliquer({ debut: +Math.max(0, d0 + dt).toFixed(3) });
+      else if (mode === "b") appliquer({ b: +Math.min(maxi, Math.max(a0 + 0.1, b0 + dt * vit)).toFixed(3) });
+      else {
+        // bord gauche : le début bouge, la fin reste en place
+        const dd = Math.max(-d0, Math.min(duree(x) - 0.1, dt));
+        if (photo) appliquer({ debut: +(d0 + dd).toFixed(3), b: +Math.max(0.1, b0 - dd).toFixed(3) });
+        else { const na = Math.max(0, Math.min(b0 - 0.1, a0 + dd * vit)), reel = (na - a0) / vit; appliquer({ a: +na.toFixed(3), debut: +(d0 + reel).toFixed(3) }); }
+      }
+    };
+    const fin = (ev: PointerEvent, ok: boolean) => {
+      cible.removeEventListener("pointermove", bouger); cible.removeEventListener("pointerup", lacher); cible.removeEventListener("pointercancel", annule);
+      if (ok && !bouge && mode === "bouger") p.onSeek(tempsDepuis(ev.clientX));
+      p.finGeste();
+    };
+    const lacher = (ev: PointerEvent) => fin(ev, true), annule = (ev: PointerEvent) => fin(ev, false);
+    cible.addEventListener("pointermove", bouger); cible.addEventListener("pointerup", lacher); cible.addEventListener("pointercancel", annule);
+  }
+  const tuilesDe = (mid: string, a: number, b: number, w: number, h: number) => {
+    const pel = pellicules.get(mid), n = Math.max(1, Math.round(w / Math.max(30, h * 0.56)));
+    return (
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex" style={{ height: h }}>
+        {Array.from({ length: n }, (_, i) => {
+          const s0 = a + ((i + 0.5) / n) * (b - a), img = pel?.images.length ? pel.images[Math.min(pel.images.length - 1, Math.floor(s0 / pel.pas))] : "";
+          return img ? <img key={i} src={img} alt="" draggable={false} className="h-full min-w-0 flex-1 object-cover" /> : <span key={i} className="h-full flex-1 bg-white/5" />;
+        })}
+      </div>
+    );
+  };
+  const poignees = (x: Incrust | PisteSon, genre: "incrust" | "son") => (
+    <>
+      <span onPointerDown={(e) => saisirObjet(e, x, genre, "a")} className="absolute left-0 top-0 z-10 flex h-full w-4 cursor-ew-resize items-center justify-center bg-white/90" aria-label="Rogner le début"><span className="h-4 w-[3px] rounded bg-violet" /></span>
+      <span onPointerDown={(e) => saisirObjet(e, x, genre, "b")} className="absolute right-0 top-0 z-10 flex h-full w-4 cursor-ew-resize items-center justify-center bg-white/90" aria-label="Rogner la fin"><span className="h-4 w-[3px] rounded bg-violet" /></span>
+    </>
+  );
+  const lignesIncrust = lignesSans(p.incrustations), lignesSons = lignesSans(p.sons);
+
   // graduations adaptées au zoom
   const pasGrad = [0.5, 1, 2, 5, 10, 15, 30, 60, 120].find((s) => px(s) >= 64) || 300;
-  const grads: number[] = []; for (let s = 0; s <= total + 1e-6; s += pasGrad) grads.push(+s.toFixed(3));
+  const grads: number[] = []; for (let s = 0; s <= Math.max(total, finObjets) + 1e-6; s += pasGrad) grads.push(+s.toFixed(3));
   const pistes = [...calques.filter((c) => c.type !== "flash")].sort((a, b) => ordreCalques.indexOf(a.type) - ordreCalques.indexOf(b.type));
   const flashs = calques.filter((c) => c.type === "flash");
   const tete = <div className="pointer-events-none absolute top-0 bottom-0 z-20 w-[2px] bg-white shadow-[0_0_6px_rgba(0,0,0,.8)]" style={{ left: LABEL + px(t) - 1 }} />;
@@ -216,23 +284,32 @@ export default function TimelineMontage(p: Props) {
           ))}
         </>)}
 
+        {/* incrustations */}
+        {lignesIncrust.map((l, i) => ligne("inc" + i, `🖼️ Incrustation${lignesIncrust.length > 1 ? " " + (i + 1) : ""}`, "#22d3ee", 46, <>
+          {l.map((x) => {
+            const w = Math.max(10, px(duree(x))), choisi = sel?.type === "incrust" && sel.id === x.id, md = mediaParId.get(x.media);
+            return (
+              <div key={x.id} onPointerDown={(e) => saisirObjet(e, x, "incrust", "bouger")} title={md?.nom}
+                className={`absolute top-1 bottom-1 cursor-grab overflow-hidden rounded-md border-2 bg-cyan-900/60 ${choisi ? "z-10 touch-none border-white" : "border-cyan-300/60"}`} style={{ left: px(x.debut), width: w }}>
+                {tuilesDe(x.media, x.a, x.b, w, 34)}
+                <span className="pointer-events-none absolute left-1 top-0.5 max-w-[80%] truncate rounded bg-black/60 px-1 text-[9px] text-white">{md?.nom || "Média"}</span>
+                {choisi && poignees(x, "incrust")}
+              </div>
+            );
+          })}
+        </>))}
+
         {/* piste vidéo principale */}
         {ligne("video", "🎞️ Vidéo", "#7b38ff", 84, <>
           {morceaux.map((m, k) => {
-            const w = Math.max(6, px(m.b - m.a)), choisi = sel?.type === "morceau" && sel.id === m.id;
-            const tuiles = Math.max(1, Math.round(w / 46));
+            const w = Math.max(6, px(duree(m))), choisi = sel?.type === "morceau" && sel.id === m.id, mid = mediaDe(m), photo = mediaParId.get(mid)?.type === "image";
             return (
               <div key={m.id} onPointerDown={(e) => saisirMorceau(e, m, k, "corps")}
-                className={`absolute top-1 bottom-1 overflow-hidden rounded-lg border-2 bg-[#2a1555] ${choisi ? "border-white z-10 touch-none" : "border-violet/50"} ${drop?.id === m.id ? "opacity-50" : ""} ${outil === "lame" ? "cursor-crosshair" : "cursor-grab"}`}
+                className={`absolute top-1 bottom-1 overflow-hidden rounded-lg border-2 bg-[#2a1555] ${choisi ? "border-white z-10 touch-none" : photo ? "border-amber-300/60" : "border-violet/50"} ${drop?.id === m.id ? "opacity-50" : ""} ${outil === "lame" ? "cursor-crosshair" : "cursor-grab"}`}
                 style={{ left: px(deb[k]) + 1, width: w - 2 }}>
-                <div className="pointer-events-none absolute inset-x-0 top-0 flex h-[52px]">
-                  {Array.from({ length: tuiles }, (_, i) => {
-                    const s = m.a + ((i + 0.5) / tuiles) * (m.b - m.a), img = pellicule.images[Math.min(pellicule.images.length - 1, Math.floor(s / pellicule.pas))];
-                    return img ? <img key={i} src={img} alt="" draggable={false} className="h-full min-w-0 flex-1 object-cover" /> : <span key={i} className="h-full flex-1 bg-white/5" />;
-                  })}
-                </div>
-                <Onde onde={onde} a={m.a} b={m.b} w={w - 6} />
-                <span className="pointer-events-none absolute left-1.5 top-1 rounded bg-black/60 px-1 text-[9px] text-white tabular-nums">{(m.b - m.a).toFixed(1)} s</span>
+                {tuilesDe(mid, m.a, m.b, w, 52)}
+                {!photo && <Onde onde={m.muet ? null : ondes.get(mid) || null} a={m.a} b={m.b} w={w - 6} />}
+                <span className="pointer-events-none absolute left-1.5 top-1 rounded bg-black/60 px-1 text-[9px] text-white tabular-nums">{photo ? "📷 " : ""}{duree(m).toFixed(1)} s{vitesse(m) !== 1 ? ` · ×${+vitesse(m).toFixed(2)}` : ""}{m.muet ? " · 🔇" : ""}</span>
                 {choisi && (
                   <>
                     <span onPointerDown={(e) => saisirMorceau(e, m, k, "a")} className="absolute left-0 top-0 h-full w-5 cursor-ew-resize bg-white/90 flex items-center justify-center" aria-label="Rogner le début"><span className="h-6 w-[3px] rounded bg-violet" /></span>
@@ -244,24 +321,39 @@ export default function TimelineMontage(p: Props) {
           })}
           {drop && <span className="pointer-events-none absolute top-0 bottom-0 z-30 w-1 -translate-x-1/2 rounded bg-lilac shadow-glow" style={{ left: drop.x }} />}
         </>)}
+
+        {/* sons et musiques */}
+        {lignesSons.map((l, i) => ligne("son" + i, `🎵 Son${lignesSons.length > 1 ? " " + (i + 1) : ""}`, "#34d399", 40, <>
+          {l.map((x) => {
+            const w = Math.max(10, px(duree(x))), choisi = sel?.type === "son" && sel.id === x.id, md = mediaParId.get(x.media);
+            return (
+              <div key={x.id} onPointerDown={(e) => saisirObjet(e, x, "son", "bouger")} title={md?.nom}
+                className={`absolute top-1 bottom-1 cursor-grab overflow-hidden rounded-md border-2 bg-emerald-900/60 ${choisi ? "z-10 touch-none border-white" : "border-emerald-300/50"}`} style={{ left: px(x.debut), width: w }}>
+                <Onde onde={ondes.get(x.media) || null} a={x.a} b={x.b} w={w - 6} couleur="rgba(167,243,208,.85)" />
+                <span className="pointer-events-none absolute left-1 top-0.5 max-w-[85%] truncate text-[9px] font-medium text-emerald-50">{md?.nom || "Son"}{x.vol !== 1 ? ` · ${Math.round(x.vol * 100)} %` : ""}</span>
+                {choisi && poignees(x, "son")}
+              </div>
+            );
+          })}
+        </>))}
         {tete}
       </div>
     </div>
   );
 }
 
-function Onde({ onde, a, b, w }: { onde: { cretes: Float32Array; parSeconde: number } | null; a: number; b: number; w: number }) {
+function Onde({ onde, a, b, w, couleur = "rgba(205,190,255,.9)" }: { onde: { cretes: Float32Array; parSeconde: number } | null; a: number; b: number; w: number; couleur?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
     const cv = ref.current; if (!cv) return;
     const W2 = Math.max(1, Math.min(2400, Math.round(w))), h = 22; cv.width = W2; cv.height = h;
     const g = cv.getContext("2d")!; g.clearRect(0, 0, W2, h);
     if (!onde) return;
-    g.fillStyle = "rgba(205,190,255,.9)";
+    g.fillStyle = couleur;
     for (let x = 0; x < W2; x++) {
       const s = a + (x / W2) * (b - a), v = onde.cretes[Math.min(onde.cretes.length - 1, Math.floor(s * onde.parSeconde))] || 0, hh = Math.max(1, v * (h - 2));
       g.fillRect(x, (h - hh) / 2, 1, hh);
     }
-  }, [onde, a, b, w]);
+  }, [onde, a, b, w, couleur]);
   return <canvas ref={ref} className="pointer-events-none absolute bottom-0.5 left-0 right-0 h-[22px] w-full" aria-hidden />;
 }

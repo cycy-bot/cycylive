@@ -3,13 +3,37 @@
 // La piste vidéo est une liste ordonnée de MORCEAUX du clip source (comme dans CapCut) : on peut couper un
 // morceau en deux, en supprimer (il disparaît, tout se resserre), le dupliquer, le déplacer ou rogner ses bords.
 // Les éléments posés dessus (titre, sous-titres, barre, encart, flashs, textes) sont en temps « monté ».
+// Médias : la vidéo du projet (« principal ») + ce qu'on importe (photos, vidéos, sons). Un morceau de la piste
+// vidéo peut venir de n'importe quelle vidéo ou photo ; les incrustations et les sons ont leurs propres pistes.
+// Vitesse : un morceau joué à ×2 dure deux fois moins longtemps à l'écran (a / b restent en temps du média).
 
 import type { Calque, Modele, SousTitre } from "@/lib/habillageTikTok";
 import { MODELE_DEFAUT } from "@/lib/habillageTikTok";
 import { nettoyerCoupe, segmentsGardes } from "@/lib/coupesMontage";
 
 export type Disposition = "vertical" | "recadre" | "floute" | "facecam";
-export type Morceau = { id: string; a: number; b: number }; // temps de la vidéo source
+export type TypeMedia = "video" | "image" | "son";
+export type Media = { id: string; type: TypeMedia; nom: string; duree: number; w: number; h: number; ajoute: number };
+export const PRINCIPAL = "principal";
+export const DUREE_PHOTO = 3; // durée d'une photo posée sur la piste (s)
+export const MAX_PHOTO = 600;
+export type Cadre = "projet" | "ajuster" | "remplir";
+export type Morceau = {
+  id: string; a: number; b: number; // temps du média
+  media?: string; // absent = la vidéo du projet
+  v?: number; // vitesse (1 = normale)
+  vol?: number; muet?: boolean; fE?: number; fS?: number; // son : volume (1 = 100 %), fondus d'entrée / de sortie (s)
+  cadre?: Cadre; // projet = disposition du projet ; ajuster = en entier sur fond flouté ; remplir = plein écran
+  lum?: number; con?: number; sat?: number; // réglages de l'image (1 = d'origine)
+  kb?: boolean; // photo : zoom lent (effet « Ken Burns »)
+};
+export type FormeIncrust = "rect" | "arrondi" | "rond";
+export type Incrust = {
+  id: string; media: string; debut: number; a: number; b: number; v?: number; // debut : temps monté
+  x: number; y: number; w: number; // centre (fraction de l'écran) et largeur (fraction de la largeur)
+  forme: FormeIncrust; contour: boolean; opacite: number; vol: number; muet?: boolean; anim: "aucune" | "fondu" | "pop";
+};
+export type PisteSon = { id: string; media: string; debut: number; a: number; b: number; vol: number; fE: number; fS: number; v?: number };
 export type ClipTwitch = { id: string; titre: string; url: string; miniature: string; vues: number; duree: number; date: string; jeu: string };
 
 export type DocMontage = {
@@ -24,21 +48,28 @@ export type DocMontage = {
   zoom: number;
   cam: { x: number; y: number; taille: number };
   ending: boolean;
+  medias: Media[];
+  incrustations: Incrust[];
+  sons: PisteSon[];
 };
 
 export const DOC_VIDE: DocMontage = {
-  morceaux: [], calques: [], sousTitres: [], transcription: "", titre: "", jeu: "",
+  morceaux: [], calques: [], sousTitres: [], transcription: "", titre: "", jeu: "", medias: [], incrustations: [], sons: [],
   dispo: "vertical", focusX: 0.5, zoom: 1, cam: { x: 0.02, y: 0.02, taille: 0.3 }, ending: true,
 };
 
 export const nouvelIdMorceau = () => "m" + Math.random().toString(36).slice(2, 9);
 const MIN = 0.08; // morceau le plus court (s)
 
-export const dureeTotale = (m: Morceau[]) => m.reduce((n, x) => n + Math.max(0, x.b - x.a), 0);
+export const vitesse = (x: { v?: number }) => (x.v && x.v > 0 ? x.v : 1);
+/** Durée à l'écran d'un morceau / d'une incrustation / d'un son. */
+export const duree = (x: { a: number; b: number; v?: number }) => Math.max(0, x.b - x.a) / vitesse(x);
+export const mediaDe = (x: Morceau) => x.media || PRINCIPAL;
+export const dureeTotale = (m: Morceau[]) => m.reduce((n, x) => n + duree(x), 0);
 /** Début (temps monté) de chaque morceau. */
 export function debuts(m: Morceau[]): number[] {
   const out: number[] = []; let t = 0;
-  for (const x of m) { out.push(t); t += x.b - x.a; }
+  for (const x of m) { out.push(t); t += duree(x); }
   return out;
 }
 /** Le morceau sous un temps monté, et le temps source correspondant. */
@@ -46,14 +77,32 @@ export function aTempsMonte(m: Morceau[], r: number): { k: number; src: number }
   if (!m.length) return { k: -1, src: 0 };
   let t = 0;
   for (let k = 0; k < m.length; k++) {
-    const d = m[k].b - m[k].a;
-    if (r < t + d - 1e-6 || k === m.length - 1) return { k, src: Math.min(m[k].b, m[k].a + Math.max(0, r - t)) };
+    const d = duree(m[k]);
+    if (r < t + d - 1e-6 || k === m.length - 1) return { k, src: Math.min(m[k].b, m[k].a + Math.max(0, r - t) * vitesse(m[k])) };
     t += d;
   }
   return { k: m.length - 1, src: m[m.length - 1].b };
 }
 /** Temps monté d'un instant source dans le morceau k. */
-export const tempsMonte = (m: Morceau[], k: number, src: number) => (k < 0 ? 0 : debuts(m)[k] + Math.max(0, Math.min(m[k].b, src) - m[k].a));
+export const tempsMonte = (m: Morceau[], k: number, src: number) => (k < 0 ? 0 : debuts(m)[k] + Math.max(0, Math.min(m[k].b, src) - m[k].a) / vitesse(m[k]));
+
+/** Ce qui est à l'écran à l'instant monté r : morceau, incrustations et sons actifs (avec leur temps de média). */
+export function etatA(d: Pick<DocMontage, "morceaux" | "incrustations" | "sons">, r: number) {
+  const { k, src } = aTempsMonte(d.morceaux, r);
+  const actif = <T extends { debut: number; a: number; b: number; v?: number }>(x: T) => r >= x.debut - 1e-6 && r < x.debut + duree(x);
+  return {
+    k, src, morceau: k >= 0 ? d.morceaux[k] : null,
+    incrust: d.incrustations.filter(actif).map((c) => ({ c, src: c.a + (r - c.debut) * vitesse(c) })),
+    sons: d.sons.filter(actif).map((s) => ({ s, src: s.a + (r - s.debut) * vitesse(s) })),
+  };
+}
+/** Durée maximale d'un média (une photo peut durer autant qu'on veut). */
+export const dureeMedia = (medias: Media[], id: string | undefined, principal: number) => {
+  if (!id || id === PRINCIPAL) return principal;
+  const x = medias.find((y) => y.id === id); if (!x) return principal;
+  return x.type === "image" ? MAX_PHOTO : x.duree;
+};
+export const nouvelIdMedia = () => "x" + Math.random().toString(36).slice(2, 10);
 
 // ── Opérations sur la piste vidéo ──
 export function couper(m: Morceau[], r: number): { morceaux: Morceau[]; droite?: string } {
@@ -61,7 +110,7 @@ export function couper(m: Morceau[], r: number): { morceaux: Morceau[]; droite?:
   if (k < 0) return { morceaux: m };
   const x = m[k];
   if (src - x.a < MIN || x.b - src < MIN) return { morceaux: m };
-  const g = { ...x, b: src }, d = { id: nouvelIdMorceau(), a: src, b: x.b };
+  const g = { ...x, b: src, fS: 0 }, d = { ...x, id: nouvelIdMorceau(), a: src, b: x.b, fE: 0 };
   return { morceaux: [...m.slice(0, k), g, d, ...m.slice(k + 1)], droite: d.id };
 }
 export const supprimerMorceau = (m: Morceau[], id: string) => (m.length <= 1 ? m : m.filter((x) => x.id !== id));
@@ -98,8 +147,11 @@ export function ajusterCalques(c: Calque[], total: number): Calque[] {
 /** Lit un projet enregistré (y compris les brouillons de l'ancien générateur : début / fin / coupes). */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function docDepuisEtat(r: Record<string, any> | null | undefined, duree: number): DocMontage {
+  const num = (x: unknown, def: number) => (typeof x === "number" && Number.isFinite(x) ? x : def);
   const e = r || {};
-  let morceaux: Morceau[] = Array.isArray(e.morceaux) ? e.morceaux.filter((x: Morceau) => x && Number.isFinite(x.a) && Number.isFinite(x.b) && x.b > x.a).map((x: Morceau) => ({ id: String(x.id || nouvelIdMorceau()), a: Math.max(0, +x.a), b: Math.min(duree || +x.b, +x.b) })) : [];
+  const medias: Media[] = Array.isArray(e.medias) ? e.medias.filter((x: Media) => x && typeof x.id === "string" && ["video", "image", "son"].includes(x.type)) : [];
+  const maxi = (id?: string) => (id && id !== PRINCIPAL ? (medias.find((y) => y.id === id)?.type === "image" ? MAX_PHOTO : medias.find((y) => y.id === id)?.duree || 1e6) : duree || 1e6);
+  let morceaux: Morceau[] = Array.isArray(e.morceaux) ? e.morceaux.filter((x: Morceau) => x && Number.isFinite(x.a) && Number.isFinite(x.b) && x.b > x.a && (!x.media || x.media === PRINCIPAL || medias.some((y) => y.id === x.media))).map((x: Morceau) => ({ ...x, id: String(x.id || nouvelIdMorceau()), a: Math.max(0, +x.a), b: Math.min(maxi(x.media), +x.b) })) : [];
   if (!morceaux.length) {
     const debut = Math.max(0, Math.min(Number(e.debut) || 0, duree)), fin = Number(e.fin) > debut && Number(e.fin) <= duree ? Number(e.fin) : duree;
     morceaux = segmentsGardes(nettoyerCoupe(e.coupe), debut, fin).map((s) => ({ id: nouvelIdMorceau(), a: s.a, b: s.b }));
@@ -117,5 +169,8 @@ export function docDepuisEtat(r: Record<string, any> | null | undefined, duree: 
     zoom: typeof e.zoom === "number" ? e.zoom : 1,
     cam: e.cam && typeof e.cam === "object" ? e.cam : { x: 0.02, y: 0.02, taille: 0.3 },
     ending: typeof e.ending === "boolean" ? e.ending : (modele?.ending ?? MODELE_DEFAUT.ending),
+    medias,
+    incrustations: Array.isArray(e.incrustations) ? e.incrustations.filter((x: Incrust) => x && medias.some((y) => y.id === x.media)).map((x: Incrust) => ({ ...x, debut: num(x.debut, 0), x: num(x.x, 0.5), y: num(x.y, 0.3), w: num(x.w, 0.45), opacite: num(x.opacite, 1), vol: num(x.vol, 1) })) : [],
+    sons: Array.isArray(e.sons) ? e.sons.filter((x: PisteSon) => x && medias.some((y) => y.id === x.media)).map((x: PisteSon) => ({ ...x, debut: num(x.debut, 0), vol: num(x.vol, 1), fE: num(x.fE, 0), fS: num(x.fS, 0) })) : [],
   };
 }

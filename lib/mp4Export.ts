@@ -16,23 +16,6 @@ export function webcodecsDispo(): boolean {
   return typeof window !== "undefined" && "VideoEncoder" in window && "AudioEncoder" in window && "VideoFrame" in window && "AudioData" in window && typeof OfflineAudioContext !== "undefined";
 }
 
-type Opts = {
-  video: HTMLVideoElement;
-  source: Blob | string; // le fichier du clip (ou son adresse)
-  debut: number;
-  fin: number;
-  W: number;
-  H: number;
-  // t : temps de la vidéo source ; rel : temps de la vidéo finale (montée)
-  dessiner: (c: CanvasRenderingContext2D, v: HTMLVideoElement, t: number, rel: number) => void;
-  // morceaux gardés (temps de la vidéo source, dans l'ordre) : les parties coupées sont sautées, image ET son
-  segments?: { a: number; b: number }[];
-  ending: { el: HTMLVideoElement; url: string } | null; // cinématique de fin (fondu de 0,4 s)
-  progres: (p: number) => void;
-  ctxAudio?: AudioContext | null; // contexte son « débloqué » au clic (Safari), pour le plan B du son
-  etape?: (texte: string) => void;
-};
-
 /** Résultat : la vidéo et l'état du son vérifié dans le fichier final. */
 export type ResultatMp4 = { blob: Blob; son: "ok" | "muet-source" | "plan-b" | "perdu"; detail?: string };
 
@@ -202,42 +185,23 @@ async function choisirCodecVideo(W: number, H: number): Promise<any> {
   throw new Error("encodeur H.264 indisponible");
 }
 
-/** Crée le MP4. Lève une erreur si le navigateur ne sait pas faire (l'appelant repasse alors à l'ancien mode). */
-export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
-  const { video: v, debut, W, H } = o;
-  const finT = Math.min(o.fin || v.duration, v.duration || o.fin);
-  const segs = (o.segments && o.segments.length ? o.segments : [{ a: debut, b: finT }])
-    .map((x) => ({ a: Math.max(0, x.a), b: Math.min(finT, x.b) })).filter((x) => x.b - x.a > 0.04);
-  if (!segs.length) throw new Error("aucun morceau gardé");
-  const dureeClip = Math.max(0.1, segs.reduce((n, x) => n + (x.b - x.a), 0));
+/** Ce que l'appelant fournit : le son déjà mixé, et le rendu des images (il dessine dans `canvas`, puis appelle `image(t)`). */
+export type OptsMp4 = {
+  W: number; H: number;
+  mix: AudioBuffer;
+  canvas: HTMLCanvasElement;
+  // rendre : dessine chaque image dans le canvas puis appelle image(t) (t = temps de la vidéo finale).
+  // charge() : l'encodeur prend du retard → mettre la lecture en pause et attendre vider().
+  rendre: (outils: { image: (t: number) => boolean; charge: () => boolean; vider: () => Promise<void>; erreur: () => unknown }) => Promise<void>;
+  progres?: (p: number) => void;
+  ctxAudio?: AudioContext | null; // contexte son « débloqué » au clic (Safari), pour le plan B du son
+  etape?: (texte: string) => void;
+};
 
-  // ── 1. Le son : décodé puis mixé hors ligne ──
-  const son = await decoderSon(o.source);
-  let sonFin: AudioBuffer | null = null;
-  if (o.ending) { try { sonFin = await decoderSon(o.ending.url); } catch { sonFin = null; } }
-  const dureeFin = o.ending ? (Number.isFinite(o.ending.el.duration) && o.ending.el.duration > 0 ? o.ending.el.duration : sonFin?.duration || 0) : 0;
-  const total = dureeClip + dureeFin;
-  const off = new OfflineAudioContext(2, Math.ceil(total * SR), SR);
-  // chaque morceau gardé est posé à la suite, avec un fondu de 6 ms à chaque raccord (pas de « clic » à la coupe)
-  { let pos = 0; const F = 0.006;
-    for (const x of segs) {
-      const d = x.b - x.a, g = off.createGain(), s1 = off.createBufferSource();
-      s1.buffer = son; s1.connect(g); g.connect(off.destination);
-      const multi = segs.length > 1;
-      g.gain.setValueAtTime(multi && pos > 0 ? 0 : 1, pos);
-      if (multi && pos > 0) g.gain.linearRampToValueAtTime(1, pos + F);
-      if (multi && x !== segs[segs.length - 1]) { g.gain.setValueAtTime(1, Math.max(pos + F, pos + d - F)); g.gain.linearRampToValueAtTime(0, pos + d); }
-      s1.start(pos, x.a, d);
-      pos += d;
-    }
-  }
-  if (sonFin) {
-    const g = off.createGain(); g.gain.setValueAtTime(0, dureeClip); g.gain.linearRampToValueAtTime(1, dureeClip + 0.4);
-    const s2 = off.createBufferSource(); s2.buffer = sonFin; s2.connect(g); g.connect(off.destination); s2.start(dureeClip);
-  }
-  const mix = await off.startRendering();
-
-  // ── 2. Encodage du son (AAC) ──
+/** Crée le MP4. Lève une erreur si le navigateur ne sait pas faire (l'appelant repasse alors au mode de secours). */
+export async function exporterMp4(o: OptsMp4): Promise<ResultatMp4> {
+  const { W, H, mix, canvas } = o;
+  // ── 1. Encodage du son (AAC) ──
   const aChunks: { data: Uint8Array; ts: number }[] = [];
   let aDesc: Uint8Array | null = null, aErr: unknown = null;
   const ae = new (WC().AudioEncoder)({
@@ -257,14 +221,11 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
   }
   await ae.flush(); ae.close();
   if (aErr) throw aErr;
-  // configuration AAC-LC 48 kHz stéréo, écrite nous-mêmes (la description de l'encodeur n'est gardée que si elle est bien de ce type)
   const ascCalc = ascAac(SR, 2);
   const da = aDesc as Uint8Array | null;
-  let asc: Uint8Array = da && da.length >= 2 && da.length <= 5 && (da[0] >> 3) === 2 ? da : ascCalc;
+  const asc: Uint8Array = da && da.length >= 2 && da.length <= 5 && (da[0] >> 3) === 2 ? da : ascCalc;
 
-  // ── 3. Les images : lecture de la vidéo, chaque image horodatée sur le temps de la vidéo source ──
-  const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
-  const c = canvas.getContext("2d")!;
+  // ── 2. Les images, sur une grille fixe de 60 images/s ──
   const vChunks: { data: Uint8Array; ts: number; cle: boolean }[] = [];
   let vDesc: Uint8Array | null = null, vErr: unknown = null;
   const ve = new (WC().VideoEncoder)({
@@ -272,99 +233,44 @@ export async function exporterMp4(o: Opts): Promise<ResultatMp4> {
     error: (e: unknown) => { vErr = e; },
   });
   ve.configure(await choisirCodecVideo(W, H));
-  // grille fixe de 60 images/s : chaque image prend la place qui lui revient dans le temps du clip
   let derniereImage = -1;
   const image = (t: number) => {
+    if (vErr) return false;
     const n = Math.floor(t * FPS + 1e-6);
     if (n <= derniereImage) return false;
-    const ts = Math.round((n * 1e6) / FPS);
-    const f = new (WC().VideoFrame)(canvas, { timestamp: ts });
+    const f = new (WC().VideoFrame)(canvas, { timestamp: Math.round((n * 1e6) / FPS) });
     ve.encode(f, { keyFrame: n % (FPS * 2) === 0 || derniereImage < 0 }); f.close();
     derniereImage = n;
     return true;
   };
-  // la vidéo est lue au ralenti pendant la création : l'appareil a deux fois plus de temps pour chaque image,
-  // et si l'encodeur prend du retard la lecture attend (aucune image sautée, aucune saccade)
-  const VITESSE = 0.5;
-  const etat0 = { muted: v.muted, rate: v.playbackRate };
-  const attendre = async (el: HTMLVideoElement) => {
-    if (ve.encodeQueueSize <= 3) return;
-    el.pause();
-    while (ve.encodeQueueSize > 1 && !vErr) await new Promise((ok) => setTimeout(ok, 15));
-    await el.play().catch(() => {});
-  };
-  try {
-    v.muted = true;
-    let decal = 0; // temps déjà monté (morceaux précédents)
-    for (const x of segs) {
-      v.pause();
-      v.currentTime = x.a;
-      await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-      o.dessiner(c, v, x.a, decal); image(decal);
-      v.playbackRate = VITESSE;
-      await v.play();
-      await new Promise<void>((ok) => {
-        const pas = async () => {
-          const t = v.currentTime;
-          if (vErr) { ok(); return; }
-          if (t >= x.b || v.ended) { v.pause(); ok(); return; }
-          const rel = decal + Math.max(0, t - x.a);
-          if (Math.floor(rel * FPS + 1e-6) > derniereImage) { o.dessiner(c, v, t, rel); image(rel); await attendre(v); }
-          o.progres(Math.min(0.97, (rel / dureeClip) * (o.ending ? 0.85 : 0.97)));
-          requestAnimationFrame(pas);
-        };
-        requestAnimationFrame(pas);
-      });
-      if (vErr) break;
-      decal += x.b - x.a;
-    }
-  } finally {
-    v.pause(); v.muted = etat0.muted; v.playbackRate = etat0.rate;
-  }
-  // cinématique de fin : fondu enchaîné de 0,4 s depuis la dernière image
-  if (o.ending && !vErr) {
-    const fv = o.ending.el, fige = document.createElement("canvas"); fige.width = W; fige.height = H; fige.getContext("2d")!.drawImage(canvas, 0, 0);
-    const fm = fv.muted; fv.muted = true; fv.currentTime = 0;
-    try {
-      fv.playbackRate = VITESSE;
-      await fv.play();
-      const limite = Date.now() + (dureeFin + 2) * 1000;
-      await new Promise<void>((ok) => {
-        const pas = () => {
-          c.globalAlpha = 1; c.drawImage(fige, 0, 0);
-          c.globalAlpha = Math.min(1, fv.currentTime / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1;
-          image(dureeClip + fv.currentTime);
-          o.progres(0.85 + 0.12 * Math.min(1, fv.currentTime / Math.max(0.1, dureeFin)));
-          if (fv.ended || fv.currentTime >= dureeFin - 0.02 || Date.now() > limite) { ok(); return; }
-          requestAnimationFrame(pas);
-        };
-        requestAnimationFrame(pas);
-      });
-    } catch { /* cinématique illisible : la vidéo est livrée sans */ }
-    fv.pause(); fv.muted = fm; fv.playbackRate = 1;
-  }
+  await o.rendre({
+    image,
+    charge: () => ve.encodeQueueSize > 3,
+    vider: async () => { while (ve.encodeQueueSize > 1 && !vErr) await new Promise((ok) => setTimeout(ok, 15)); },
+    erreur: () => vErr,
+  });
   await ve.flush(); ve.close();
   if (vErr) throw vErr;
   if (!vDesc || !vChunks.length) throw new Error("aucune image encodée");
   for (let i = 1; i < vChunks.length; i++) if (vChunks[i].ts <= vChunks[i - 1].ts) throw new Error("images dans le désordre");
-  // ── 4. Contrôle du son dans le fichier final : on le relit comme le ferait un lecteur ──
+
+  // ── 3. Contrôle du son dans le fichier final : on le relit comme le ferait un lecteur ──
   const sourceMuette = crete(mix) < 1e-4;
-  let blob = assembler({ W, H, vDesc, vChunks, asc, aChunks, dureeAudio: mix.length });
-  if (sourceMuette) { o.progres(1); return { blob, son: "muet-source", detail: "le clip importé n’a pas de son lisible dans ce navigateur" }; }
+  const blob = assembler({ W, H, vDesc, vChunks, asc, aChunks, dureeAudio: mix.length });
+  if (sourceMuette) { o.progres?.(1); return { blob, son: "muet-source", detail: "aucun son dans le montage (ou son illisible dans ce navigateur)" }; }
   const verifier = async (b: Blob) => {
     try { const m4a = extraireAac(new Uint8Array(await b.arrayBuffer())); if (!m4a) return false; const r = await new OfflineAudioContext(2, SR, SR).decodeAudioData(m4a.buffer as ArrayBuffer); return crete(r) > 1e-4; }
     catch { return false; }
   };
-  if (await verifier(blob)) { o.progres(1); return { blob, son: "ok" }; }
-  // l'encodeur du navigateur a rendu un son illisible : plan B, le son est rejoué et enregistré (dure le temps du clip)
+  if (await verifier(blob)) { o.progres?.(1); return { blob, son: "ok" }; }
   o.etape?.("Le son est réenregistré pour ce navigateur…");
   const b2 = await aacParEnregistrement(mix, o.ctxAudio).catch(() => null);
   if (b2) {
     const n = b2.trames.length;
     const essai = assembler({ W, H, vDesc, vChunks, asc: b2.asc, aChunks: b2.trames.map((t, i) => ({ data: t, ts: Math.round((i * 1024 * 1e6) / b2.sr) })), dureeAudio: n * 1024, srA: b2.sr });
-    if (await verifier(essai)) { o.progres(1); return { blob: essai, son: "plan-b" }; }
+    if (await verifier(essai)) { o.progres?.(1); return { blob: essai, son: "plan-b" }; }
   }
-  o.progres(1);
+  o.progres?.(1);
   return { blob, son: "perdu", detail: "ce navigateur n’a pas réussi à encoder le son" };
 }
 

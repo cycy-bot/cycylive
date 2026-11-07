@@ -2,20 +2,25 @@
 
 // 🎬 Studio montage — l'éditeur d'un projet (disposition inspirée de CapCut, pensée pour l'iPad à l'horizontale) :
 //   barre du haut : retour aux projets, nom du projet, annuler / rétablir, Enregistrer, Télécharger ;
-//   à gauche : Textes, Sous-titres, Effets, Médias ;  au centre : l'aperçu 9:16 dans un cadre 16:9 ;
+//   à gauche : Médias, Audios, Textes, Sous-titres, Effets ;  au centre : l'aperçu 9:16 ;
 //   à droite : les réglages de l'élément choisi (ou de la vidéo) ;  en bas : outils + timeline multipiste.
-// Tout est calculé dans le navigateur : la vidéo ne part sur internet que pour être gardée dans le projet.
+// Tout est calculé dans le navigateur : les fichiers ne partent sur internet que pour être gardés dans le projet.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import { liens } from "@/data/liens";
 import { integre, ORIGINES_INTERFACE } from "@/components/admin/useEtatAdmin";
-import { exporterMp4, webcodecsDispo } from "@/lib/mp4Export";
-import { enregistrerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
+import { decoderSon, exporterMp4, webcodecsDispo } from "@/lib/mp4Export";
+import { enregistrerBrouillon, envoyerMedias, garderMedia, lireMedia, type BrouillonInfo } from "@/lib/brouillonsMontage";
 import { ANIMS, calquesDepuisModele, COULEURS, dessinerCalques, dessinerVideo, MODELE_DEFAUT, modeleDepuisCalques, NOMS, nouveauFlash, nouveauTexte, nouvelId, type Calque, type Modele } from "@/lib/habillageTikTok";
-import { aTempsMonte, ajusterCalques, couper, debuts, DOC_VIDE, docDepuisEtat, dupliquerMorceau, dureeTotale, nouvelIdMorceau, supprimerMorceau, type ClipTwitch, type Disposition, type DocMontage, type Morceau } from "@/lib/montage/projet";
+import {
+  aTempsMonte, ajusterCalques, couper, debuts, DOC_VIDE, docDepuisEtat, dupliquerMorceau, duree, DUREE_PHOTO, dureeMedia, dureeTotale, etatA, mediaDe, nouvelIdMedia, nouvelIdMorceau, PRINCIPAL, supprimerMorceau, vitesse,
+  type Cadre, type ClipTwitch, type Disposition, type DocMontage, type Incrust, type Media, type Morceau, type PisteSon, type TypeMedia,
+} from "@/lib/montage/projet";
 import { useHistorique } from "@/lib/montage/historique";
-import { useOnde, usePellicule } from "@/lib/montage/apercus";
+import { useApercusMedias } from "@/lib/montage/apercus";
+import { Lecteur, type Source } from "@/lib/montage/lecteur";
+import { mixer } from "@/lib/montage/mixage";
 import TimelineMontage, { monteDepuisSource, type Outil, type Selection } from "@/components/admin/montage/TimelineMontage";
 
 const CLE_MODELE = "cycy-modele-tiktok";
@@ -28,13 +33,19 @@ const DISPOS: { valeur: Disposition; label: string; aide: string; icone: NomIcon
   { valeur: "floute", label: "Fond flouté", aide: "Le clip entier au centre", icone: "ecran" },
   { valeur: "recadre", label: "Recadré plein écran", aide: "Zoom sur l’action", icone: "smartphone" },
 ];
+const CADRES: { v: Cadre; l: string }[] = [{ v: "projet", l: "Comme le projet" }, { v: "ajuster", l: "En entier (fond flouté)" }, { v: "remplir", l: "Plein écran" }];
+const VITESSES = [0.25, 0.5, 1, 1.5, 2, 3];
 const ZOOMS = [25, 50, 75, 100, 125, 150, 200];
 
 export type ProjetOuvert = { id: string; nom: string; nomFichier: string; cree: number; archive: boolean; fichier: Blob; etat: Record<string, unknown> | null; fichierEnLigne: boolean; clip: ClipTwitch | null; nouveau: boolean; exporter?: boolean };
 
 const fmtLong = (s: number) => { const x = Math.max(0, s), h = Math.floor(x / 3600), m = Math.floor((x % 3600) / 60), r = Math.floor(x % 60); return `${h}:${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`; };
 const fmtPrecis = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toFixed(2).padStart(5, "0")}`;
-const dans = (b: { x: number; y: number; w: number; h: number }, p: { x: number; y: number }, m = 20) => p.x >= b.x - m && p.x <= b.x + b.w + m && p.y >= b.y - m && p.y <= b.y + b.h + m;
+const fmtCourt = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+type Boite = { x: number; y: number; w: number; h: number };
+const dans = (b: Boite, p: { x: number; y: number }, m = 20) => p.x >= b.x - m && p.x <= b.x + b.w + m && p.y >= b.y - m && p.y <= b.y + b.h + m;
+const sansExt = (n: string) => n.replace(/\.[^.]+$/, "").replace(/[_]+/g, " ").trim() || "Média";
+const easeOut = (x: number) => 1 - (1 - Math.max(0, Math.min(1, x))) ** 3;
 
 function lignes(ctx: CanvasRenderingContext2D, texte: string, largeur: number) {
   const out: string[] = []; let l = "";
@@ -54,6 +65,35 @@ function hashtags(jeu: string) {
   if (j.includes("minecraft")) return ["#minecraft", "#minecraftfr", ...base];
   return jeu ? [`#${jeu.replace(/[^a-z0-9]/gi, "").toLowerCase()}`, ...base] : base;
 }
+/** Type, durée et taille d'un fichier importé. */
+async function sonder(f: File): Promise<{ type: TypeMedia; duree: number; w: number; h: number }> {
+  const ext = (f.name.split(".").pop() || "").toLowerCase();
+  const type: TypeMedia = f.type.startsWith("image/") || ["jpg", "jpeg", "png", "webp", "gif", "heic", "heif", "avif"].includes(ext) ? "image"
+    : f.type.startsWith("audio/") || ["mp3", "m4a", "wav", "aac", "ogg", "flac", "caf", "weba"].includes(ext) ? "son" : "video";
+  const u = URL.createObjectURL(f);
+  try {
+    if (type === "image") {
+      const i = new Image();
+      await new Promise<void>((ok, ko) => { i.onload = () => ok(); i.onerror = () => ko(new Error("photo illisible dans ce navigateur (format HEIC ? exporte-la en JPEG)")); i.src = u; });
+      return { type, duree: 0, w: i.naturalWidth, h: i.naturalHeight };
+    }
+    const el = document.createElement(type === "son" ? "audio" : "video");
+    el.preload = "metadata"; el.muted = true; el.src = u;
+    await new Promise<void>((ok, ko) => { el.onloadedmetadata = () => ok(); el.onerror = () => ko(new Error(type === "son" ? "son illisible dans ce navigateur" : "vidéo illisible dans ce navigateur")); setTimeout(() => ko(new Error("fichier trop long à lire")), 20000); });
+    let d = el.duration;
+    if (!Number.isFinite(d) || d <= 0) { await new Promise<void>((ok) => { el.ondurationchange = () => { if (Number.isFinite(el.duration) && el.duration > 0) ok(); }; el.currentTime = 1e7; setTimeout(ok, 4000); }); d = el.duration; }
+    const v = el as HTMLVideoElement;
+    if (type === "video" && !v.videoWidth) return { type: "son", duree: d || 1, w: 0, h: 0 }; // vidéo sans image (son seul)
+    return { type, duree: Number.isFinite(d) && d > 0 ? d : 1, w: v.videoWidth || 0, h: v.videoHeight || 0 };
+  } finally { URL.revokeObjectURL(u); }
+}
+// formes des incrustations
+function cheminForme(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, forme: Incrust["forme"]) {
+  ctx.beginPath();
+  if (forme === "rond") { const r = Math.min(w, h) / 2; ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2); }
+  else if (forme === "arrondi") ctx.roundRect(x, y, w, h, Math.min(w, h) * 0.08);
+  else ctx.rect(x, y, w, h);
+}
 
 export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuvert; onFermer: (maj?: BrouillonInfo) => void }) {
   const H_ = useHistorique<DocMontage>(DOC_VIDE);
@@ -69,36 +109,52 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   const [enLecture, setEnLecture] = useState(false);
   const [zoomApercu, setZoomApercu] = useState(100);
   const [zoomTl, setZoomTl] = useState(40);
-  const [onglet, setOnglet] = useState<"textes" | "soustitres" | "effets" | "medias">("textes");
+  const [onglet, setOnglet] = useState<"medias" | "audios" | "textes" | "soustitres" | "effets">("medias");
+  const [filtre, setFiltre] = useState<"tout" | "video" | "image" | "son">("tout");
+  const [recherche, setRecherche] = useState("");
+  const [mediaChoisi, setMediaChoisi] = useState("");
+  const [import_, setImport] = useState<{ n: number; fait: number; erreur?: string } | null>(null);
   const [modele, setModele] = useState<Modele>(MODELE_DEFAUT);
   const [polices, setPolices] = useState({ display: "system-ui, sans-serif", sans: "system-ui, sans-serif" });
-  const [sauve, setSauve] = useState<{ etat: "repos" | "enreg" | "ok" | "erreur"; maj?: number; message?: string }>({ etat: projet.nouveau ? "repos" : "ok" });
+  const [sauve, setSauve] = useState<{ etat: "repos" | "enreg" | "ok" | "erreur"; maj?: number; message?: string; medias?: string }>({ etat: projet.nouveau ? "repos" : "ok" });
   const [quitter, setQuitter] = useState(false);
   const [menu, setMenu] = useState(false);
   const [panneauExport, setPanneauExport] = useState(Boolean(projet.exporter));
-  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string }>({ etat: "repos", progres: 0 });
+  const [export_, setExport] = useState<{ etat: "repos" | "en-cours" | "fini" | "erreur"; progres: number; url?: string; ext?: string; message?: string; mode?: string; etape?: string }>({ etat: "repos", progres: 0 });
   const [vt, setVt] = useState<{ titre: string; desc: string; tags: string[]; etat: "repos" | "envoi" | "ok" | "erreur"; pct: number; message?: string }>({ titre: "", desc: "", tags: [], etat: "repos", pct: 0 });
   const [copie, setCopie] = useState("");
-  const pressePapier = useRef<{ type: "morceau"; m: Morceau } | { type: "calque"; c: Calque } | null>(null);
+  const [, setVersionMedias] = useState(0);
+  const pressePapier = useRef<{ type: "morceau"; m: Morceau } | { type: "calque"; c: Calque } | { type: "incrust"; c: Incrust } | { type: "son"; s: PisteSon } | null>(null);
   const fichierEnLigne = useRef(projet.fichierEnLigne);
   const creeLe = useRef(projet.cree);
-  const ctxDebloque = useRef<AudioContext | null>(null);
 
+  // fichiers des médias (en mémoire) et leurs adresses locales
+  const fichiers = useRef(new Map<string, Blob>([[PRINCIPAL, projet.fichier]]));
+  const urls = useRef(new Map<string, string>([[PRINCIPAL, url]]));
+  const [manquants, setManquants] = useState<Set<string>>(new Set());
   const video = useRef<HTMLVideoElement>(null);
   const apercu = useRef<HTMLCanvasElement>(null);
   const finVideo = useRef<HTMLVideoElement>(null);
-  const audio = useRef<{ ctx: AudioContext; dest: MediaStreamAudioDestinationNode; gain: GainNode; principal: GainNode; finGain: GainNode | null } | null>(null);
-  const zones = useRef<Record<string, { x: number; y: number; w: number; h: number }>>({});
-  const kLecture = useRef(0); // morceau en cours de lecture
+  const lecteur = useRef<Lecteur | null>(null);
+  const zones = useRef<Record<string, Boite>>({});
+  const tRef = useRef(0);
+  const lectureRef = useRef(false);
+  const pilote = useRef<{ k: number; t0: number; rel0: number }>({ k: -1, t0: 0, rel0: 0 });
   const rafRef = useRef(0);
-  const dernierT = useRef(-1);
+  const exportEnCours = useRef(false);
 
-  const pellicule = usePellicule(url, dureeSource);
-  const onde = useOnde(projet.fichier);
   const total = Math.max(0.1, dureeTotale(doc.morceaux));
   const habille = doc.dispo === "vertical" || doc.dispo === "facecam";
-  const etat = useRef({ doc, sel, polices, total });
-  etat.current = { doc, sel, polices, total };
+  const etat = useRef({ doc, sel, polices, total, dureeSource });
+  etat.current = { doc, sel, polices, total, dureeSource };
+  const mediaParId = useMemo(() => new Map(doc.medias.map((x) => [x.id, x])), [doc.medias]);
+  const nomMedia = (id: string) => (id === PRINCIPAL ? "Vidéo du projet" : mediaParId.get(id)?.nom || "Média");
+  const dureeMax = useCallback((id?: string) => dureeMedia(etat.current.doc.medias, id, etat.current.dureeSource), []);
+
+  const apercus = useApercusMedias(useMemo(() => [
+    ...(dureeSource > 0 ? [{ id: PRINCIPAL, url, duree: dureeSource, type: "video" as const }] : []),
+    ...doc.medias.map((m) => ({ id: m.id, url: urls.current.get(m.id) || "", duree: m.duree, type: m.type })),
+  ], [dureeSource, url, doc.medias, manquants])); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── mise en place ──
   useEffect(() => {
@@ -108,7 +164,15 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     for (const [n, f] of [["CyAnton", "Anton-Regular.ttf"], ["CyBarlowC", "BarlowCondensed-Bold.ttf"], ["CyBarlow", "Barlow-SemiBold.ttf"]]) new FontFace(n, `url(/fonts/${f})`).load().then((x) => document.fonts.add(x)).catch(() => {});
     try { const m = JSON.parse(localStorage.getItem(CLE_MODELE) || "null"); if (m) setModele({ ...MODELE_DEFAUT, ...m }); } catch { /* modèle d'origine */ }
     const avant = document.body.style.overflow; document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = avant; try { window.parent.postMessage({ type: "cycy-plein-ecran", actif: false }, "*"); } catch { /* rien */ } URL.revokeObjectURL(url); };
+    const l = new Lecteur((mid) => urls.current.get(mid), () => etat.current.doc.medias);
+    if (video.current) l.adopter("p:" + PRINCIPAL, video.current);
+    lecteur.current = l;
+    return () => {
+      document.body.style.overflow = avant;
+      try { window.parent.postMessage({ type: "cycy-plein-ecran", actif: false }, "*"); } catch { /* rien */ }
+      l.detruire();
+      for (const u of urls.current.values()) URL.revokeObjectURL(u);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // quitter la page avec des modifications : le navigateur prévient
@@ -118,6 +182,16 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     return () => window.removeEventListener("beforeunload", avant);
   }, [modifie, nomModifie]);
 
+  function poserFichier(mid: string, b: Blob) {
+    const ancien = urls.current.get(mid); if (ancien) URL.revokeObjectURL(ancien);
+    fichiers.current.set(mid, b); urls.current.set(mid, URL.createObjectURL(b));
+  }
+  async function chargerMedias(liste: Media[]) {
+    const perdus = new Set<string>();
+    await Promise.all(liste.map(async (m) => { const b = await lireMedia(projet.id, m.id).catch(() => undefined); if (b) poserFichier(m.id, b); else perdus.add(m.id); }));
+    setManquants(perdus); setVersionMedias((n) => n + 1);
+  }
+
   function auChargement(v: HTMLVideoElement) {
     const appliquer = (d: number) => {
       setDureeSource(d);
@@ -125,11 +199,12 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       if (!projet.etat) {
         base.titre = projet.clip?.titre || ""; base.jeu = projet.clip?.jeu || "";
         base.ending = modele.ending;
-        if (v.videoHeight > v.videoWidth * 1.4) base.dispo = "vertical"; else base.dispo = "floute";
+        base.dispo = v.videoHeight > v.videoWidth * 1.4 ? "vertical" : "floute";
       }
       if (!base.calques.length) base.calques = calquesDepuisModele(modele, dureeTotale(base.morceaux), base.titre, "");
       reinitialiser(base);
-      kLecture.current = 0; v.currentTime = base.morceaux[0]?.a ?? 0;
+      if (base.medias.length) chargerMedias(base.medias);
+      tRef.current = 0; v.currentTime = base.morceaux[0]?.a ?? 0;
       setPret(true);
       if (projet.nouveau) setTimeout(() => { if (v.videoHeight > v.videoWidth * 1.4) detecterSeparation(); enregistrer(true); }, 600);
     };
@@ -141,8 +216,13 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   // ── changements (passent tous par l'historique) ──
   const setMorceaux = useCallback((f: (m: Morceau[]) => Morceau[], fusion?: string) => changer((d) => { const m = f(d.morceaux); return m === d.morceaux ? d : { ...d, morceaux: m, calques: ajusterCalques(d.calques, dureeTotale(m)) }; }, fusion), [changer]);
   const setCalques = useCallback((f: (c: Calque[]) => Calque[], fusion?: string) => changer((d) => ({ ...d, calques: f(d.calques) }), fusion), [changer]);
+  const setIncrust = useCallback((f: (c: Incrust[]) => Incrust[], fusion?: string) => changer((d) => ({ ...d, incrustations: f(d.incrustations) }), fusion), [changer]);
+  const setSons = useCallback((f: (c: PisteSon[]) => PisteSon[], fusion?: string) => changer((d) => ({ ...d, sons: f(d.sons) }), fusion), [changer]);
   const maj = useCallback(<K extends keyof DocMontage>(k: K, v: DocMontage[K], fusion?: string) => changer((d) => ({ ...d, [k]: v }), fusion ?? "champ-" + String(k)), [changer]);
   const majCalque = (id: string, q: Partial<Calque>, fusion = "calque-" + id) => setCalques((l) => l.map((c) => (c.id === id ? { ...c, ...q } : c)), fusion);
+  const majMorceau = (id: string, q: Partial<Morceau>, fusion = "morceau-" + id) => setMorceaux((l) => l.map((c) => (c.id === id ? { ...c, ...q } : c)), fusion);
+  const majIncrust = (id: string, q: Partial<Incrust>, fusion = "incrust-" + id) => setIncrust((l) => l.map((c) => (c.id === id ? { ...c, ...q } : c)), fusion);
+  const majSon = (id: string, q: Partial<PisteSon>, fusion = "son-" + id) => setSons((l) => l.map((c) => (c.id === id ? { ...c, ...q } : c)), fusion);
   function majTitre(t: string) { changer((d) => ({ ...d, titre: t, calques: d.calques.map((c) => (c.type === "carte" ? { ...c, texte: t } : c)) }), "titre"); }
 
   // le modèle (positions, durées, animations, textes fixes) est gardé pour les prochaines vidéos
@@ -152,90 +232,143 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc.calques, doc.ending]);
 
-  // ── lecture : les morceaux sont joués à la suite ──
+  // ── lecture : les morceaux à la suite, incrustations et sons calés dessus ──
   const allerA = useCallback((r: number) => {
-    const v = video.current; if (!v) return;
-    const m = etat.current.doc.morceaux, x = aTempsMonte(m, Math.max(0, Math.min(dureeTotale(m), r)));
-    if (x.k < 0) return;
-    kLecture.current = x.k; v.currentTime = x.src; setTM(Math.max(0, Math.min(dureeTotale(m), r)));
+    const tot = dureeTotale(etat.current.doc.morceaux), x = Math.max(0, Math.min(tot, r));
+    tRef.current = x; pilote.current = { k: -1, t0: performance.now(), rel0: x }; setTM(x);
   }, []);
+  function arreter() { lectureRef.current = false; setEnLecture(false); lecteur.current?.pauseTout(); }
   function lectureOuPause() {
-    const v = video.current; if (!v) return;
-    if (v.paused) {
-      if (tM >= total - 0.05) allerA(0);
-      v.play().catch(() => {});
-    } else v.pause();
+    lecteur.current?.debloquer();
+    if (lectureRef.current) { arreter(); return; }
+    if (tRef.current >= etat.current.total - 0.05) allerA(0);
+    pilote.current = { k: -1, t0: performance.now(), rel0: tRef.current };
+    lectureRef.current = true; setEnLecture(true);
   }
   useEffect(() => {
+    let dernier = -1;
     const boucle = () => {
-      if (export_.etat === "en-cours") { rafRef.current = requestAnimationFrame(boucle); return; }
-      const v = video.current, c = apercu.current?.getContext("2d");
-      const m = etat.current.doc.morceaux;
-      if (v && m.length) {
-        let k = Math.min(kLecture.current, m.length - 1);
-        if (!v.paused) {
-          // fin du morceau : on passe au suivant (ou on s'arrête à la fin de la vidéo)
-          if (v.currentTime >= m[k].b - 0.012 || v.ended) {
-            if (k + 1 < m.length) { k = k + 1; kLecture.current = k; if (Math.abs(v.currentTime - m[k].a) > 0.03) v.currentTime = m[k].a; }
-            else { v.pause(); v.currentTime = m[k].b; }
-          } else if (v.currentTime < m[k].a - 0.25) v.currentTime = m[k].a;
-        }
-        const rel = debuts(m)[k] + Math.max(0, Math.min(m[k].b, v.currentTime) - m[k].a);
-        if (c && v.readyState >= 2) dessiner(c, v, v.currentTime, rel, true);
-        if (Math.abs(rel - dernierT.current) > 0.02) { dernierT.current = rel; setTM(rel); }
-      }
       rafRef.current = requestAnimationFrame(boucle);
+      const l = lecteur.current, c = apercu.current?.getContext("2d");
+      if (exportEnCours.current || !l || !c) return;
+      const d = etat.current.doc, tot = dureeTotale(d.morceaux);
+      if (!d.morceaux.length) return;
+      let rel = tRef.current;
+      if (lectureRef.current) {
+        const e = etatA(d, rel), m = e.morceau!, mid = mediaDe(m), cle = "p:" + mid, p = pilote.current;
+        if (l.typeDe(mid) === "video") {
+          const el = l.media(cle, mid, "video") as HTMLVideoElement | null;
+          if (el) {
+            const deb = debuts(d.morceaux)[e.k];
+            if (p.k === e.k && !el.seeking && (el.ended || el.currentTime >= m.b - 0.012)) rel = deb + duree(m) + 1e-4; // fin du morceau : au suivant
+            else if (p.k !== e.k || el.paused) {
+              if (Math.abs(el.currentTime - e.src) > 0.04) el.currentTime = e.src;
+              el.playbackRate = vitesse(m); el.play().catch(() => {});
+              pilote.current = { k: e.k, t0: performance.now(), rel0: rel };
+            } else if (!el.seeking) rel = deb + Math.max(0, el.currentTime - m.a) / vitesse(m);
+          }
+        } else {
+          if (p.k !== e.k) pilote.current = { k: e.k, t0: performance.now(), rel0: rel };
+          rel = pilote.current.rel0 + (performance.now() - pilote.current.t0) / 1000;
+        }
+        if (rel >= tot) { rel = tot; arreter(); }
+        tRef.current = rel;
+        l.synchroniser(d, Math.min(rel, tot - 1e-3), lectureRef.current, { pilote: cle });
+      } else l.synchroniser(d, Math.min(rel, tot - 1e-3), false);
+      dessiner(c, Math.min(rel, tot - 1e-3), true);
+      if (Math.abs(rel - dernier) > 0.02) { dernier = rel; setTM(rel); }
     };
     rafRef.current = requestAnimationFrame(boucle);
     return () => cancelAnimationFrame(rafRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [export_.etat]);
+  }, []);
 
   // ── dessin d'une image (aperçu et export) ──
-  function dessiner(ctx: CanvasRenderingContext2D, v: HTMLVideoElement, tSrc: number, rel: number, enApercu = false) {
-    const e = etat.current, d = e.doc;
-    const vw = v.videoWidth || 1920, vh = v.videoHeight || 1080;
-    ctx.fillStyle = "#0d0a17"; ctx.fillRect(0, 0, W, H);
-    const tot = Math.max(0.5, dureeTotale(d.morceaux));
-    if (d.dispo === "vertical") dessinerVideo(ctx, v, rel, d.calques);
+  function dessinerFond(ctx: CanvasRenderingContext2D, s: Source, m: Morceau, rel0: number, d: DocMontage, e: typeof etat.current) {
+    const el = s.el, vw = s.w, vh = s.h, mid = mediaDe(m);
+    const cadre: Cadre = m.cadre || (mid === PRINCIPAL ? "projet" : "ajuster");
+    const filtres = [m.lum && m.lum !== 1 ? `brightness(${m.lum})` : "", m.con && m.con !== 1 ? `contrast(${m.con})` : "", m.sat != null && m.sat !== 1 ? `saturate(${m.sat})` : ""].filter(Boolean).join(" ");
+    ctx.save(); if (filtres) ctx.filter = filtres;
+    // zoom lent (photos)
+    const kb = m.kb ? 1 + 0.08 * Math.max(0, Math.min(1, (aTempsMonte(d.morceaux, rel0).src - m.a) / Math.max(0.1, m.b - m.a))) : 1;
+    if (kb !== 1) { ctx.translate(W / 2, H / 2); ctx.scale(kb, kb); ctx.translate(-W / 2, -H / 2); }
+    if (cadre === "remplir") { const k = Math.max(W / vw, H / vh); ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); }
+    else if (cadre === "ajuster") {
+      const k = Math.max(W / vw, H / vh);
+      ctx.save(); ctx.filter = (filtres ? filtres + " " : "") + "blur(36px) brightness(.55) saturate(1.2)"; ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); ctx.restore();
+      const k2 = Math.min(W / vw, H / vh); ctx.drawImage(el, (W - vw * k2) / 2, (H - vh * k2) / 2, vw * k2, vh * k2);
+    } else if (d.dispo === "vertical") dessinerVideo(ctx, el, rel0, d.calques);
     else if (d.dispo === "floute") {
-      const s = Math.max(W / vw, H / vh);
-      ctx.save(); ctx.filter = "blur(36px) brightness(.55) saturate(1.2)"; ctx.drawImage(v, (W - vw * s) / 2, (H - vh * s) / 2, vw * s, vh * s); ctx.restore();
+      const k = Math.max(W / vw, H / vh);
+      ctx.save(); ctx.filter = (filtres ? filtres + " " : "") + "blur(36px) brightness(.55) saturate(1.2)"; ctx.drawImage(el, (W - vw * k) / 2, (H - vh * k) / 2, vw * k, vh * k); ctx.restore();
       const fh = (W * vh) / vw, y = (H - fh) / 2 + 60;
-      ctx.save(); ctx.shadowColor = "rgba(161,92,255,.6)"; ctx.shadowBlur = 40; ctx.drawImage(v, 0, y, W, fh); ctx.restore();
-      if (d.titre) texteContour(ctx, d.titre, W / 2, y - 150, 76, e.polices.display, W - 120, 2);
+      ctx.save(); ctx.shadowColor = "rgba(161,92,255,.6)"; ctx.shadowBlur = 40; ctx.drawImage(el, 0, y, W, fh); ctx.restore();
+      if (d.titre) { ctx.filter = "none"; texteContour(ctx, d.titre, W / 2, y - 150, 76, e.polices.display, W - 120, 2); }
     } else if (d.dispo === "recadre") {
       const sh = vh / d.zoom, sw = (sh * W) / H, sx = Math.max(0, Math.min(vw - sw, (vw - sw) * d.focusX)), sy = (vh - sh) / 2;
-      ctx.drawImage(v, sx, sy, sw, sh, 0, 0, W, H);
+      ctx.drawImage(el, sx, sy, sw, sh, 0, 0, W, H);
+      ctx.filter = "none";
       const g = ctx.createLinearGradient(0, 0, 0, 420); g.addColorStop(0, "rgba(13,10,23,.75)"); g.addColorStop(1, "rgba(13,10,23,0)"); ctx.fillStyle = g; ctx.fillRect(0, 0, W, 420);
       if (d.titre) texteContour(ctx, d.titre, W / 2, 220, 72, e.polices.display, W - 120, 2);
     } else {
       const hautH = Math.round(H * 0.38), cw = vw * d.cam.taille, ch = (cw * hautH) / W;
       const cx = Math.max(0, Math.min(vw - cw, vw * d.cam.x)), cy = Math.max(0, Math.min(vh - ch, vh * d.cam.y));
-      ctx.drawImage(v, cx, cy, cw, ch, 0, 0, W, hautH);
+      ctx.drawImage(el, cx, cy, cw, ch, 0, 0, W, hautH);
       const basH = H - hautH, sh = vh / d.zoom, sw = Math.min(vw, (sh * W) / basH), sx = Math.max(0, Math.min(vw - sw, (vw - sw) * d.focusX));
-      ctx.drawImage(v, sx, (vh - sh) / 2, sw, sh, 0, hautH, W, basH);
-      ctx.fillStyle = "#b57cff"; ctx.fillRect(0, hautH - 4, W, 8);
+      ctx.drawImage(el, sx, (vh - sh) / 2, sw, sh, 0, hautH, W, basH);
+      ctx.filter = "none"; ctx.fillStyle = "#b57cff"; ctx.fillRect(0, hautH - 4, W, 8);
+    }
+    ctx.restore();
+  }
+  function dessiner(ctx: CanvasRenderingContext2D, rel: number, enApercu = false) {
+    const e = etat.current, d = e.doc, l = lecteur.current;
+    ctx.fillStyle = "#0d0a17"; ctx.fillRect(0, 0, W, H);
+    if (!l) return;
+    const tot = Math.max(0.5, dureeTotale(d.morceaux));
+    const x = etatA(d, rel), z: Record<string, Boite> = {};
+    if (x.morceau) {
+      const mid = mediaDe(x.morceau), s = l.source("p:" + mid, mid);
+      if (s && s.w > 0) dessinerFond(ctx, s, x.morceau, rel, d, e);
+      else if (manquantsRef.current.has(mid)) { ctx.fillStyle = "rgba(255,255,255,.6)"; ctx.font = `600 40px ${e.polices.sans}`; ctx.textAlign = "center"; ctx.fillText("Média introuvable : réimporte-le", W / 2, H / 2); }
+    }
+    // incrustations (photo / vidéo par-dessus)
+    for (const { c } of x.incrust) {
+      const s = l.source("i:" + c.id, c.media); if (!s || !s.w) continue;
+      const w = c.w * W, h = (w * s.h) / s.w;
+      const t0 = rel - c.debut, len = duree(c);
+      let a = c.opacite, k = 1;
+      if (c.anim !== "aucune") { const pe = Math.min(1, t0 / 0.3), ps = Math.min(1, (len - t0) / 0.3), p = Math.max(0, Math.min(pe, ps)); a *= c.anim === "fondu" ? p : Math.min(1, p * 1.6); if (c.anim === "pop") k = 0.6 + 0.4 * easeOut(p) + (p < 1 ? 0.06 * Math.sin(p * Math.PI) : 0); }
+      if (a <= 0.01) continue;
+      const cx = c.x * W, cy = c.y * H;
+      const bw = c.forme === "rond" ? Math.min(w, h) : w, bh = c.forme === "rond" ? Math.min(w, h) : h;
+      ctx.save(); ctx.globalAlpha = a; ctx.translate(cx, cy); ctx.scale(k, k);
+      if (c.contour) { ctx.save(); ctx.shadowColor = "rgba(0,0,0,.55)"; ctx.shadowBlur = 30; cheminForme(ctx, -bw / 2 - 6, -bh / 2 - 6, bw + 12, bh + 12, c.forme); ctx.fillStyle = "#fff"; ctx.fill(); ctx.restore(); }
+      cheminForme(ctx, -bw / 2, -bh / 2, bw, bh, c.forme); ctx.clip();
+      const kk = Math.max(bw / w, bh / h); ctx.drawImage(s.el, -(w * kk) / 2, -(h * kk) / 2, w * kk, h * kk);
+      ctx.restore();
+      z[c.id] = { x: cx - bw / 2, y: cy - bh / 2, w: bw, h: bh };
     }
     // à l'arrêt, l'élément choisi est montré en entier (sans son animation d'entrée) pour le régler
-    const idSel = enApercu && v.paused && e.sel?.type === "calque" ? e.sel.id : "";
+    const idSel = enApercu && !lectureRef.current && e.sel?.type === "calque" ? e.sel.id : "";
     const cal = idSel ? d.calques.map((c) => (c.id === idSel ? { ...c, anim: "aucune" as const } : c)) : d.calques;
-    if (d.dispo === "vertical" || d.dispo === "facecam") zones.current = dessinerCalques(ctx, rel, tot, cal, d.sousTitres, 0, tSrc);
+    const tSrc = x.morceau && mediaDe(x.morceau) === PRINCIPAL ? x.src : -1; // les sous-titres suivent la vidéo du projet
+    if (habilleDe(d)) Object.assign(z, dessinerCalques(ctx, rel, tot, cal, d.sousTitres, 0, tSrc));
     else {
-      // textes ajoutés et flashs : aussi sur les autres dispositions
       const libres = cal.filter((c) => c.type === "texte" || c.type === "flash");
-      zones.current = libres.length ? dessinerCalques(ctx, rel, tot, libres, [], 0, tSrc) : {};
-      const st = d.sousTitres.find((x) => tSrc >= x.debut && tSrc < x.fin);
+      if (libres.length) Object.assign(z, dessinerCalques(ctx, rel, tot, libres, [], 0, tSrc));
+      const st = tSrc >= 0 ? d.sousTitres.find((y) => tSrc >= y.debut && tSrc < y.fin) : null;
       if (st?.texte) texteContour(ctx, st.texte.toUpperCase(), W / 2, H * 0.72, 70, e.polices.display, W - 140, 2, "#ffffff");
       ctx.font = `600 34px ${e.polices.sans}`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillText(`twitch.tv/${chaine}`, W / 2, H - 120);
     }
-    const z = enApercu && e.sel?.type === "calque" ? zones.current[e.sel.id] : null;
-    if (z) {
-      ctx.save(); ctx.setLineDash([14, 10]); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,170,235,.95)"; ctx.strokeRect(z.x - 8, z.y - 8, z.w + 16, z.h + 16); ctx.restore();
-      // poignée pour agrandir / réduire
-      ctx.save(); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#a970ff"; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(z.x + z.w + 8, z.y + z.h + 8, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
+    zones.current = z;
+    const b = enApercu && (e.sel?.type === "calque" || e.sel?.type === "incrust") ? z[e.sel.id] : null;
+    if (b) {
+      ctx.save(); ctx.setLineDash([14, 10]); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(255,170,235,.95)"; ctx.strokeRect(b.x - 8, b.y - 8, b.w + 16, b.h + 16); ctx.restore();
+      ctx.save(); ctx.fillStyle = "#fff"; ctx.strokeStyle = "#a970ff"; ctx.lineWidth = 6; ctx.beginPath(); ctx.arc(b.x + b.w + 8, b.y + b.h + 8, 22, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); ctx.restore();
     }
   }
+  const habilleDe = (d: DocMontage) => d.dispo === "vertical" || d.dispo === "facecam";
+  const manquantsRef = useRef(manquants); manquantsRef.current = manquants;
 
   // repère la séparation caméra / jeu (la ligne horizontale la plus marquée entre 25 et 55 %)
   function detecterSeparation() {
@@ -257,50 +390,135 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const cv = e.currentTarget, r = cv.getBoundingClientRect();
     const pt = (cx: number, cy: number) => ({ x: ((cx - r.left) / r.width) * W, y: ((cy - r.top) / r.height) * H });
     const p0 = pt(e.clientX, e.clientY);
-    const cal = etat.current.doc.calques, selId = etat.current.sel?.type === "calque" ? etat.current.sel.id : "";
+    const d = etat.current.doc, cal = d.calques, s0 = etat.current.sel;
+    const selId = s0?.type === "calque" || s0?.type === "incrust" ? s0.id : "";
     const zSel = selId ? zones.current[selId] : null;
-    // poignée d'agrandissement du calque choisi
-    if (zSel && Math.hypot(p0.x - (zSel.x + zSel.w + 8), p0.y - (zSel.y + zSel.h + 8)) < 60) {
-      const c0 = cal.find((c) => c.id === selId)!; const k0 = c0.echelle || 1;
-      const cx = zSel.x + zSel.w / 2, cy = zSel.y + zSel.h / 2, d0 = Math.hypot(p0.x - cx, p0.y - cy) || 1;
+    const suivre = (bouger: (q: { x: number; y: number }) => void) => {
       cv.setPointerCapture(e.pointerId);
-      const bouger = (ev: PointerEvent) => { const q = pt(ev.clientX, ev.clientY); const k = Math.max(0.4, Math.min(2.6, (k0 * Math.hypot(q.x - cx, q.y - cy)) / d0)); majCalque(selId, { echelle: +k.toFixed(3) }, "taille-" + selId); };
-      const lacher = () => { cv.removeEventListener("pointermove", bouger); cv.removeEventListener("pointerup", lacher); couperGeste(); };
-      cv.addEventListener("pointermove", bouger); cv.addEventListener("pointerup", lacher);
+      const mv = (ev: PointerEvent) => bouger(pt(ev.clientX, ev.clientY));
+      const fin = () => { cv.removeEventListener("pointermove", mv); cv.removeEventListener("pointerup", fin); cv.removeEventListener("pointercancel", fin); couperGeste(); };
+      cv.addEventListener("pointermove", mv); cv.addEventListener("pointerup", fin); cv.addEventListener("pointercancel", fin);
+    };
+    // poignée d'agrandissement de l'élément choisi
+    if (zSel && Math.hypot(p0.x - (zSel.x + zSel.w + 8), p0.y - (zSel.y + zSel.h + 8)) < 60) {
+      const cx = zSel.x + zSel.w / 2, cy = zSel.y + zSel.h / 2, d0 = Math.hypot(p0.x - cx, p0.y - cy) || 1;
+      if (s0?.type === "incrust") {
+        const w0 = d.incrustations.find((c) => c.id === selId)?.w || 0.4;
+        suivre((q) => majIncrust(selId, { w: +Math.max(0.08, Math.min(1.4, (w0 * Math.hypot(q.x - cx, q.y - cy)) / d0)).toFixed(3) }, "taille-" + selId));
+      } else {
+        const k0 = cal.find((c) => c.id === selId)?.echelle || 1;
+        suivre((q) => majCalque(selId, { echelle: +Math.max(0.4, Math.min(2.6, (k0 * Math.hypot(q.x - cx, q.y - cy)) / d0)).toFixed(3) }, "taille-" + selId));
+      }
       return;
     }
-    const ordre = [...cal].reverse();
-    let cible = ordre.find((c) => c.id === selId && zones.current[c.id] && dans(zones.current[c.id], p0));
-    if (!cible) cible = ordre.find((c) => zones.current[c.id] && dans(zones.current[c.id], p0));
-    if (!cible) { setSel(null); return; }
-    setSel({ type: "calque", id: cible.id });
-    const c0 = cible, y0 = c0.type === "encart" && c0.lie ? (cal.find((x) => x.type === "barre")?.y ?? c0.y) : c0.y, x0 = c0.x;
-    cv.setPointerCapture(e.pointerId);
-    const bouger = (ev: PointerEvent) => {
-      const q = pt(ev.clientX, ev.clientY), dy = (q.y - p0.y) / H, dx = (q.x - p0.x) / W;
+    // ce qui est sous le doigt : d'abord l'élément choisi, puis les textes, puis les incrustations
+    const actives = etatA(d, tRef.current).incrust.map((x) => x.c);
+    const ids = [...[...cal].reverse().map((c) => c.id), ...[...actives].reverse().map((c) => c.id)];
+    let id = ids.find((x) => x === selId && zones.current[x] && dans(zones.current[x], p0));
+    if (!id) id = ids.find((x) => zones.current[x] && dans(zones.current[x], p0, 0));
+    if (!id) id = ids.find((x) => zones.current[x] && dans(zones.current[x], p0));
+    if (!id) { setSel(null); return; }
+    const inc = actives.find((c) => c.id === id);
+    if (inc) {
+      setSel({ type: "incrust", id: inc.id });
+      const x0 = inc.x, y0 = inc.y;
+      suivre((q) => majIncrust(inc.id, { x: +Math.max(0, Math.min(1, x0 + (q.x - p0.x) / W)).toFixed(4), y: +Math.max(0, Math.min(1, y0 + (q.y - p0.y) / H)).toFixed(4) }, "deplacer-" + inc.id));
+      return;
+    }
+    const c0 = cal.find((c) => c.id === id)!;
+    setSel({ type: "calque", id: c0.id });
+    const y0 = c0.type === "encart" && c0.lie ? (cal.find((x) => x.type === "barre")?.y ?? c0.y) : c0.y, x0 = c0.x;
+    suivre((q) => {
+      const dy = (q.y - p0.y) / H, dx = (q.x - p0.x) / W;
       const ny = Math.max(0.03, Math.min(0.97, y0 + dy)), nx = Math.max(0.05, Math.min(0.95, x0 + dx));
       setCalques((l) => l.map((c) => {
         if (c0.type === "encart" && c0.lie) return c.type === "barre" ? { ...c, y: ny } : c;
         if (c.id !== c0.id) return c;
         return c.type === "flash" || c.type === "texte" || c.type === "etiquette" || c.type === "carte" ? { ...c, y: ny, x: nx } : { ...c, y: ny };
       }), "deplacer-" + c0.id);
-    };
-    const lacher = () => { cv.removeEventListener("pointermove", bouger); cv.removeEventListener("pointerup", lacher); couperGeste(); };
-    cv.addEventListener("pointermove", bouger); cv.addEventListener("pointerup", lacher);
+    });
+  }
+
+  // ── médias : importer, ajouter à la piste, en incrustation, au son ──
+  async function importer(liste: FileList | File[], remplace?: string) {
+    const fs = Array.from(liste); if (!fs.length) return;
+    setImport({ n: fs.length, fait: 0 });
+    const ajouts: Media[] = []; const erreurs: string[] = [];
+    for (const f of fs) {
+      try {
+        const s = await sonder(f);
+        const id = remplace || nouvelIdMedia();
+        await garderMedia(projet.id, id, f);
+        poserFichier(id, f);
+        ajouts.push({ id, type: s.type, nom: sansExt(f.name), duree: s.duree, w: s.w, h: s.h, ajoute: Date.now() });
+      } catch (er) { erreurs.push(`${f.name} : ${er instanceof Error ? er.message : er}`); }
+      setImport((x) => (x ? { ...x, fait: x.fait + 1 } : x));
+    }
+    if (remplace && ajouts.length) {
+      setManquants((m) => { const n = new Set(m); n.delete(remplace); return n; });
+      corriger((d) => ({ ...d, medias: d.medias.map((m) => (m.id === remplace ? { ...ajouts[0], ajoute: m.ajoute } : m)) }));
+    } else if (ajouts.length) {
+      changer((d) => ({ ...d, medias: [...d.medias, ...ajouts] }));
+      setMediaChoisi(ajouts[ajouts.length - 1].id);
+      if (ajouts.every((a) => a.type === "son")) setOnglet("audios");
+    }
+    setVersionMedias((n) => n + 1);
+    setImport(erreurs.length ? { n: fs.length, fait: fs.length, erreur: erreurs.join(" · ") } : null);
+  }
+  function aLaSuite(mid: string) {
+    const m = mid === PRINCIPAL ? null : mediaParId.get(mid);
+    const len = m?.type === "image" ? DUREE_PHOTO : m ? m.duree : dureeSource;
+    const nouveau: Morceau = { id: nouvelIdMorceau(), a: 0, b: len, ...(mid === PRINCIPAL ? {} : { media: mid }) };
+    const r = tRef.current;
+    setMorceaux((l) => {
+      const { k, src } = aTempsMonte(l, r);
+      if (k < 0) return [nouveau];
+      const x = l[k];
+      if (src - x.a > 0.1 && x.b - src > 0.1) { const c = couper(l, r); const i = c.morceaux.findIndex((y) => y.id === c.droite); const out = [...c.morceaux]; out.splice(i, 0, nouveau); return out; }
+      const out = [...l]; out.splice(r - debuts(l)[k] < duree(x) / 2 ? k : k + 1, 0, nouveau); return out;
+    });
+    setSel({ type: "morceau", id: nouveau.id });
+  }
+  function enIncrustation(mid: string) {
+    const m = mid === PRINCIPAL ? null : mediaParId.get(mid);
+    const len = m?.type === "image" ? Math.min(5, Math.max(1, total - tRef.current)) : m ? m.duree : dureeSource;
+    const c: Incrust = { id: nouvelId(), media: mid, debut: +tRef.current.toFixed(3), a: 0, b: len, x: 0.5, y: 0.3, w: 0.5, forme: "arrondi", contour: true, opacite: 1, vol: 1, muet: false, anim: "pop" };
+    setIncrust((l) => [...l, c]); setSel({ type: "incrust", id: c.id });
+  }
+  function ajouterSon(mid: string) {
+    const m = mediaParId.get(mid); if (!m) return;
+    const s: PisteSon = { id: nouvelId(), media: mid, debut: +tRef.current.toFixed(3), a: 0, b: Math.min(m.duree, Math.max(1, total - tRef.current)), vol: 0.8, fE: 0.5, fS: 1 };
+    setSons((l) => [...l, s]); setSel({ type: "son", id: s.id });
+  }
+  function retirerMedia(mid: string) {
+    const n = doc.morceaux.filter((m) => m.media === mid).length + doc.incrustations.filter((c) => c.media === mid).length + doc.sons.filter((s) => s.media === mid).length;
+    if (n && !confirm(`Ce média est utilisé ${n} fois dans le montage : le retirer partout ?`)) return;
+    if (doc.morceaux.length && doc.morceaux.every((m) => m.media === mid)) { alert("La piste vidéo ne peut pas être vide : ajoute d’abord autre chose."); return; }
+    changer((d) => { const m = d.morceaux.filter((x) => x.media !== mid); return { ...d, medias: d.medias.filter((x) => x.id !== mid), morceaux: m, calques: ajusterCalques(d.calques, dureeTotale(m)), incrustations: d.incrustations.filter((x) => x.media !== mid), sons: d.sons.filter((x) => x.media !== mid) }; });
+    setMediaChoisi(""); setSel(null);
   }
 
   // ── outils ──
-  const morceauSous = () => aTempsMonte(doc.morceaux, tM);
   function diviser() {
+    const r = tRef.current;
     if (sel?.type === "calque") {
       const c = doc.calques.find((x) => x.id === sel.id);
-      if (c && c.type !== "soustitres" && c.type !== "barre" && c.type !== "encart" && tM > c.debut + 0.1 && tM < c.fin - 0.1) {
-        const d2 = { ...c, id: nouvelId(), debut: tM };
-        setCalques((l) => [...l.map((x) => (x.id === c.id ? { ...x, fin: tM } : x)), d2]); setSel({ type: "calque", id: d2.id }); return;
+      if (c && c.type !== "soustitres" && c.type !== "barre" && c.type !== "encart" && r > c.debut + 0.1 && r < c.fin - 0.1) {
+        const d2 = { ...c, id: nouvelId(), debut: r };
+        setCalques((l) => [...l.map((x) => (x.id === c.id ? { ...x, fin: r } : x)), d2]); setSel({ type: "calque", id: d2.id }); return;
       }
     }
-    const r = couper(doc.morceaux, tM);
-    if (r.droite) { setMorceaux(() => r.morceaux); setSel({ type: "morceau", id: r.droite }); }
+    if (sel?.type === "incrust" || sel?.type === "son") {
+      const l0 = sel.type === "incrust" ? doc.incrustations : doc.sons, x = l0.find((y) => y.id === sel.id);
+      if (x && r > x.debut + 0.1 && r < x.debut + duree(x) - 0.1) {
+        const cut = x.a + (r - x.debut) * vitesse(x), id2 = nouvelId();
+        const part = <T extends Incrust | PisteSon>(l: T[]) => l.flatMap((y) => (y.id === x.id ? [{ ...y, b: cut, ...("fS" in y ? { fS: 0 } : {}) }, { ...y, id: id2, a: cut, debut: r, ...("fE" in y ? { fE: 0 } : {}) }] : [y]));
+        if (sel.type === "incrust") setIncrust((l) => part(l)); else setSons((l) => part(l));
+        setSel({ type: sel.type, id: id2 }); return;
+      }
+    }
+    const c = couper(doc.morceaux, r);
+    if (c.droite) { setMorceaux(() => c.morceaux); setSel({ type: "morceau", id: c.droite }); }
   }
   function couperA(r: number) { allerA(r); const x = couper(etat.current.doc.morceaux, r); if (x.droite) { setMorceaux(() => x.morceaux); setSel({ type: "morceau", id: x.droite }); } }
   function supprimer() {
@@ -313,6 +531,8 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       setTimeout(() => { const m = etat.current.doc.morceaux, tot = dureeTotale(m); allerA(Math.min(debuts(m)[Math.max(0, k)] ?? tot, Math.max(0, tot - 0.05))); }, 0);
       return;
     }
+    if (sel.type === "incrust") { setIncrust((l) => l.filter((x) => x.id !== sel.id)); setSel(null); return; }
+    if (sel.type === "son") { setSons((l) => l.filter((x) => x.id !== sel.id)); setSel(null); return; }
     const c = doc.calques.find((x) => x.id === sel.id);
     if (!c) return;
     if (c.type === "flash" || c.type === "texte") { setCalques((l) => l.filter((x) => x.id !== c.id)); setSel(null); }
@@ -320,25 +540,28 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   }
   function copier() {
     if (sel?.type === "morceau") { const m = doc.morceaux.find((x) => x.id === sel.id); if (m) pressePapier.current = { type: "morceau", m }; }
+    else if (sel?.type === "incrust") { const c = doc.incrustations.find((x) => x.id === sel.id); if (c) pressePapier.current = { type: "incrust", c }; }
+    else if (sel?.type === "son") { const s = doc.sons.find((x) => x.id === sel.id); if (s) pressePapier.current = { type: "son", s }; }
     else if (sel?.type === "calque") { const c = doc.calques.find((x) => x.id === sel.id); if (c && (c.type === "flash" || c.type === "texte")) pressePapier.current = { type: "calque", c }; }
   }
   function coller() {
-    const pp = pressePapier.current; if (!pp) return;
+    const pp = pressePapier.current, r = tRef.current; if (!pp) return;
     if (pp.type === "morceau") {
-      const { k } = morceauSous(); const nouveau = { ...pp.m, id: nouvelIdMorceau() };
+      const { k } = aTempsMonte(doc.morceaux, r); const nouveau = { ...pp.m, id: nouvelIdMorceau() };
       setMorceaux((m) => { const out = [...m]; out.splice(k + 1, 0, nouveau); return out; }); setSel({ type: "morceau", id: nouveau.id });
-    } else {
-      const len = pp.c.fin - pp.c.debut, c = { ...pp.c, id: nouvelId(), debut: tM, fin: Math.min(total, tM + len) };
-      setCalques((l) => [...l, c]); setSel({ type: "calque", id: c.id });
-    }
+    } else if (pp.type === "incrust") { const c = { ...pp.c, id: nouvelId(), debut: r }; setIncrust((l) => [...l, c]); setSel({ type: "incrust", id: c.id }); }
+    else if (pp.type === "son") { const s = { ...pp.s, id: nouvelId(), debut: r }; setSons((l) => [...l, s]); setSel({ type: "son", id: s.id }); }
+    else { const len = pp.c.fin - pp.c.debut, c = { ...pp.c, id: nouvelId(), debut: r, fin: Math.min(total, r + len) }; setCalques((l) => [...l, c]); setSel({ type: "calque", id: c.id }); }
   }
   function dupliquer() {
     if (sel?.type === "morceau") { const r = dupliquerMorceau(doc.morceaux, sel.id); if (r.id) { setMorceaux(() => r.morceaux); setSel({ type: "morceau", id: r.id }); } }
+    else if (sel?.type === "incrust") { const c = doc.incrustations.find((x) => x.id === sel.id); if (c) { const n = { ...c, id: nouvelId(), debut: c.debut + duree(c) }; setIncrust((l) => [...l, n]); setSel({ type: "incrust", id: n.id }); } }
+    else if (sel?.type === "son") { const s = doc.sons.find((x) => x.id === sel.id); if (s) { const n = { ...s, id: nouvelId(), debut: s.debut + duree(s) }; setSons((l) => [...l, n]); setSel({ type: "son", id: n.id }); } }
     else if (sel?.type === "calque") { const c = doc.calques.find((x) => x.id === sel.id); if (c && (c.type === "flash" || c.type === "texte")) { const len = c.fin - c.debut, n = { ...c, id: nouvelId(), debut: Math.min(total - 0.1, c.fin), fin: Math.min(total, c.fin + len) }; setCalques((l) => [...l, n]); setSel({ type: "calque", id: n.id }); } }
   }
-  const ajouterFlash = () => { const f = nouveauFlash(tM); setCalques((l) => [...l, f]); setSel({ type: "calque", id: f.id }); };
-  const ajouterTexte = () => { const c = nouveauTexte(tM, total); setCalques((l) => [...l, c]); setSel({ type: "calque", id: c.id }); };
-  const image = (n: number) => { video.current?.pause(); allerA(Math.max(0, Math.min(total, tM + n / 30))); };
+  const ajouterFlash = () => { const f = nouveauFlash(tRef.current); setCalques((l) => [...l, f]); setSel({ type: "calque", id: f.id }); };
+  const ajouterTexte = () => { const c = nouveauTexte(tRef.current, total); setCalques((l) => [...l, c]); setSel({ type: "calque", id: c.id }); };
+  const image = (n: number) => { arreter(); allerA(tRef.current + n / 30); };
 
   // raccourcis clavier
   useEffect(() => {
@@ -358,6 +581,8 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       else if (k === "delete" || k === "backspace") { e.preventDefault(); supprimer(); }
       else if (k === "arrowleft") { e.preventDefault(); image(e.shiftKey ? -30 : -1); }
       else if (k === "arrowright") { e.preventDefault(); image(e.shiftKey ? 30 : 1); }
+      else if (k === "home") { e.preventDefault(); arreter(); allerA(0); }
+      else if (k === "end") { e.preventDefault(); arreter(); allerA(total); }
       else if (k === "a") setOutil("selection");
       else if (k === "escape") setSel(null);
     };
@@ -384,6 +609,9 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       fichierEnLigne.current = true;
       marquerEnregistre(); setNomModifie(false);
       setSauve({ etat: "ok", maj: info.maj });
+      // les médias ajoutés partent en ligne derrière (pour les retrouver sur les autres appareils)
+      const mids = d.medias.map((m) => m.id).filter((m) => !manquantsRef.current.has(m));
+      if (mids.length) envoyerMedias(projet.id, mids, (f, n) => setSauve((s) => ({ ...s, medias: f < n ? `Médias en ligne ${f}/${n}…` : "" }))).then((ok) => { if (!ok) setSauve((s) => ({ ...s, medias: "⚠️ Médias pas encore en ligne (réessayé au prochain enregistrement)" })); });
       return info;
     } catch (e) {
       setSauve({ etat: "erreur", message: "Projet non enregistré : " + (e instanceof Error ? e.message : String(e)) });
@@ -392,30 +620,38 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   }
   async function fermer(sauver: boolean | null) {
     if (sauver === null && (modifie || nomModifie)) { setQuitter(true); return; }
-    video.current?.pause();
+    arreter();
     const info = sauver ? await enregistrer() : null;
     if (sauver && !info) return; // l'erreur est affichée, on reste
     onFermer(info || undefined);
   }
 
   // ── export ──
-  function brancherAudio() {
-    const v = video.current; if (!v || audio.current) return;
-    const ctx = ctxDebloque.current || new AudioContext();
-    const src = ctx.createMediaElementSource(v), dest = ctx.createMediaStreamDestination(), gain = ctx.createGain(), principal = ctx.createGain();
-    src.connect(principal); principal.connect(dest); src.connect(gain); gain.connect(ctx.destination);
-    let finGain: GainNode | null = null;
-    if (finVideo.current) { const fs = ctx.createMediaElementSource(finVideo.current); finGain = ctx.createGain(); fs.connect(finGain); finGain.connect(dest); }
-    audio.current = { ctx, dest, gain, principal, finGain };
+  async function preparerSon(avecFin: boolean) {
+    const d = etat.current.doc, sons = new Map<string, AudioBuffer | null>();
+    const utiles = new Set<string>([...d.morceaux.filter((m) => !m.muet).map(mediaDe), ...d.incrustations.filter((c) => !c.muet).map((c) => c.media), ...d.sons.map((s) => s.media)]);
+    for (const mid of utiles) {
+      if (mid !== PRINCIPAL && mediaParId.get(mid)?.type === "image") continue;
+      const b = fichiers.current.get(mid);
+      sons.set(mid, b ? await decoderSon(b).catch(() => null) : null);
+    }
+    let fin: { son: AudioBuffer | null; duree: number } | null = null;
+    if (avecFin && finVideo.current) {
+      const s = await decoderSon(ENDING).catch(() => null), fv = finVideo.current;
+      fin = { son: s, duree: Number.isFinite(fv.duration) && fv.duration > 0 ? fv.duration : s?.duration || 4 };
+    }
+    return mixer(d, sons, fin);
   }
   async function exporter() {
-    const v = video.current; if (!v) return;
-    v.pause();
+    const l = lecteur.current; if (!l) return;
+    arreter(); l.debloquer();
     const fv = finVideo.current, avecFin = habille && doc.ending && Boolean(fv);
-    if (avecFin && fv) { fv.muted = true; fv.play().then(() => { fv.pause(); fv.currentTime = 0; fv.muted = false; }).catch(() => { fv.muted = false; }); }
-    if (!audio.current && !ctxDebloque.current) { try { ctxDebloque.current = new AudioContext(); ctxDebloque.current.resume().catch(() => {}); } catch { /* pas de son */ } }
-    try { await exporterVideo(v, avecFin); }
+    if (avecFin && fv) { fv.muted = true; fv.play().then(() => { fv.pause(); fv.currentTime = 0; }).catch(() => {}); }
+    exportEnCours.current = true;
+    setExport({ etat: "en-cours", progres: 0, etape: "Préparation du son…" });
+    try { await exporterVideo(avecFin); }
     catch (er) { setExport({ etat: "erreur", progres: 0, message: "La création a échoué : " + (er instanceof Error ? er.message : String(er)) + ". Réessaie (garde l’onglet ouvert pendant la création)." }); }
+    finally { exportEnCours.current = false; l.pauseTout(); allerA(tRef.current); }
   }
   function livrer(blob: Blob, ext: string, mode = "") {
     const u = URL.createObjectURL(blob);
@@ -424,31 +660,97 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const a = document.createElement("a"); a.href = u; a.download = `${(nom || "tiktok-cycylive").replace(/[^a-z0-9]+/gi, "-").toLowerCase().slice(0, 50)}.${ext}`;
     document.body.appendChild(a); a.click(); a.remove();
   }
-  async function exporterVideo(v: HTMLVideoElement, avecFin: boolean) {
-    const m = etat.current.doc.morceaux, segs = m.map((x) => ({ a: x.a, b: x.b }));
-    let raison = webcodecsDispo() ? "" : "ce navigateur ne sait pas encoder image par image";
-    if (webcodecsDispo()) {
-      setExport({ etat: "en-cours", progres: 0 });
-      try {
-        const r = await exporterMp4({
-          video: v, source: projet.fichier, debut: 0, fin: dureeSource || v.duration, W, H, segments: segs,
-          dessiner: (c, vv, t, rel) => dessiner(c, vv, t, rel),
-          ending: avecFin && finVideo.current ? { el: finVideo.current, url: ENDING } : null,
-          progres: (x) => setExport((e) => ({ ...e, progres: x })),
-          ctxAudio: audio.current?.ctx || ctxDebloque.current,
-        });
-        if (r.son === "ok" || r.son === "plan-b") { livrer(r.blob, "mp4", r.son === "ok" ? "✓ MP4, 60 images/s, son vérifié dans le fichier" : "✓ MP4, 60 images/s · son réenregistré pour ce navigateur et vérifié"); return; }
-        raison = (r.detail || "son introuvable dans le fichier") + " : la vidéo est refaite en direct, avec le son du lecteur";
-      } catch (er) { raison = er instanceof Error ? er.message : String(er); }
-    }
-    // secours : enregistrement en direct, morceau par morceau
-    v.muted = false; v.playbackRate = 1;
-    brancherAudio();
-    const a = audio.current!; await a.ctx.resume();
+  /** Joue la cinématique de fin dans le canvas (fondu de 0,4 s depuis la dernière image). */
+  async function jouerFin(c: CanvasRenderingContext2D, canvas: HTMLCanvasElement, base: number, rythme: number, surImage: (t: number) => void, avance: (p: number) => void) {
+    const fv = finVideo.current; if (!fv) return;
+    const fige = document.createElement("canvas"); fige.width = W; fige.height = H; fige.getContext("2d")!.drawImage(canvas, 0, 0);
+    fv.muted = true; fv.currentTime = 0; fv.playbackRate = rythme;
+    const dureeFin = Number.isFinite(fv.duration) && fv.duration > 0 ? fv.duration : 4;
+    try {
+      await fv.play();
+      const limite = Date.now() + ((dureeFin / rythme) + 2) * 1000;
+      await new Promise<void>((ok) => {
+        const pas = () => {
+          c.globalAlpha = 1; c.drawImage(fige, 0, 0); c.globalAlpha = Math.min(1, fv.currentTime / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1;
+          surImage(base + fv.currentTime); avance(Math.min(1, fv.currentTime / dureeFin));
+          if (fv.ended || fv.currentTime >= dureeFin - 0.02 || Date.now() > limite) { ok(); return; }
+          requestAnimationFrame(pas);
+        };
+        requestAnimationFrame(pas);
+      });
+    } catch { /* cinématique illisible : la vidéo est livrée sans */ }
+    fv.pause(); fv.playbackRate = 1;
+  }
+  async function exporterVideo(avecFin: boolean) {
+    const l = lecteur.current!, d = etat.current.doc, m = d.morceaux, deb = debuts(m), tot = dureeTotale(m);
+    const mix = await preparerSon(avecFin);
     const canvas = document.createElement("canvas"); canvas.width = W; canvas.height = H;
     const c = canvas.getContext("2d")!;
+    const part = avecFin ? 0.9 : 1;
+    let raison = webcodecsDispo() ? "" : "ce navigateur ne sait pas encoder image par image";
+    if (webcodecsDispo()) {
+      setExport({ etat: "en-cours", progres: 0, etape: "Création des images…" });
+      try {
+        const R = 0.5; // lu au ralenti pendant la création : aucune image sautée
+        const r = await exporterMp4({
+          W, H, mix, canvas, ctxAudio: l.ctx, etape: (t) => setExport((x) => ({ ...x, etape: t })),
+          progres: (x) => setExport((e) => ({ ...e, progres: x })),
+          rendre: async ({ image: img, charge, vider, erreur }) => {
+            let dm = 0;
+            const signal = (rel: number) => { const t = performance.now(); if (t - dm > 200) { dm = t; setExport((e) => ({ ...e, progres: Math.min(0.97, (rel / tot) * part) })); } };
+            const souffler = async (reprendre: () => void) => { if (!charge()) return; l.pauseTout(); await vider(); reprendre(); };
+            for (let k = 0; k < m.length && !erreur(); k++) {
+              const x = m[k], mid = mediaDe(x), cle = "p:" + mid, len = duree(x), debut = deb[k];
+              await l.allerEtAttendre(d, debut + 1e-4);
+              if (l.typeDe(mid) === "video") {
+                const el = l.media(cle, mid, "video") as HTMLVideoElement;
+                el.currentTime = x.a; await new Promise((ok) => { if (!el.seeking) ok(0); else el.addEventListener("seeked", ok, { once: true }); });
+                dessiner(c, debut); img(debut);
+                el.playbackRate = vitesse(x) * R; await el.play().catch(() => {});
+                await new Promise<void>((ok) => {
+                  const pas = async () => {
+                    if (erreur()) { el.pause(); ok(); return; }
+                    if (el.currentTime >= x.b - 1e-3 || el.ended) { el.pause(); ok(); return; }
+                    const rel = debut + Math.max(0, el.currentTime - x.a) / vitesse(x);
+                    l.synchroniser(d, rel, true, { pilote: cle, rythme: R, tolerance: 0.08, muet: true });
+                    dessiner(c, rel); img(rel);
+                    signal(rel);
+                    await souffler(() => { el.play().catch(() => {}); });
+                    requestAnimationFrame(pas);
+                  };
+                  requestAnimationFrame(pas);
+                });
+              } else {
+                // photo : horloge à la place de la vidéo
+                let t0 = performance.now(), base = debut;
+                await new Promise<void>((ok) => {
+                  const pas = async () => {
+                    if (erreur()) { ok(); return; }
+                    const rel = Math.min(debut + len, base + ((performance.now() - t0) / 1000) * R);
+                    l.synchroniser(d, Math.min(rel, debut + len - 1e-3), true, { rythme: R, tolerance: 0.08, muet: true });
+                    dessiner(c, Math.min(rel, debut + len - 1e-3)); img(rel); signal(rel);
+                    if (rel >= debut + len - 1e-4) { ok(); return; }
+                    if (charge()) { const ici = rel; l.pauseTout(); await vider(); base = ici; t0 = performance.now(); }
+                    requestAnimationFrame(pas);
+                  };
+                  requestAnimationFrame(pas);
+                });
+              }
+            }
+            l.pauseTout();
+            if (avecFin && !erreur()) { setExport((x) => ({ ...x, etape: "Cinématique de fin…" })); await jouerFin(c, canvas, tot, R, (t) => img(t), (p) => setExport((e) => ({ ...e, progres: part + (0.97 - part) * p }))); }
+          },
+        });
+        if (r.son === "ok" || r.son === "plan-b" || r.son === "muet-source") { livrer(r.blob, "mp4", r.son === "ok" ? "✓ MP4, 60 images/s, son vérifié dans le fichier" : r.son === "plan-b" ? "✓ MP4, 60 images/s · son réenregistré pour ce navigateur et vérifié" : "✓ MP4, 60 images/s · montage sans son"); return; }
+        raison = (r.detail || "son introuvable dans le fichier") + " : la vidéo est refaite en direct";
+      } catch (er) { raison = er instanceof Error ? er.message : String(er); }
+    }
+    // secours : enregistrement en direct (le son mixé est joué en même temps)
+    setExport({ etat: "en-cours", progres: 0, etape: "Enregistrement en direct…" });
+    const ctx = l.ctx || new AudioContext(); await ctx.resume().catch(() => {});
+    const dest = ctx.createMediaStreamDestination();
     const flux = canvas.captureStream(30);
-    a.dest.stream.getAudioTracks().forEach((t) => flux.addTrack(t));
+    dest.stream.getAudioTracks().forEach((t) => flux.addTrack(t));
     const types = ["video/mp4;codecs=avc1.42E01E,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"];
     const type = types.find((t) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t));
     if (!type) { setExport({ etat: "erreur", progres: 0, message: "Ce navigateur ne sait pas enregistrer de vidéo : utilise Chrome, Edge ou Safari récent." }); return; }
@@ -456,63 +758,41 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
     const rec = new MediaRecorder(flux, { mimeType: type, videoBitsPerSecond: 16_000_000 });
     rec.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
     const termine = new Promise<void>((ok) => { rec.onstop = () => ok(); });
-    setExport({ etat: "en-cours", progres: 0 });
-    a.gain.gain.value = 0;
-    a.principal.gain.cancelScheduledValues(a.ctx.currentTime); a.principal.gain.value = 1;
-    if (a.finGain) { a.finGain.gain.cancelScheduledValues(a.ctx.currentTime); a.finGain.gain.value = 0; }
-    v.pause();
-    const dureeTot = Math.max(0.1, dureeTotale(m));
-    let fait = 0;
-    for (let k = 0; k < segs.length; k++) {
-      const x = segs[k];
-      v.currentTime = x.a; await new Promise((ok) => v.addEventListener("seeked", ok, { once: true }));
-      if (k === 0) { await new Promise((ok) => setTimeout(ok, 350)); dessiner(c, v, v.currentTime, 0); rec.start(250); }
-      else { dessiner(c, v, v.currentTime, fait); await new Promise((ok) => setTimeout(ok, 60)); if (rec.state === "paused") rec.resume(); }
-      await v.play();
-      await new Promise<void>((ok) => {
-        let dm = 0;
-        const pas = () => {
-          const rel = fait + Math.max(0, v.currentTime - x.a);
-          dessiner(c, v, v.currentTime, rel);
-          const mt = performance.now(); if (mt - dm > 200) { dm = mt; setExport((e) => ({ ...e, progres: Math.min(avecFin ? 0.95 : 1, (rel / dureeTot) * (avecFin ? 0.95 : 1)) })); }
-          if (v.currentTime >= x.b || v.ended) { v.pause(); ok(); return; }
-          requestAnimationFrame(pas);
-        };
+    await l.allerEtAttendre(d, 0);
+    dessiner(c, 0);
+    rec.start(250);
+    const src = ctx.createBufferSource(); src.buffer = mix; src.connect(dest);
+    const t0 = ctx.currentTime + 0.05; src.start(t0);
+    await new Promise<void>((ok) => {
+      let dm = 0;
+      const pas = () => {
+        const rel = Math.max(0, ctx.currentTime - t0);
+        if (rel >= tot) { ok(); return; }
+        l.synchroniser(d, rel, true, { tolerance: 0.15, muet: true });
+        dessiner(c, rel);
+        const mt = performance.now(); if (mt - dm > 200) { dm = mt; setExport((e) => ({ ...e, progres: Math.min(part, (rel / tot) * part) })); }
         requestAnimationFrame(pas);
-      });
-      fait += x.b - x.a;
-      if (k < segs.length - 1 && rec.state === "recording") rec.pause();
-    }
-    const fv = finVideo.current;
-    if (avecFin && fv && a.finGain) {
-      try {
-        const fige = document.createElement("canvas"); fige.width = W; fige.height = H; fige.getContext("2d")!.drawImage(canvas, 0, 0);
-        fv.currentTime = 0;
-        const n = a.ctx.currentTime;
-        a.principal.gain.setValueAtTime(1, n); a.principal.gain.linearRampToValueAtTime(0, n + 0.4);
-        a.finGain.gain.setValueAtTime(0, n); a.finGain.gain.linearRampToValueAtTime(1, n + 0.4);
-        await fv.play();
-        const limite = Date.now() + ((fv.duration || 5) + 2) * 1000;
-        await new Promise<void>((ok) => {
-          const pas = () => { c.globalAlpha = 1; c.drawImage(fige, 0, 0); c.globalAlpha = Math.min(1, fv.currentTime / 0.4); c.drawImage(fv, 0, 0, W, H); c.globalAlpha = 1; if (fv.ended || fv.currentTime >= (fv.duration || 4) - 0.03 || Date.now() > limite) { ok(); return; } requestAnimationFrame(pas); };
-          requestAnimationFrame(pas);
-        });
-      } catch { /* sans la cinématique */ }
-      fv.pause(); a.principal.gain.cancelScheduledValues(a.ctx.currentTime); a.principal.gain.value = 1;
-    }
-    rec.stop(); await termine; a.gain.gain.value = 1;
+      };
+      requestAnimationFrame(pas);
+    });
+    l.pauseTout();
+    if (avecFin) await jouerFin(c, canvas, tot, 1, () => {}, (p) => setExport((e) => ({ ...e, progres: part + (1 - part) * p })));
+    await new Promise((ok) => setTimeout(ok, 250));
+    rec.stop(); await termine; try { src.stop(); } catch { /* déjà fini */ }
     livrer(new Blob(parts, { type: type.split(";")[0] }), type.includes("mp4") ? "mp4" : "webm", "Mode de secours (enregistrement en direct, 30 images/s) · raison : " + raison);
   }
 
   // images fixes (miniature YouTube / story) à partir de l'image en cours
   function visuel(type: "miniature" | "story") {
-    const v = video.current; if (!v) return;
+    const src = apercu.current; if (!src) return;
+    const x = etatA(doc, tRef.current), mid = x.morceau ? mediaDe(x.morceau) : PRINCIPAL, s = lecteur.current?.source("p:" + mid, mid);
+    if (!s) return;
     const [w, h] = type === "miniature" ? [1280, 720] : [1080, 1920];
     const canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h;
     const c = canvas.getContext("2d")!;
-    const vw = v.videoWidth || 1920, vh = v.videoHeight || 1080, s = Math.max(w / vw, h / vh), titre = doc.titre || nom;
+    const vw = s.w, vh = s.h, k = Math.max(w / vw, h / vh), titre = doc.titre || nom;
     if (type === "story") c.filter = "blur(30px) brightness(.5)";
-    c.drawImage(v, (w - vw * s) / 2, (h - vh * s) / 2, vw * s, vh * s); c.filter = "none";
+    c.drawImage(s.el, (w - vw * k) / 2, (h - vh * k) / 2, vw * k, vh * k); c.filter = "none";
     if (type === "miniature") {
       const g = c.createLinearGradient(0, h, 0, h * 0.35); g.addColorStop(0, "rgba(13,10,23,.95)"); g.addColorStop(1, "rgba(13,10,23,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h);
       c.fillStyle = "#9146ff"; c.fillRect(48, h - 250, 14, 170);
@@ -521,7 +801,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       if (doc.jeu) { c.font = `700 30px ${polices.sans}`; c.fillStyle = "#e0b3ff"; c.fillText(doc.jeu.toUpperCase(), 86, h - 270); }
     } else {
       const fh = (w * vh) / vw, y = (h - fh) / 2;
-      c.save(); c.shadowColor = "rgba(161,92,255,.7)"; c.shadowBlur = 50; c.drawImage(v, 0, y, w, fh); c.restore();
+      c.save(); c.shadowColor = "rgba(161,92,255,.7)"; c.shadowBlur = 50; c.drawImage(s.el, 0, y, w, fh); c.restore();
       c.fillStyle = "#e11d48"; c.beginPath(); c.roundRect(w / 2 - 230, y - 300, 460, 90, 45); c.fill();
       c.font = `800 42px ${polices.sans}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillStyle = "#fff"; c.fillText("NOUVEAU CLIP", w / 2, y - 254);
       texteContour(c, titre || "", w / 2, y - 120, 70, polices.display, w - 120, 2);
@@ -578,19 +858,86 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
   // ── rendu ──
   const calqueSel = sel?.type === "calque" ? doc.calques.find((c) => c.id === sel.id) || null : null;
   const morceauSel = sel?.type === "morceau" ? doc.morceaux.find((m) => m.id === sel.id) || null : null;
+  const incrustSel = sel?.type === "incrust" ? doc.incrustations.find((m) => m.id === sel.id) || null : null;
+  const sonSel = sel?.type === "son" ? doc.sons.find((m) => m.id === sel.id) || null : null;
   const champ = "w-full rounded-lg bg-[#0e0a1c] border border-violet/25 px-3 py-2 text-sm text-ink outline-none focus:border-violet/70";
   const etiquette = "block text-xs text-ink-soft";
+  const glissiere = "mt-1 w-full accent-violet-500";
   const btnOutil = (actif = false) => `flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-xl px-2.5 text-sm transition-all disabled:opacity-35 disabled:pointer-events-none ${actif ? "bg-violet text-white" : "text-ink-soft hover:bg-white/10 hover:text-ink"}`;
+  const puce = (actif: boolean) => `rounded-full border px-2.5 py-1 text-xs transition-all ${actif ? "border-violet-light bg-violet/25 text-ink" : "border-white/10 text-ink-soft hover:bg-white/5"}`;
   const ongletBtn = (k: typeof onglet, ic: NomIcone, t: string) => (
-    <button type="button" onClick={() => setOnglet(k)} className={`flex flex-1 flex-col items-center gap-1 rounded-xl px-1 py-2 text-[11px] font-medium transition-all ${onglet === k ? "bg-violet/25 text-ink" : "text-ink-soft hover:bg-white/5"}`}><Icone nom={ic} className="h-5 w-5" />{t}</button>
+    <button type="button" onClick={() => setOnglet(k)} className={`flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-0.5 py-2 text-[10.5px] font-medium transition-all ${onglet === k ? "bg-violet/25 text-ink" : "text-ink-soft hover:bg-white/5"}`}><Icone nom={ic} className="h-5 w-5" /><span className="max-w-full truncate">{t}</span></button>
   );
   const etatSauve = sauve.etat === "enreg" ? "Enregistrement…" : sauve.etat === "erreur" ? "⚠️ Non enregistré" : modifie || nomModifie ? "Modifications non enregistrées" : sauve.maj ? `Enregistré à ${new Date(sauve.maj).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : "";
+  const glisser = (label: string, v: number, min: number, max: number, pas: number, f: (x: number) => void, affiche?: string) => (
+    <label className={etiquette}>{label} : {affiche ?? v}<input type="range" min={min} max={max} step={pas} value={v} onChange={(e) => f(+e.target.value)} className={glissiere} /></label>
+  );
+  // bibliothèque
+  const bib: { id: string; type: TypeMedia; nom: string; duree: number }[] = [{ id: PRINCIPAL, type: "video", nom: "Vidéo du projet", duree: dureeSource }, ...doc.medias];
+  const bibFiltree = bib.filter((m) => (onglet === "audios" ? m.type === "son" : filtre === "tout" || m.type === filtre) && (!recherche.trim() || m.nom.toLowerCase().includes(recherche.trim().toLowerCase())));
+  const vignette = (id: string) => apercus.pellicules.get(id)?.images.find(Boolean) || "";
+  const utilisations = (id: string) => doc.morceaux.filter((m) => mediaDe(m) === id).length + doc.incrustations.filter((c) => c.media === id).length + doc.sons.filter((s) => s.media === id).length;
+  const listeMedias = (
+    <>
+      <div className="flex gap-1.5">
+        <label className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-violet px-3 py-2.5 text-sm font-semibold text-white shadow-glow-sm hover:bg-violet-light">
+          <Icone nom="plus" className="h-4 w-4" /> Importer
+          <input type="file" multiple accept={onglet === "audios" ? "audio/*,.mp3,.m4a,.wav,.aac" : "image/*,video/*,audio/*"} className="sr-only" onChange={(e) => { const f = e.target.files; if (f) importer(Array.from(f)); e.target.value = ""; }} />
+        </label>
+      </div>
+      {import_ && <p className={`rounded-lg px-2.5 py-1.5 text-xs ${import_.erreur ? "bg-red-500/15 text-red-100" : "bg-white/5 text-ink-soft"}`}>{import_.erreur ? <>⚠️ {import_.erreur} <button type="button" className="ml-1 underline" onClick={() => setImport(null)}>OK</button></> : `Import… ${import_.fait}/${import_.n}`}</p>}
+      {onglet === "medias" && (
+        <div className="flex flex-wrap gap-1">
+          {([["tout", "Tout"], ["video", "Vidéos"], ["image", "Photos"], ["son", "Sons"]] as const).map(([v, t]) => <button key={v} type="button" onClick={() => setFiltre(v)} className={puce(filtre === v)}>{t}</button>)}
+        </div>
+      )}
+      <div className="relative">
+        <Icone nom="loupe" className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-soft/60" />
+        <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Rechercher" className={`${champ} pl-8 py-1.5`} />
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {bibFiltree.map((m) => {
+          const img = m.type === "image" ? urls.current.get(m.id) : vignette(m.id), choisi = mediaChoisi === m.id, perdu = manquants.has(m.id), n = utilisations(m.id);
+          return (
+            <div key={m.id} className={`overflow-hidden rounded-xl border transition-all ${choisi ? "col-span-2 border-violet-light bg-violet/15" : "border-white/10 bg-white/[0.03]"}`}>
+              <button type="button" onClick={() => setMediaChoisi(choisi ? "" : m.id)} className={`flex w-full text-left ${choisi ? "flex-row items-center gap-2 p-1.5" : "flex-col"}`}>
+                <span className={`relative flex shrink-0 items-center justify-center overflow-hidden bg-black/40 ${choisi ? "h-14 w-14 rounded-lg" : "aspect-square w-full"}`}>
+                  {m.type === "son" ? <Icone nom="note" className="h-7 w-7 text-emerald-300" /> : img ? <img src={img} alt="" className="h-full w-full object-cover" /> : <span className="text-xl">{perdu ? "⚠️" : "🎞️"}</span>}
+                  {m.type !== "image" && m.duree > 0 && <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[9px] text-white tabular-nums">{fmtCourt(m.duree)}</span>}
+                  {n > 0 && <span className="absolute left-1 top-1 rounded bg-violet/90 px-1 text-[9px] font-semibold text-white">✓ {n}</span>}
+                </span>
+                <span className={`block min-w-0 truncate text-[11px] text-ink ${choisi ? "" : "px-1.5 py-1"}`}>{m.nom}{perdu ? " · introuvable" : ""}</span>
+              </button>
+              {choisi && (
+                <div className="flex flex-wrap gap-1 border-t border-white/10 p-1.5">
+                  {perdu ? (
+                    <label className="cursor-pointer rounded-lg bg-amber-500/20 px-2.5 py-1.5 text-xs text-amber-100">Réimporter ce fichier<input type="file" className="sr-only" onChange={(e) => { const f = e.target.files?.[0]; if (f) importer([f], m.id); e.target.value = ""; }} /></label>
+                  ) : m.type === "son" ? (
+                    <button type="button" onClick={() => ajouterSon(m.id)} className="rounded-lg bg-emerald-500/80 px-2.5 py-1.5 text-xs font-semibold text-white">＋ Ajouter le son ici</button>
+                  ) : (
+                    <>
+                      <button type="button" onClick={() => aLaSuite(m.id)} className="rounded-lg bg-violet px-2.5 py-1.5 text-xs font-semibold text-white">＋ Sur la piste vidéo</button>
+                      <button type="button" onClick={() => enIncrustation(m.id)} className="rounded-lg bg-cyan-500/80 px-2.5 py-1.5 text-xs font-semibold text-white">▣ En incrustation</button>
+                      {m.type === "video" && <button type="button" onClick={() => ajouterSon(m.id)} disabled={m.id === PRINCIPAL} className="rounded-lg border border-white/15 px-2.5 py-1.5 text-xs text-ink-soft disabled:hidden">♪ Son seul</button>}
+                    </>
+                  )}
+                  {m.id !== PRINCIPAL && <button type="button" onClick={() => retirerMedia(m.id)} className="ml-auto rounded-lg px-2 py-1.5 text-xs text-ink-soft hover:text-red-300" title="Retirer du projet"><Icone nom="corbeille" className="h-4 w-4" /></button>}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {!bibFiltree.length && <p className="rounded-xl border border-dashed border-violet/30 p-3 text-center text-xs text-ink-soft">{onglet === "audios" ? "Importe une musique ou un son (MP3, M4A, WAV…) : il se pose à la tête de lecture, sur sa propre piste." : "Rien ici pour l’instant."}</p>}
+      <p className="text-[11px] text-ink-soft/70">Touche un média pour l’ajouter à la tête de lecture : à la suite sur la piste vidéo, ou par-dessus (incrustation).</p>
+    </>
+  );
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col bg-[#0a0614] text-ink">
       <video ref={finVideo} src={ENDING} preload="auto" playsInline className="hidden" />
-      <video ref={video} src={url} playsInline preload="auto" className="hidden" crossOrigin="anonymous"
-        onLoadedMetadata={(e) => auChargement(e.currentTarget)} onPlay={() => setEnLecture(true)} onPause={() => setEnLecture(false)}
+      <video ref={video} src={url} playsInline preload="auto" className="hidden"
+        onLoadedMetadata={(e) => auChargement(e.currentTarget)}
         onError={() => setSauve({ etat: "erreur", message: "Ce clip ne peut pas être lu ici : réimporte-le en MP4." })} />
 
       {/* ── barre du haut ── */}
@@ -598,7 +945,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
         <button type="button" onClick={() => fermer(null)} className={btnOutil()} title="Retour à mes projets"><Icone nom="retour" className="h-5 w-5" /><span className="hidden lg:inline">Projets</span></button>
         <input value={nom} onChange={(e) => { setNom(e.target.value); setNomModifie(true); }} maxLength={120} aria-label="Nom du projet"
           className="min-w-0 max-w-[340px] flex-1 rounded-lg border border-transparent bg-transparent px-2.5 py-1.5 text-[15px] font-semibold text-ink outline-none hover:border-white/15 focus:border-violet/60 focus:bg-black/30" />
-        <span className={`hidden text-xs md:inline ${sauve.etat === "erreur" ? "text-red-300" : modifie || nomModifie ? "text-amber-200" : "text-ink-soft/70"}`} title={sauve.message}>{(modifie || nomModifie) && sauve.etat !== "enreg" ? "● " : ""}{etatSauve}</span>
+        <span className={`hidden text-xs md:inline ${sauve.etat === "erreur" ? "text-red-300" : modifie || nomModifie ? "text-amber-200" : "text-ink-soft/70"}`} title={sauve.message}>{(modifie || nomModifie) && sauve.etat !== "enreg" ? "● " : ""}{etatSauve}{sauve.medias ? ` · ${sauve.medias}` : ""}</span>
         <div className="ml-auto flex items-center gap-1">
           <button type="button" onClick={annuler} disabled={!peutAnnuler} className={btnOutil()} title="Annuler (⌘/Ctrl Z)"><Icone nom="annuler" className="h-5 w-5" /></button>
           <button type="button" onClick={retablir} disabled={!peutRetablir} className={btnOutil()} title="Rétablir (⌘/Ctrl ⇧ Z)"><Icone nom="retablir" className="h-5 w-5" /></button>
@@ -620,16 +967,18 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       {sauve.etat === "erreur" && <p className="shrink-0 bg-red-500/15 px-4 py-1.5 text-xs text-red-100" role="alert">{sauve.message}</p>}
 
       {/* ── partie haute : bibliothèque · aperçu · réglages ── */}
-      <div className="grid min-h-0 flex-[1.1] grid-cols-[minmax(210px,0.9fr)_minmax(0,1.7fr)_minmax(230px,1fr)] gap-2 p-2">
+      <div className="grid min-h-0 flex-[1.1] grid-cols-[minmax(230px,0.95fr)_minmax(0,1.6fr)_minmax(240px,1fr)] gap-2 p-2">
         {/* bibliothèque */}
         <section className="flex min-h-0 flex-col rounded-2xl border border-white/10 bg-[#120c22]">
-          <div className="flex gap-1 border-b border-white/10 p-1.5">
+          <div className="flex gap-0.5 border-b border-white/10 p-1.5">
+            {ongletBtn("medias", "image", "Médias")}
+            {ongletBtn("audios", "note", "Audios")}
             {ongletBtn("textes", "lettres", "Textes")}
             {ongletBtn("soustitres", "bulle", "Sous-titres")}
             {ongletBtn("effets", "eclair", "Effets")}
-            {ongletBtn("medias", "image", "Médias")}
           </div>
           <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+            {(onglet === "medias" || onglet === "audios") && listeMedias}
             {onglet === "textes" && (
               <>
                 <label className={etiquette}>{habille ? "Titre (carte d’ouverture)" : "Titre affiché"}<input value={doc.titre} onChange={(e) => majTitre(e.target.value)} maxLength={70} className={`${champ} mt-1`} placeholder="Le clutch le plus fou de la saison" /></label>
@@ -647,13 +996,12 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
             )}
             {onglet === "soustitres" && (
               <>
-                <p className="text-xs text-ink-soft">Colle ce qui est dit, puis « Répartir » : le texte est découpé en cartons. Ou ajoute un carton à la tête de lecture.{habille && " Entoure un mot d’astérisques (*ACE*) pour l’écrire en rose."}</p>
+                <p className="text-xs text-ink-soft">Colle ce qui est dit, puis « Répartir » : le texte est découpé en cartons, calés sur la vidéo du projet.{habille && " Entoure un mot d’astérisques (*ACE*) pour l’écrire en rose."}</p>
                 <textarea value={doc.transcription} onChange={(e) => maj("transcription", e.target.value)} rows={3} className={champ} placeholder="Non mais c’est pas possible…" />
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" disabled={!doc.transcription.trim()} onClick={() => {
                     const mots = doc.transcription.split(/\s+/).filter(Boolean); if (!mots.length) return;
                     const cartons: string[] = []; for (let i = 0; i < mots.length;) { const n = Math.min(mots.length - i, mots.length - i <= 6 ? mots.length - i : 4); cartons.push(mots.slice(i, i + n).join(" ")); i += n; }
-                    // réparti sur la vidéo montée : chaque carton est calé sur l'image source correspondante
                     let r = 0; const out = cartons.map((texte) => { const dd = (total * texte.split(" ").length) / mots.length; const s0 = aTempsMonte(doc.morceaux, r).src; const st = { id: nouvelId(), debut: +s0.toFixed(2), fin: +(s0 + dd).toFixed(2), texte }; r += dd; return st; });
                     maj("sousTitres", out, "repartir");
                   }} className="rounded-full bg-violet px-3.5 py-2 text-xs font-semibold text-white disabled:opacity-40">Répartir</button>
@@ -688,15 +1036,6 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
                 {habille && <label className="flex items-center gap-2 rounded-xl bg-white/[0.03] px-3 py-2.5 text-sm"><input type="checkbox" checked={doc.ending} onChange={(e) => maj("ending", e.target.checked)} className="accent-violet-500" /> Cinématique de fin Cycylive (4 s)</label>}
                 {doc.dispo === "vertical" && <button type="button" onClick={() => { if (!detecterSeparation()) alert("Pas de séparation nette trouvée sur cette image : place la tête de lecture sur une image où l’on voit bien la caméra et le jeu."); }} className="w-full rounded-xl border border-violet/30 px-3 py-2.5 text-left text-sm text-ink-soft hover:bg-violet/10">Détecter la séparation caméra / jeu</button>}
                 <button type="button" onClick={() => { try { localStorage.removeItem(CLE_MODELE); } catch { /* rien */ } setModele(MODELE_DEFAUT); setCalques((l) => [...calquesDepuisModele(MODELE_DEFAUT, total, doc.titre, sousCarte), ...l.filter((c) => c.type === "flash" || c.type === "texte")]); }} className="w-full rounded-xl border border-violet/30 px-3 py-2.5 text-left text-sm text-ink-soft hover:bg-violet/10">Revenir au thème d’origine</button>
-              </>
-            )}
-            {onglet === "medias" && (
-              <>
-                <div className="overflow-hidden rounded-xl border border-violet/25 bg-black/40">
-                  {pellicule.images[0] ? <img src={pellicule.images[Math.floor(pellicule.images.length / 3)] || pellicule.images[0]} alt="" className="aspect-video w-full object-cover" /> : <span className="flex aspect-video items-center justify-center text-2xl">🎞️</span>}
-                  <p className="truncate px-2.5 py-2 text-xs text-ink">{projet.nomFichier} · {fmtPrecis(dureeSource)}</p>
-                </div>
-                <p className="rounded-xl border border-dashed border-violet/30 p-3 text-xs text-ink-soft">Prochaine étape du Studio montage : importer des photos, des sons / musiques et d’autres vidéos (à la suite ou en incrustation), chacun sur sa piste.</p>
               </>
             )}
           </div>
@@ -751,17 +1090,13 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
               {calqueSel.type !== "barre" && calqueSel.type !== "flash" && (
                 <label className={etiquette}>Animation (entrée / sortie)<select value={calqueSel.anim} onChange={(e) => majCalque(calqueSel.id, { anim: e.target.value as Calque["anim"] }, "anim")} className={`${champ} mt-1`}>{ANIMS.map((a) => <option key={a.v} value={a.v}>{a.l}</option>)}</select></label>
               )}
-              {calqueSel.type !== "barre" && calqueSel.type !== "flash" && (
-                <label className={etiquette}>Taille : {Math.round((calqueSel.echelle || 1) * 100)} % <span className="opacity-60">(ou tire la poignée ronde sur l’aperçu)</span><input type="range" min={0.4} max={2.6} step={0.02} value={calqueSel.echelle || 1} onChange={(e) => majCalque(calqueSel.id, { echelle: +e.target.value }, "taille-" + calqueSel.id)} className="mt-1 w-full accent-violet-500" /></label>
-              )}
-              {!(calqueSel.type === "encart" && calqueSel.lie) && calqueSel.type !== "flash" && (
-                <label className={etiquette}>Hauteur : {Math.round(calqueSel.y * 100)} %<input type="range" min={0.05} max={0.95} step={0.002} value={calqueSel.y} onChange={(e) => majCalque(calqueSel.id, { y: +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
-              )}
+              {calqueSel.type !== "barre" && calqueSel.type !== "flash" && glisser("Taille", calqueSel.echelle || 1, 0.4, 2.6, 0.02, (v) => majCalque(calqueSel.id, { echelle: v }, "taille-" + calqueSel.id), `${Math.round((calqueSel.echelle || 1) * 100)} %`)}
+              {!(calqueSel.type === "encart" && calqueSel.lie) && calqueSel.type !== "flash" && glisser("Hauteur", calqueSel.y, 0.05, 0.95, 0.002, (v) => majCalque(calqueSel.id, { y: v }), `${Math.round(calqueSel.y * 100)} %`)}
               {calqueSel.type === "encart" && <label className="flex items-center gap-2 text-xs text-ink-soft"><input type="checkbox" checked={calqueSel.lie} onChange={(e) => majCalque(calqueSel.id, { lie: e.target.checked })} className="accent-violet-500" /> Collé à la séparation caméra / jeu</label>}
               {calqueSel.type === "flash" && (
                 <>
-                  <label className={etiquette}>Durée : {(calqueSel.fin - calqueSel.debut).toFixed(2)} s<input type="range" min={0.1} max={0.6} step={0.05} value={calqueSel.fin - calqueSel.debut} onChange={(e) => majCalque(calqueSel.id, { fin: calqueSel.debut + +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
-                  <label className={etiquette}>Intensité : {Math.round(calqueSel.intensite * 100)} %<input type="range" min={0.15} max={1} step={0.05} value={calqueSel.intensite} onChange={(e) => majCalque(calqueSel.id, { intensite: +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
+                  {glisser("Durée", calqueSel.fin - calqueSel.debut, 0.1, 0.6, 0.05, (v) => majCalque(calqueSel.id, { fin: calqueSel.debut + v }), `${(calqueSel.fin - calqueSel.debut).toFixed(2)} s`)}
+                  {glisser("Intensité", calqueSel.intensite, 0.15, 1, 0.05, (v) => majCalque(calqueSel.id, { intensite: v }), `${Math.round(calqueSel.intensite * 100)} %`)}
                   <label className="flex items-center gap-2 text-xs text-ink-soft"><input type="checkbox" checked={calqueSel.zoom} onChange={(e) => majCalque(calqueSel.id, { zoom: e.target.checked })} className="accent-violet-500" /> Petit zoom sur le jeu</label>
                   <label className="flex items-center gap-2 text-xs text-ink-soft"><input type="checkbox" checked={calqueSel.onde} onChange={(e) => majCalque(calqueSel.id, { onde: e.target.checked })} className="accent-violet-500" /> Onde au viseur (déplace-la sur l’aperçu)</label>
                 </>
@@ -769,20 +1104,116 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
               {calqueSel.type === "barre" && <p className="text-xs text-ink-soft/80">La barre marque la séparation caméra / jeu : déplace-la sur l’aperçu, l’encart la suit.</p>}
               {calqueSel.type === "soustitres" && <p className="text-xs text-ink-soft/80">Les cartons se règlent dans l’onglet « Sous-titres » à gauche ; ici leur style.</p>}
             </div>
-          ) : morceauSel ? (
-            <div className="space-y-3">
-              <b className="block text-sm">🎞️ Morceau de vidéo</b>
-              <p className="text-xs text-ink-soft">Du {fmtPrecis(morceauSel.a)} au {fmtPrecis(morceauSel.b)} du clip · {(morceauSel.b - morceauSel.a).toFixed(2)} s</p>
-              <div className="grid grid-cols-2 gap-2">
-                <label className={etiquette}>Début (s)<input type="number" step={0.033} value={+morceauSel.a.toFixed(2)} onChange={(e) => setMorceaux((l) => l.map((x) => (x.id === morceauSel.id ? { ...x, a: Math.max(0, Math.min(x.b - 0.1, +e.target.value)) } : x)), "m-a-" + morceauSel.id)} className={`${champ} mt-1`} /></label>
-                <label className={etiquette}>Fin (s)<input type="number" step={0.033} value={+morceauSel.b.toFixed(2)} onChange={(e) => setMorceaux((l) => l.map((x) => (x.id === morceauSel.id ? { ...x, b: Math.min(dureeSource, Math.max(x.a + 0.1, +e.target.value)) } : x)), "m-b-" + morceauSel.id)} className={`${champ} mt-1`} /></label>
+          ) : morceauSel ? (() => {
+            const mid = mediaDe(morceauSel), photo = mediaParId.get(mid)?.type === "image", v = vitesse(morceauSel), maxi = dureeMax(morceauSel.media);
+            return (
+              <div className="space-y-3">
+                <div><b className="block text-sm">{photo ? "📷 Photo" : "🎞️ Morceau de vidéo"}</b><span className="block truncate text-xs text-ink-soft">{nomMedia(mid)} · {duree(morceauSel).toFixed(2)} s à l’écran</span></div>
+                {photo ? (
+                  <>
+                    {glisser("Durée", +(morceauSel.b - morceauSel.a).toFixed(1), 0.5, 20, 0.1, (x) => majMorceau(morceauSel.id, { b: morceauSel.a + x }, "duree-" + morceauSel.id), `${(morceauSel.b - morceauSel.a).toFixed(1)} s`)}
+                    <label className="flex items-center gap-2 text-xs text-ink-soft"><input type="checkbox" checked={Boolean(morceauSel.kb)} onChange={(e) => majMorceau(morceauSel.id, { kb: e.target.checked })} className="accent-violet-500" /> Zoom lent (effet « Ken Burns »)</label>
+                  </>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className={etiquette}>Début (s)<input type="number" step={0.033} value={+morceauSel.a.toFixed(2)} onChange={(e) => majMorceau(morceauSel.id, { a: Math.max(0, Math.min(morceauSel.b - 0.1, +e.target.value)) }, "m-a-" + morceauSel.id)} className={`${champ} mt-1`} /></label>
+                      <label className={etiquette}>Fin (s)<input type="number" step={0.033} value={+morceauSel.b.toFixed(2)} onChange={(e) => majMorceau(morceauSel.id, { b: Math.min(maxi, Math.max(morceauSel.a + 0.1, +e.target.value)) }, "m-b-" + morceauSel.id)} className={`${champ} mt-1`} /></label>
+                    </div>
+                    <div>
+                      <span className={etiquette}>Vitesse : ×{+v.toFixed(2)}</span>
+                      <div className="mt-1 flex flex-wrap gap-1">{VITESSES.map((x) => <button key={x} type="button" onClick={() => majMorceau(morceauSel.id, { v: x }, "vitesse-" + morceauSel.id)} className={puce(Math.abs(v - x) < 1e-3)}>×{x}</button>)}</div>
+                      <input type="range" min={0.25} max={4} step={0.05} value={v} onChange={(e) => majMorceau(morceauSel.id, { v: +e.target.value }, "vitesse-" + morceauSel.id)} className={glissiere} />
+                    </div>
+                    <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
+                      <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={!morceauSel.muet} onChange={(e) => majMorceau(morceauSel.id, { muet: !e.target.checked })} className="accent-violet-500" /> Son du morceau</label>
+                      {!morceauSel.muet && (
+                        <>
+                          {glisser("Volume", morceauSel.vol ?? 1, 0, 2, 0.05, (x) => majMorceau(morceauSel.id, { vol: x }, "vol-" + morceauSel.id), `${Math.round((morceauSel.vol ?? 1) * 100)} %`)}
+                          <div className="grid grid-cols-2 gap-2">
+                            {glisser("Fondu entrée", morceauSel.fE || 0, 0, 3, 0.1, (x) => majMorceau(morceauSel.id, { fE: x }, "fe-" + morceauSel.id), `${(morceauSel.fE || 0).toFixed(1)} s`)}
+                            {glisser("Fondu sortie", morceauSel.fS || 0, 0, 3, 0.1, (x) => majMorceau(morceauSel.id, { fS: x }, "fs-" + morceauSel.id), `${(morceauSel.fS || 0).toFixed(1)} s`)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+                <label className={etiquette}>Cadrage<select value={morceauSel.cadre || (mid === PRINCIPAL ? "projet" : "ajuster")} onChange={(e) => majMorceau(morceauSel.id, { cadre: e.target.value as Cadre })} className={`${champ} mt-1`}>{CADRES.map((c) => <option key={c.v} value={c.v}>{c.l}</option>)}</select></label>
+                <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
+                  <span className="block text-xs font-medium text-ink">Image</span>
+                  {glisser("Luminosité", morceauSel.lum ?? 1, 0.4, 1.8, 0.02, (x) => majMorceau(morceauSel.id, { lum: x }, "lum-" + morceauSel.id), `${Math.round((morceauSel.lum ?? 1) * 100)} %`)}
+                  {glisser("Contraste", morceauSel.con ?? 1, 0.5, 1.8, 0.02, (x) => majMorceau(morceauSel.id, { con: x }, "con-" + morceauSel.id), `${Math.round((morceauSel.con ?? 1) * 100)} %`)}
+                  {glisser("Saturation", morceauSel.sat ?? 1, 0, 2, 0.02, (x) => majMorceau(morceauSel.id, { sat: x }, "sat-" + morceauSel.id), `${Math.round((morceauSel.sat ?? 1) * 100)} %`)}
+                  {(morceauSel.lum ?? 1) !== 1 || (morceauSel.con ?? 1) !== 1 || (morceauSel.sat ?? 1) !== 1 ? <button type="button" onClick={() => majMorceau(morceauSel.id, { lum: 1, con: 1, sat: 1 })} className="text-xs text-lilac underline">Image d’origine</button> : null}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button type="button" onClick={diviser} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">✂️ Diviser à la tête</button>
+                  <button type="button" onClick={dupliquer} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">Dupliquer</button>
+                  <button type="button" onClick={supprimer} disabled={doc.morceaux.length <= 1} className="rounded-full border border-red-300/40 px-3 py-1.5 text-xs text-red-100 disabled:opacity-40">Supprimer</button>
+                </div>
               </div>
+            );
+          })() : incrustSel ? (() => {
+            const md = mediaParId.get(incrustSel.media), photo = md?.type === "image";
+            return (
+              <div className="space-y-3">
+                <div><b className="block text-sm">▣ Incrustation</b><span className="block truncate text-xs text-ink-soft">{nomMedia(incrustSel.media)} · tire-la sur l’aperçu, poignée ronde pour la taille</span></div>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className={etiquette}>Apparaît à (s)<input type="number" step={0.05} min={0} value={+incrustSel.debut.toFixed(2)} onChange={(e) => majIncrust(incrustSel.id, { debut: Math.max(0, +e.target.value) })} className={`${champ} mt-1`} /></label>
+                  <label className={etiquette}>Durée (s)<input type="number" step={0.1} min={0.2} value={+duree(incrustSel).toFixed(2)} onChange={(e) => majIncrust(incrustSel.id, { b: Math.min(dureeMax(incrustSel.media), incrustSel.a + Math.max(0.2, +e.target.value) * vitesse(incrustSel)) })} className={`${champ} mt-1`} /></label>
+                  <button type="button" onClick={() => majIncrust(incrustSel.id, { debut: +tM.toFixed(3) }, "tete-" + incrustSel.id)} className="col-span-2 rounded-lg border border-violet/30 px-2 py-1.5 text-xs text-ink-soft hover:bg-violet/10">⌖ Commencer à la tête de lecture</button>
+                </div>
+                {glisser("Taille", incrustSel.w, 0.08, 1.4, 0.01, (x) => majIncrust(incrustSel.id, { w: x }, "taille-" + incrustSel.id), `${Math.round(incrustSel.w * 100)} %`)}
+                {glisser("Opacité", incrustSel.opacite, 0.1, 1, 0.02, (x) => majIncrust(incrustSel.id, { opacite: x }, "op-" + incrustSel.id), `${Math.round(incrustSel.opacite * 100)} %`)}
+                <div>
+                  <span className={etiquette}>Forme</span>
+                  <div className="mt-1 flex flex-wrap gap-1">{([["rect", "Carrée"], ["arrondi", "Arrondie"], ["rond", "Ronde"]] as const).map(([f, t]) => <button key={f} type="button" onClick={() => majIncrust(incrustSel.id, { forme: f })} className={puce(incrustSel.forme === f)}>{t}</button>)}</div>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-ink-soft"><input type="checkbox" checked={incrustSel.contour} onChange={(e) => majIncrust(incrustSel.id, { contour: e.target.checked })} className="accent-violet-500" /> Contour blanc et ombre</label>
+                <label className={etiquette}>Apparition<select value={incrustSel.anim} onChange={(e) => majIncrust(incrustSel.id, { anim: e.target.value as Incrust["anim"] })} className={`${champ} mt-1`}><option value="pop">Pop (rebond)</option><option value="fondu">Fondu</option><option value="aucune">Aucune</option></select></label>
+                <div className="flex flex-wrap gap-1">
+                  {([["Haut gauche", 0.27, 0.16], ["Haut droite", 0.73, 0.16], ["Centre", 0.5, 0.5], ["Bas gauche", 0.27, 0.8], ["Bas droite", 0.73, 0.8]] as const).map(([t, x, y]) => <button key={t} type="button" onClick={() => majIncrust(incrustSel.id, { x, y })} className={puce(false)}>{t}</button>)}
+                </div>
+                {!photo && (
+                  <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
+                    <label className="flex items-center gap-2 text-xs text-ink"><input type="checkbox" checked={!incrustSel.muet} onChange={(e) => majIncrust(incrustSel.id, { muet: !e.target.checked })} className="accent-violet-500" /> Son de l’incrustation</label>
+                    {!incrustSel.muet && glisser("Volume", incrustSel.vol, 0, 2, 0.05, (x) => majIncrust(incrustSel.id, { vol: x }, "vol-" + incrustSel.id), `${Math.round(incrustSel.vol * 100)} %`)}
+                    <div>
+                      <span className={etiquette}>Vitesse : ×{+vitesse(incrustSel).toFixed(2)}</span>
+                      <div className="mt-1 flex flex-wrap gap-1">{VITESSES.map((x) => <button key={x} type="button" onClick={() => majIncrust(incrustSel.id, { v: x })} className={puce(Math.abs(vitesse(incrustSel) - x) < 1e-3)}>×{x}</button>)}</div>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-1.5">
+                  <button type="button" onClick={diviser} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">✂️ Diviser à la tête</button>
+                  <button type="button" onClick={dupliquer} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">Dupliquer</button>
+                  <button type="button" onClick={supprimer} className="rounded-full border border-red-300/40 px-3 py-1.5 text-xs text-red-100">Supprimer</button>
+                </div>
+              </div>
+            );
+          })() : sonSel ? (
+            <div className="space-y-3">
+              <div><b className="block text-sm">🎵 Son</b><span className="block truncate text-xs text-ink-soft">{nomMedia(sonSel.media)} · {duree(sonSel).toFixed(1)} s</span></div>
+              {glisser("Volume", sonSel.vol, 0, 2, 0.05, (x) => majSon(sonSel.id, { vol: x }, "vol-" + sonSel.id), `${Math.round(sonSel.vol * 100)} %`)}
+              <div className="grid grid-cols-2 gap-2">
+                {glisser("Fondu entrée", sonSel.fE, 0, 5, 0.1, (x) => majSon(sonSel.id, { fE: x }, "fe-" + sonSel.id), `${sonSel.fE.toFixed(1)} s`)}
+                {glisser("Fondu sortie", sonSel.fS, 0, 5, 0.1, (x) => majSon(sonSel.id, { fS: x }, "fs-" + sonSel.id), `${sonSel.fS.toFixed(1)} s`)}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className={etiquette}>Commence à (s)<input type="number" step={0.05} min={0} value={+sonSel.debut.toFixed(2)} onChange={(e) => majSon(sonSel.id, { debut: Math.max(0, +e.target.value) })} className={`${champ} mt-1`} /></label>
+                <label className={etiquette}>Départ dans le son (s)<input type="number" step={0.1} min={0} value={+sonSel.a.toFixed(2)} onChange={(e) => majSon(sonSel.id, { a: Math.max(0, Math.min(sonSel.b - 0.2, +e.target.value)) })} className={`${champ} mt-1`} /></label>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button type="button" onClick={() => majSon(sonSel.id, { debut: +tM.toFixed(3) }, "tete-" + sonSel.id)} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">⌖ À la tête de lecture</button>
+                <button type="button" onClick={() => majSon(sonSel.id, { b: Math.min(dureeMax(sonSel.media), sonSel.a + Math.max(0.2, total - sonSel.debut) * vitesse(sonSel)) })} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">⇥ Jusqu’à la fin de la vidéo</button>
+              </div>
+              <button type="button" onClick={() => setMorceaux((l) => l.map((m) => ({ ...m, vol: Math.min(m.vol ?? 1, 0.35) })))} className="w-full rounded-xl border border-white/10 px-3 py-2 text-left text-xs text-ink-soft hover:bg-white/5">🔉 Baisser le son de la vidéo (35 %) pour entendre la musique</button>
               <div className="flex flex-wrap gap-1.5">
                 <button type="button" onClick={diviser} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">✂️ Diviser à la tête</button>
                 <button type="button" onClick={dupliquer} className="rounded-full border border-violet/30 px-3 py-1.5 text-xs">Dupliquer</button>
-                <button type="button" onClick={supprimer} disabled={doc.morceaux.length <= 1} className="rounded-full border border-red-300/40 px-3 py-1.5 text-xs text-red-100 disabled:opacity-40">Supprimer</button>
+                <button type="button" onClick={supprimer} className="rounded-full border border-red-300/40 px-3 py-1.5 text-xs text-red-100">Supprimer</button>
               </div>
-              <p className="text-xs text-ink-soft/70">Sur la timeline : tire les bords blancs pour rogner, glisse le morceau pour changer l’ordre.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -795,15 +1226,19 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
                   </button>
                 ))}
               </div>
-              {doc.dispo !== "floute" && doc.dispo !== "vertical" && <label className={etiquette}>Cadrage (gauche ↔ droite)<input type="range" min={0} max={1} step={0.01} value={doc.focusX} onChange={(e) => maj("focusX", +e.target.value)} className="mt-1 w-full accent-violet-500" /></label>}
-              {doc.dispo !== "floute" && doc.dispo !== "vertical" && <label className={etiquette}>Zoom : ×{doc.zoom.toFixed(2)}<input type="range" min={1} max={2.5} step={0.05} value={doc.zoom} onChange={(e) => maj("zoom", +e.target.value)} className="mt-1 w-full accent-violet-500" /></label>}
+              {doc.dispo !== "floute" && doc.dispo !== "vertical" && glisser("Cadrage (gauche ↔ droite)", doc.focusX, 0, 1, 0.01, (v) => maj("focusX", v), `${Math.round(doc.focusX * 100)} %`)}
+              {doc.dispo !== "floute" && doc.dispo !== "vertical" && glisser("Zoom", doc.zoom, 1, 2.5, 0.05, (v) => maj("zoom", v), `×${doc.zoom.toFixed(2)}`)}
               {doc.dispo === "facecam" && (
                 <>
-                  <label className={etiquette}>Caméra : horizontal<input type="range" min={0} max={1} step={0.01} value={doc.cam.x} onChange={(e) => maj("cam", { ...doc.cam, x: +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
-                  <label className={etiquette}>Caméra : vertical<input type="range" min={0} max={1} step={0.01} value={doc.cam.y} onChange={(e) => maj("cam", { ...doc.cam, y: +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
-                  <label className={etiquette}>Caméra : taille<input type="range" min={0.12} max={0.6} step={0.01} value={doc.cam.taille} onChange={(e) => maj("cam", { ...doc.cam, taille: +e.target.value })} className="mt-1 w-full accent-violet-500" /></label>
+                  {glisser("Caméra : horizontal", doc.cam.x, 0, 1, 0.01, (v) => maj("cam", { ...doc.cam, x: v }), `${Math.round(doc.cam.x * 100)} %`)}
+                  {glisser("Caméra : vertical", doc.cam.y, 0, 1, 0.01, (v) => maj("cam", { ...doc.cam, y: v }), `${Math.round(doc.cam.y * 100)} %`)}
+                  {glisser("Caméra : taille", doc.cam.taille, 0.12, 0.6, 0.01, (v) => maj("cam", { ...doc.cam, taille: v }), `${Math.round(doc.cam.taille * 100)} %`)}
                 </>
               )}
+              <div className="rounded-xl bg-white/[0.03] p-2.5 space-y-2">
+                <span className="block text-xs font-medium text-ink">Son de la piste vidéo</span>
+                {glisser("Volume de tous les morceaux", doc.morceaux[0]?.vol ?? 1, 0, 2, 0.05, (v) => setMorceaux((l) => l.map((m) => ({ ...m, vol: v })), "vol-tous"), `${Math.round((doc.morceaux[0]?.vol ?? 1) * 100)} %`)}
+              </div>
               <p className="text-xs text-ink-soft/70">Touche un élément sur l’aperçu ou la timeline pour le régler ici.</p>
             </div>
           )}
@@ -827,6 +1262,7 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
           <span className="mx-1 h-6 w-px bg-white/10" />
           <button type="button" onClick={ajouterTexte} className={btnOutil()} title="Texte à la tête de lecture"><Icone nom="lettres" className="h-5 w-5" /><span className="text-xs">Texte</span></button>
           <button type="button" onClick={ajouterFlash} className={btnOutil()} title="Flash de kill à la tête de lecture"><Icone nom="eclair" className="h-5 w-5" /><span className="text-xs">Flash</span></button>
+          <button type="button" onClick={() => setOnglet("audios")} className={btnOutil(onglet === "audios")} title="Ajouter un son ou une musique"><Icone nom="note" className="h-5 w-5" /><span className="hidden xl:inline text-xs">Son</span></button>
           <div className="ml-auto flex shrink-0 items-center gap-1">
             <button type="button" onClick={() => setZoomTl((z) => Math.max(8, z / 1.4))} className={btnOutil()} aria-label="Dézoomer la timeline"><Icone nom="loupeMoins" className="h-5 w-5" /></button>
             <input type="range" min={8} max={400} value={zoomTl} onChange={(e) => setZoomTl(+e.target.value)} className="w-28 accent-violet-500" aria-label="Zoom de la timeline" />
@@ -837,8 +1273,9 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
         <div className="min-h-0 flex-1">
           {pret && (
             <TimelineMontage dureeSource={dureeSource} morceaux={doc.morceaux} calques={habille ? doc.calques : doc.calques.filter((c) => c.type === "texte" || c.type === "flash")} sousTitres={doc.sousTitres} t={tM} sel={sel} setSel={setSel} outil={outil}
-              setMorceaux={setMorceaux} setCalques={setCalques} finGeste={couperGeste} onSeek={(r) => { video.current?.pause(); allerA(r); }} onCouperA={couperA}
-              pellicule={pellicule} onde={onde} zoom={zoomTl} setZoom={setZoomTl} />
+              setMorceaux={setMorceaux} setCalques={setCalques} finGeste={couperGeste} onSeek={(r) => { arreter(); allerA(r); }} onCouperA={couperA}
+              medias={doc.medias} incrustations={doc.incrustations} sons={doc.sons} setIncrust={setIncrust} setSons={setSons} dureeMax={dureeMax}
+              pellicules={apercus.pellicules} ondes={apercus.ondes} zoom={zoomTl} setZoom={setZoomTl} />
           )}
         </div>
       </div>
@@ -867,10 +1304,11 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
               <button type="button" onClick={() => export_.etat !== "en-cours" && setPanneauExport(false)} disabled={export_.etat === "en-cours"} className="ml-auto rounded-full p-2 hover:bg-white/10 disabled:opacity-40" aria-label="Fermer"><Icone nom="fermer" className="h-5 w-5" /></button>
             </div>
             <p className="mt-1 text-sm text-ink-soft">MP4 vertical 1080×1920 · {fmtLong(total)}{habille && doc.ending ? " + cinématique de fin" : ""}. Garde l’onglet ouvert pendant la création ; à la fin, la vidéo se télécharge toute seule.</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap items-center gap-2">
               <button type="button" onClick={exporter} disabled={export_.etat === "en-cours" || !pret} className="inline-flex items-center gap-2 rounded-full bg-violet px-5 py-2.5 text-sm font-semibold text-white shadow-glow-sm hover:bg-violet-light disabled:opacity-50">
                 <Icone nom="clap" className="h-4 w-4" /> {export_.etat === "en-cours" ? `Création… ${Math.round(export_.progres * 100)} %` : export_.etat === "fini" ? "Recréer la vidéo" : "Créer et télécharger"}
               </button>
+              {export_.etat === "en-cours" && export_.etape && <span className="text-xs text-ink-soft">{export_.etape}</span>}
             </div>
             {export_.etat === "en-cours" && <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full bg-violet transition-all" style={{ width: `${Math.round(export_.progres * 100)}%` }} /></div>}
             {export_.etat === "erreur" && <p className="mt-3 text-sm text-red-300" role="alert">{export_.message}</p>}

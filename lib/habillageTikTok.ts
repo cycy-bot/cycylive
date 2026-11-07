@@ -199,8 +199,8 @@ function punch(t: number, flashs: Calque[]) {
 }
 
 /** Dessine la vidéo (remplit le 1080×1920) avec, s'il y a lieu, le zoom de kill sur la partie jeu. */
-export function dessinerVideo(ctx: CanvasRenderingContext2D, v: HTMLVideoElement, t: number, calques: Calque[]) {
-  const vw = v.videoWidth || W, vh = v.videoHeight || H, s = Math.max(W / vw, H / vh);
+export function dessinerVideo(ctx: CanvasRenderingContext2D, v: HTMLVideoElement | HTMLImageElement, t: number, calques: Calque[]) {
+  const vw = (v instanceof HTMLVideoElement ? v.videoWidth : v.naturalWidth) || W, vh = (v instanceof HTMLVideoElement ? v.videoHeight : v.naturalHeight) || H, s = Math.max(W / vw, H / vh);
   const dw = vw * s, dh = vh * s, dx = (W - dw) / 2, dy = (H - dh) / 2;
   ctx.drawImage(v, dx, dy, dw, dh);
   const z = punch(t, calques.filter((c) => c.type === "flash"));

@@ -5,7 +5,7 @@
 // télécharger la vidéo, planifier, archiver, supprimer).
 import { useEffect, useMemo, useRef, useState } from "react";
 import Icone from "@/components/icones/Icone";
-import { enregistrerBrouillon, lireEtatBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
+import { copierMedias, envoyerMedias, enregistrerBrouillon, lireEtatBrouillon, lireFichierBrouillon, listerBrouillons, supprimerBrouillon, type BrouillonInfo } from "@/lib/brouillonsMontage";
 import type { ClipTwitch } from "@/lib/montage/projet";
 
 type Props = {
@@ -75,7 +75,10 @@ export default function ProjetsMontage({ onNouveau, onOuvrir, message }: Props) 
       const nid = Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 9);
       const info: BrouillonInfo = { ...complet, id: nid, nom: complet.nom + " (copie)", maj: Date.now(), cree: Date.now(), archive: false };
       delete (info as Partial<BrouillonInfo>).ligne; delete (info as Partial<BrouillonInfo>).etatEnLigne;
+      const mids = (((complet.etat || {}) as { medias?: { id: string }[] }).medias || []).map((x) => x.id);
+      if (mids.length) await copierMedias(p.id, nid, mids);
       await enregistrerBrouillon(info, f);
+      if (mids.length) envoyerMedias(nid, mids).catch(() => {});
       await recharger();
     } catch (e) { setErreur(`Duplication impossible : ${e instanceof Error ? e.message : e}`); }
     setOccupe("");

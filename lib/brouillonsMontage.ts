@@ -86,6 +86,7 @@ async function enregistrerLocal(info: BrouillonInfo, fichier?: Blob) {
 async function supprimerLocal(id: string) {
   await requete(INFOS, "readwrite", (s) => s.delete(id));
   await requete(FICHIERS, "readwrite", (s) => s.delete(id));
+  await requete(FICHIERS, "readwrite", (s) => s.delete(IDBKeyRange.bound(id + "::", id + "::\uffff"))).catch(() => {});
 }
 const propre = (b: BrouillonInfo): BrouillonInfo => { const { ligne, etatEnLigne, clipLocal, clipEnLigne, ...r } = b as BrouillonInfo & { clip?: unknown }; void ligne; void etatEnLigne; void clipLocal; void clipEnLigne; delete (r as { clip?: unknown }).clip; return r; };
 
@@ -212,6 +213,63 @@ export async function enregistrerBrouillon(info: BrouillonInfo, fichier?: Blob, 
   envoyerPlusTard(brut);
   if (errLocal && !jeton()) throw errLocal;
   return { enLigne: true };
+}
+
+// ─────────────────────────────────────────────────────────────
+//  Médias ajoutés au projet (photos, vidéos, sons) : gardés ici et en ligne, comme le clip
+// ─────────────────────────────────────────────────────────────
+type MediaGarde = FichierGarde & { enLigne?: boolean };
+const cleMedia = (id: string, mid: string) => id + "::" + mid;
+const envoisMedias = new Map<string, Promise<boolean>>();
+
+/** Garde un média sur cet appareil (tout de suite) ; il part en ligne au prochain enregistrement du projet. */
+export async function garderMedia(id: string, mid: string, fichier: Blob, enLigne = false) {
+  const octets = await fichier.arrayBuffer();
+  const g: MediaGarde = { octets, type: fichier.type || "application/octet-stream", enLigne };
+  await requete(FICHIERS, "readwrite", (s) => s.put(g, cleMedia(id, mid)));
+}
+/** Le média : sur cet appareil, sinon téléchargé depuis la copie en ligne. */
+export async function lireMedia(id: string, mid: string): Promise<Blob | undefined> {
+  const r = await requete<MediaGarde | undefined>(FICHIERS, "readonly", (s) => s.get(cleMedia(id, mid))).catch(() => undefined);
+  if (r?.octets) return new Blob([r.octets], { type: r.type });
+  try {
+    const blob = await (await api(`/${id}/media/${mid}`)).blob();
+    garderMedia(id, mid, blob, true).catch(() => {});
+    return blob;
+  } catch { return undefined; }
+}
+/** Envoie en ligne les médias qui n'y sont pas encore (après l'enregistrement du projet). */
+export async function envoyerMedias(id: string, mids: string[], signal?: (fait: number, total: number) => void): Promise<boolean> {
+  let tout = true, fait = 0;
+  for (const mid of mids) {
+    const k = cleMedia(id, mid);
+    let p = envoisMedias.get(k);
+    if (!p) {
+      p = (async () => {
+        const r = await requete<MediaGarde | undefined>(FICHIERS, "readonly", (s) => s.get(k)).catch(() => undefined);
+        if (!r?.octets) return true; // pas sur cet appareil : il est déjà en ligne (on l'a téléchargé) ou perdu
+        if (r.enLigne) return true;
+        const b = new Blob([r.octets], { type: r.type }), n = Math.max(1, Math.ceil(b.size / MORCEAU));
+        for (let i = 0; i < n; i++) {
+          let essai = 0;
+          for (;;) {
+            try { await api(`/${id}/media/${mid}?i=${i}&n=${n}&type=${encodeURIComponent(r.type)}`, { method: "POST", body: b.slice(i * MORCEAU, (i + 1) * MORCEAU) }); break; }
+            catch (e) { if (++essai >= 3) throw e; await new Promise((x) => setTimeout(x, 1500 * essai)); }
+          }
+        }
+        await requete(FICHIERS, "readwrite", (s) => s.put({ ...r, enLigne: true }, k));
+        return true;
+      })().catch(() => false).finally(() => envoisMedias.delete(k));
+      envoisMedias.set(k, p);
+    }
+    if (!(await p)) tout = false;
+    signal?.(++fait, mids.length);
+  }
+  return tout;
+}
+/** Copie les médias d'un projet vers un autre (dupliquer). */
+export async function copierMedias(de: string, vers: string, mids: string[]) {
+  for (const mid of mids) { const b = await lireMedia(de, mid); if (b) await garderMedia(vers, mid, b); }
 }
 
 export async function supprimerBrouillon(id: string) {
