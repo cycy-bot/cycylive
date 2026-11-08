@@ -9,6 +9,7 @@ import {
   IconTikTok,
   IconInstagram,
   IconYouTube,
+  IconDiscord,
   IconStar4,
   IconOrbit,
 } from "@/components/Icons";
@@ -56,14 +57,6 @@ export default function Hero() {
             >
               {enLigne ? "Rejoindre le live" : textes.hero.boutonPrincipal}
             </a>
-            <a
-              href={liens.discord}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full px-6 py-3 border border-violet/40 bg-violet/10 text-ink font-medium hover:bg-violet/20 transition-all"
-            >
-              {textes.hero.boutonSecondaire}
-            </a>
           </div>
 
           <div className="flex items-center gap-3">
@@ -78,6 +71,10 @@ export default function Hero() {
             <a href={liens.youtube} target="_blank" rel="noopener noreferrer" aria-label="YouTube"
               className="h-11 w-11 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
               <IconYouTube className="w-5 h-5" />
+            </a>
+            <a href={liens.discord} target="_blank" rel="noopener noreferrer" aria-label="Discord"
+              className="h-11 w-11 flex items-center justify-center rounded-full border border-violet/20 text-ink-soft hover:text-ink hover:border-violet/50 hover:shadow-glow-sm transition-all">
+              <IconDiscord className="w-5 h-5" />
             </a>
           </div>
         </div>

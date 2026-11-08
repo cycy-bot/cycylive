@@ -62,7 +62,6 @@ export const SECTIONS_TEXTES: SectionTexte[] = [
       { cle: "accroche", label: "Titre principal", type: "input" },
       { cle: "description", label: "Description", type: "textarea" },
       { cle: "boutonPrincipal", label: "Texte du bouton Twitch", type: "input" },
-      { cle: "boutonSecondaire", label: "Texte du bouton Discord", type: "input" },
     ],
   },
   {
