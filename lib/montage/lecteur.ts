@@ -28,6 +28,7 @@ export class Lecteur {
   private els = new Map<string, ElSon>();
   private imgs = new Map<string, HTMLImageElement>();
   private gains = new Map<ElSon, GainNode>();
+  private suivi = new WeakMap<ElSon, { ecart: number; corr: number; vu: number }>();
   private boite: HTMLDivElement;
   ctx: AudioContext | null = null;
   constructor(private url: (mid: string) => string | undefined, private medias: () => Media[]) {
@@ -41,6 +42,9 @@ export class Lecteur {
   /** À appeler pendant un clic (Safari) : crée le mixage en direct. */
   debloquer() {
     if (this.ctx) { this.ctx.resume().catch(() => {}); return; }
+    // iPad / iPhone : session audio « lecture » (son plein, haut-parleur, même en mode silencieux) au lieu du mode
+    // « ambiance » que Safari choisit sinon pour une page avec des vidéos muettes, où le son sort beaucoup plus bas
+    try { const n = navigator as Navigator & { audioSession?: { type: string } }; if (n.audioSession) n.audioSession.type = "playback"; } catch { /* navigateur sans réglage */ }
     try { this.ctx = new AudioContext(); this.ctx.resume().catch(() => {}); for (const el of this.els.values()) this.brancher(el); } catch { this.ctx = null; }
   }
   private brancher(el: ElSon) {
@@ -49,8 +53,9 @@ export class Lecteur {
   }
   private volume(el: ElSon, v: number) {
     const g = this.gains.get(el);
-    if (g) { g.gain.value = v; el.volume = 1; el.muted = v <= 0; }
-    else { el.volume = Math.max(0, Math.min(1, v)); el.muted = v <= 0; }
+    // on n'écrit que ce qui change : sur iPad, réécrire muted / volume à chaque image fait hoqueter la vidéo
+    if (g) { if (Math.abs(g.gain.value - v) > 1e-3) g.gain.value = v; if (el.volume !== 1) el.volume = 1; if (el.muted !== v <= 0) el.muted = v <= 0; }
+    else { const vv = Math.max(0, Math.min(1, v)); if (Math.abs(el.volume - vv) > 1e-3) el.volume = vv; if (el.muted !== v <= 0) el.muted = v <= 0; }
   }
   media(cle: string, mid: string, type: "video" | "son"): ElSon | null {
     let el = this.els.get(cle);
@@ -89,12 +94,22 @@ export class Lecteur {
     const e = etatA(d, r), rythme = o.rythme ?? 1, tol = o.tolerance ?? 0.25;
     const vus = new Set<ElSon>();
     // doux : l'horloge est le son ; la vidéo la suit en accélérant / ralentissant très légèrement (sans saut d'image)
+    // L'écart est lissé (la position d'une vidéo est imprécise d'une image à l'autre, surtout sur iPad) et la vitesse
+    // ne change qu'avec une marge : avant, elle changeait presque à chaque image, et chaque changement fait hoqueter
+    // la vidéo sur Safari. Maintenant : vitesse normale tant que l'écart reste petit, petite correction (± 5 %) gardée
+    // jusqu'à ce qu'il soit rattrapé, et un saut seulement si la vidéo est vraiment partie ailleurs.
     const suivre = (el: ElSon, src: number, rate: number) => {
-      if (el.paused) { if (Math.abs(el.currentTime - src) > 0.04) el.currentTime = src; if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate; el.play().catch(() => {}); return; }
+      const st = this.suivi.get(el) || { ecart: 0, corr: 0, vu: 0 };
+      this.suivi.set(el, st);
+      if (el.paused) { if (Math.abs(el.currentTime - src) > 0.04) el.currentTime = src; if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate; st.ecart = 0; st.corr = 0; el.play().catch(() => {}); return; }
       if (el.seeking) return;
-      const ecart = src - el.currentTime;
-      if (Math.abs(ecart) > 0.35) { el.currentTime = src; return; }
-      const r2 = Math.abs(ecart) > 0.02 ? rate * (1 + Math.max(-0.08, Math.min(0.08, ecart * 1.2))) : rate;
+      const brut = src - el.currentTime;
+      if (Math.abs(brut) > 0.45) { el.currentTime = src; st.ecart = 0; st.corr = 0; if (Math.abs(el.playbackRate - rate) > 1e-3) el.playbackRate = rate; return; }
+      const now = performance.now();
+      st.ecart = now - st.vu > 400 ? brut : st.ecart * 0.85 + brut * 0.15; st.vu = now;
+      if (st.corr === 0 && Math.abs(st.ecart) > 0.07) st.corr = st.ecart > 0 ? 1 : -1;
+      else if (st.corr !== 0 && (Math.abs(st.ecart) < 0.015 || Math.sign(st.ecart) !== st.corr)) st.corr = 0;
+      const r2 = rate * (1 + 0.05 * st.corr);
       if (Math.abs(el.playbackRate - r2) > 1e-3) el.playbackRate = r2;
     };
     const caler = (el: ElSon, src: number, vit: number, vol: number, cle: string) => {

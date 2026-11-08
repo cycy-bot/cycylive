@@ -347,7 +347,9 @@ export default function EditeurMontage({ projet, onFermer }: { projet: ProjetOuv
       } else l.synchroniser(d, Math.min(rel, tot - 1e-3), false);
       dessiner(c, Math.min(rel, tot - 1e-3), true);
       if (process.env.NEXT_PUBLIC_DEBUG_MONTAGE) Object.assign(window, { __t: rel, __montage: { l, doc: () => etat.current.doc, figer: (x: boolean) => { exportEnCours.current = x; } } });
-      if (Math.abs(rel - dernier) > 0.02) { dernier = rel; setTM(rel); }
+      // tête de lecture : ~12 fois par seconde pendant la lecture (redessiner tout l'éditeur 50 fois par seconde
+      // ralentissait la vidéo sur iPad), précise à l'arrêt
+      if (Math.abs(rel - dernier) > (lectureRef.current ? 0.08 : 0.02)) { dernier = rel; setTM(rel); }
     };
     rafRef.current = requestAnimationFrame(boucle);
     return () => cancelAnimationFrame(rafRef.current);
