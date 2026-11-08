@@ -1,12 +1,12 @@
 "use client";
 
-// Grille du planning (page d'accueil) : la semaine en cours, et les suivantes au clic.
+// Planning (page d'accueil) : carrousel des jours à venir (aujourd'hui vers le milieu), flèches et raccourcis par semaine.
 // Toutes les cases ont la même taille, qu'il y ait 1, 2 ou 3 jeux dans la soirée.
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type React from "react";
 import Icone from "@/components/icones/Icone";
 import { formatDe, lignesDeroule, type Etape } from "@/data/planning";
-import { IconCrystal } from "@/components/Icons";
+import { IconChevronLeft, IconChevronRight, IconCrystal } from "@/components/Icons";
 
 export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean; etapes?: Etape[] };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
@@ -96,38 +96,54 @@ function Deroule({ etapes, heure, couleur = "text-lilac", avecJeu = true }: { et
 }
 
 export default function GrillePlanning({ semaines, aujourdhui }: { semaines: SemaineGrille[]; aujourdhui: string }) {
+  // Carrousel : tous les jours des semaines à la suite. Au départ, aujourd'hui est vers le milieu (4e sur 7 à l'écran
+  // sur ordinateur) ; les flèches font défiler d'un écran, les boutons de semaine sautent directement à un lundi.
+  const jours = semaines.flatMap((w, i) => w.jours.map((j) => ({ ...j, semaine: i })));
+  const piste = useRef<HTMLDivElement>(null);
   const [s, setS] = useState(0);
-  const semaine = semaines[s] ?? semaines[0];
-  return (
-    <div>
-      <div className="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
-        {semaines.map((w, i) => (
-          <button
-            key={w.du}
-            type="button"
-            aria-pressed={i === s}
-            onClick={() => setS(i)}
-            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm border transition-all ${i === s ? "border-violet-light bg-violet/20 text-ink" : "border-violet/15 text-ink-soft hover:text-ink hover:border-violet/35"}`}
-          >
-            {NOMS_SEMAINE[i] ?? `Semaine du ${w.du}`}
-            <span className="ml-1.5 text-ink-soft/70">{w.du} → {w.au}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-3 md:auto-rows-fr">
-        {semaine.jours.map((jour) => {
+  const [bords, setBords] = useState({ debut: true, fin: false });
+  // Téléphone : 3 jours empilés (hier, aujourd'hui, demain au départ), les flèches avancent de 3 jours
+  const iAuj = Math.max(0, jours.findIndex((j) => j.date === aujourdhui));
+  const PAR_TEL = 3;
+  const [debutTel, setDebutTel] = useState(Math.max(0, Math.min(jours.length - PAR_TEL, iAuj - 1)));
+  const tel = (i: number) => setDebutTel(Math.max(0, Math.min(jours.length - PAR_TEL, i)));
+  const semaineTel = jours[Math.min(jours.length - 1, debutTel + 1)]?.semaine ?? 0;
+  const court = (j: (typeof jours)[number]) => `${j.jour.slice(0, 3)}. ${j.date ? Number(j.date.slice(8)) : ""}`;
+  const cases = () => Array.from(piste.current?.children || []) as HTMLElement[];
+  const parEcran = () => { const t = piste.current, c = cases()[0]; return t && c && c.offsetWidth ? Math.max(1, Math.round(t.clientWidth / c.offsetWidth)) : 1; };
+  const allerA = useCallback((i: number, doux = true) => {
+    const t = piste.current, c = cases(); if (!t || !c.length || !t.clientWidth || !Number.isFinite(i)) return;
+    const k = Math.max(0, Math.min(c.length - 1, i));
+    t.scrollTo({ left: c[k].offsetLeft - c[0].offsetLeft, behavior: doux ? "smooth" : "auto" });
+  }, []);
+  const suivre = useCallback(() => {
+    const t = piste.current, c = cases(); if (!t || !c.length) return;
+    const x = t.scrollLeft, w = c[0].offsetWidth || 1, n = parEcran();
+    const premier = Math.round(x / (w + 12));
+    const milieu = Math.min(jours.length - 1, premier + Math.floor((n - 1) / 2));
+    setS(jours[milieu]?.semaine ?? 0);
+    setBords({ debut: x < 4, fin: x + t.clientWidth >= t.scrollWidth - 4 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jours.length]);
+  useEffect(() => {
+    const i = jours.findIndex((j) => j.date === aujourdhui);
+    allerA(i < 0 ? 0 : i - Math.floor((parEcran() - 1) / 2), false);
+    suivre();
+    const r = () => suivre(); window.addEventListener("resize", r);
+    return () => window.removeEventListener("resize", r);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aujourdhui]);
+  const rendreJour = (jour: (typeof jours)[number]) => {
           const estAujourdhui = jour.date === aujourdhui;
           // jour passé (comme sur le Discord) : carte éteinte, sans couleur d'événement ni halo, pour que le prochain live ressorte
           const passe = Boolean(jour.date && aujourdhui && jour.date < aujourdhui);
           const sp = jour.off ? "" : typeLive(jour);
           const st = sp && !passe ? STYLE_LIVE[sp] : null;
           const valo = !jour.off && !sp && (jour.categorie === "valorant" || jour.categorie === "pp" || [jour.titre || "", ...jour.jeux].some((j) => /valorant/i.test(j)));
-          return (
+    return (
             <div
-              key={jour.date || jour.jour}
               style={st?.carte}
-              className={`relative carte-holo rounded-2xl px-4 py-3 md:p-4 md:min-h-[168px] flex ${jour.off ? "flex-row items-center" : "flex-col items-stretch"} md:flex-col md:items-center md:justify-center md:text-center gap-x-3 gap-y-2 md:gap-2 border ${estAujourdhui || (passe && !jour.off) ? "pt-5 md:pt-4" : ""} ${
+              className={`relative w-full carte-holo rounded-2xl px-4 py-3 md:p-4 md:min-h-[168px] flex ${jour.off ? "flex-row items-center" : "flex-col items-stretch"} md:flex-col md:items-center md:justify-center md:text-center gap-x-3 gap-y-2 md:gap-2 border ${estAujourdhui || (passe && !jour.off) ? "pt-5 md:pt-4" : ""} ${
                 passe ? "border-violet/10 opacity-45 saturate-[.35]" : st ? (estAujourdhui ? "ring-2 ring-violet-light/80 ring-offset-2 ring-offset-void" : "") : estAujourdhui ? "border-violet-light shadow-glow" : jour.off ? "border-violet/10 opacity-80" : "border-violet/35 shadow-glow-sm"
               }`}
             >
@@ -181,8 +197,49 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
               )}
               {jour.note ? <span className="w-full md:order-5 md:w-auto text-[11px] leading-tight text-ink-soft line-clamp-2">{jour.note}</span> : null}
             </div>
-          );
-        })}
+    );
+  };
+  const defiler = (sens: number) => { const t = piste.current; if (t) t.scrollBy({ left: sens * t.clientWidth, behavior: "smooth" }); };
+  const fleche = "absolute top-1/2 z-10 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-violet/40 bg-void/85 text-ink shadow-glow-sm backdrop-blur transition hover:border-violet-light hover:bg-violet/30 disabled:pointer-events-none disabled:opacity-0";
+  return (
+    <div>
+      <div className="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
+        {semaines.map((w, i) => (
+          <button
+            key={w.du}
+            type="button"
+            aria-pressed={i === s}
+            onClick={() => { const k = jours.findIndex((j) => j.semaine === i); allerA(k); tel(k); }}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm border transition-all ${i === s ? "sm:border-violet-light sm:bg-violet/20 sm:text-ink" : "sm:border-violet/15 sm:text-ink-soft sm:hover:text-ink sm:hover:border-violet/35"} ${i === semaineTel ? "max-sm:border-violet-light max-sm:bg-violet/20 max-sm:text-ink" : "max-sm:border-violet/15 max-sm:text-ink-soft"}`}
+          >
+            {NOMS_SEMAINE[i] ?? `Semaine du ${w.du}`}
+            <span className="ml-1.5 text-ink-soft/70">{w.du} → {w.au}</span>
+          </button>
+        ))}
+      </div>
+
+      {/* téléphone */}
+      <div className="sm:hidden">
+        <div className="mb-3 flex items-center gap-2">
+          <button type="button" aria-label="Jours précédents" onClick={() => tel(debutTel - PAR_TEL)} disabled={debutTel <= 0} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-violet/40 bg-void/85 text-ink disabled:opacity-30"><IconChevronLeft className="h-5 w-5" /></button>
+          <span className="flex-1 text-center text-sm font-medium text-ink-soft">{jours[debutTel] ? court(jours[debutTel]) : ""} → {jours[debutTel + PAR_TEL - 1] ? court(jours[debutTel + PAR_TEL - 1]) : ""}</span>
+          <button type="button" aria-label="Jours suivants" onClick={() => tel(debutTel + PAR_TEL)} disabled={debutTel >= jours.length - PAR_TEL} className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-violet/40 bg-void/85 text-ink disabled:opacity-30"><IconChevronRight className="h-5 w-5" /></button>
+        </div>
+        <div className="flex flex-col gap-3 pt-2">
+          {jours.slice(debutTel, debutTel + PAR_TEL).map((jour) => <div key={(jour.date || jour.jour) + jour.semaine} className="flex">{rendreJour(jour)}</div>)}
+        </div>
+      </div>
+      {/* tablette et ordinateur : carrousel */}
+      <div className="relative max-sm:hidden">
+      <button type="button" aria-label="Jours précédents" onClick={() => defiler(-1)} disabled={bords.debut} className={`${fleche} -left-3 xl:-left-6`}><IconChevronLeft className="h-5 w-5" /></button>
+      <button type="button" aria-label="Jours suivants" onClick={() => defiler(1)} disabled={bords.fin} className={`${fleche} -right-3 xl:-right-6`}><IconChevronRight className="h-5 w-5" /></button>
+      <div ref={piste} onScroll={suivre} className="-mx-1 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto scroll-smooth px-1 pb-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {jours.map((jour) => (
+            <div key={(jour.date || jour.jour) + jour.semaine} className="flex shrink-0 snap-start basis-[calc((100%-0.75rem)/2)] md:basis-[calc((100%-3*0.75rem)/4)] lg:basis-[calc((100%-6*0.75rem)/7)]">
+              {rendreJour(jour)}
+            </div>
+        ))}
+      </div>
       </div>
     </div>
   );
