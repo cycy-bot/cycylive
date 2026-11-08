@@ -115,17 +115,22 @@ export async function lireClassement(
 }
 
 export async function lireCycyBot(): Promise<DonneesCycyBot | null> {
+  let donnees: DonneesCycyBot | null = null;
   try {
     const reponse = await fetch(`${CYCYBOT_URL}/api/public`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(9000),
     });
-    if (!reponse.ok) return null;
-    return (await reponse.json()) as DonneesCycyBot;
+    if (reponse.ok) donnees = (await reponse.json()) as DonneesCycyBot;
   } catch {
-    // Bot injoignable : la page s'affiche quand même, sans la liste.
-    return null;
+    donnees = null;
   }
+  if (donnees?.discord) return donnees;
+  // Bot injoignable ou réponse incomplète (redémarrage, déploiement…) : pendant la construction du site, la page
+  // s'affiche quand même (avec les listes de secours). Ensuite, on garde la dernière version complète de la page
+  // plutôt que d'effacer les chiffres, le Marché noir et les expéditions : la mise à jour réessaie une minute plus tard.
+  if (process.env.NEXT_PHASE === "phase-production-build") return donnees;
+  throw new Error("CycyBot ne répond pas : dernière version de la page gardée.");
 }
 
 // ── Secours ────────────────────────────────────────────────
