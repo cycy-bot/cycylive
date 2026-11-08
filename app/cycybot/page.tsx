@@ -70,6 +70,15 @@ export default async function CycyBotPage() {
     .map((nom) => donnees?.commands.everyone.find((c) => c.name === nom))
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
   const nbDiscord = discord ? discord.commands.reduce((n, g) => n + g.items.length, 0) : 0;
+  // Nouvelle édition de cartes : seulement son nom (aucune carte montrée), une fois lancée sur le Discord
+  const nouvelleEdition = discord?.editions?.find((e) => e.nouvelle)?.nom ?? "";
+  const blocs = nouvelleEdition
+    ? blocsDiscord.map((b) =>
+        b.id === "cartes"
+          ? { ...b, titre: `Cartes Astrales & ${nouvelleEdition}`, texte: `Deux éditions à collectionner : les Cartes Astrales et la toute nouvelle ${nouvelleEdition}. Un booster gratuit par jour pour l'édition de ton choix, six raretés, des mythiques en dix exemplaires… et des combats classés.`, commandes: ["booster", "collection", "combat"] }
+          : b
+      )
+    : blocsDiscord;
   // Collections de figurines : la liste du bot (nombres à jour), sinon celle du site
   const collections = discord?.figurines?.length
     ? discord.figurines.map((c) => ({ id: c.id, nom: c.nom, emoji: c.emoji, total: c.total, mystere: Boolean(c.mystere) || (c.id === "evenements" && !c.apercu.length), image: c.apercu[0]?.image || figurinesSecours.find((s) => s.id === c.id)?.image || "/figurines/boule-rose.webp" }))
@@ -77,7 +86,7 @@ export default async function CycyBotPage() {
   // La galaxie du Discord en chiffres (en direct depuis CycyBot), chacun avec son icône
   const stats: { v: number; l: string; i: NomIcone; t: Teinte }[] = discord
     ? ([
-        { v: discord.stats.cards, l: "Cartes Astrales à collectionner", i: "cartes", t: "violet" },
+        { v: discord.stats.cards, l: nouvelleEdition ? `cartes à collectionner (Cartes Astrales & ${nouvelleEdition})` : "Cartes Astrales à collectionner", i: "cartes", t: "violet" },
         { v: discord.stats.collectors, l: "collectionneurs", i: "membres", t: "violet" },
         { v: discord.stats.boostersOpened, l: "boosters ouverts", i: "colis", t: "rose" },
         { v: discord.stats.eclatsCirculation, l: "Éclats en circulation", i: "eclats", t: "or" },
@@ -245,7 +254,7 @@ export default async function CycyBotPage() {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {blocsDiscord.map((b) => (
+          {blocs.map((b) => (
             <CarteBloc key={b.id} bloc={b} />
           ))}
         </div>

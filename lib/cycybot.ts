@@ -43,6 +43,8 @@ export type ObjetMarche = { emoji: string; name: string; price: number; currency
 
 export type DiscordCycyBot = {
   commands: GroupeCommandesDiscord[];
+  /** Éditions de cartes ouvertes (la 2e apparaît à son lancement : le nom seulement). */
+  editions?: { nom: string; nouvelle?: boolean }[];
   stats: {
     cards: number;
     collectors: number;
