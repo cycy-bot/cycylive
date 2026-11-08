@@ -88,10 +88,23 @@ function Badge({ statut }: { statut: Statut }) {
   return <span className="rounded-full border border-violet/35 bg-violet/10 px-2.5 py-0.5 text-xs text-lilac">À venir</span>;
 }
 
-function CarteEvenement({ e }: { e: Evenement }) {
-  const complet = e.maxPlaces > 0 && (e.participants ?? 0) >= e.maxPlaces;
+/** Pavé de date (« DIM. · 8 · NOV. · 19:00 ») des événements en largeur. */
+function PaveDate({ e }: { e: Evenement }) {
+  const d = new Date(e.startAt), o = { timeZone: TZ } as const;
   return (
-    <article className="carte-holo rounded-2xl border border-violet/25 p-4 md:p-5" style={{ borderLeft: `4px solid ${couleurDe(e.type)}` }}>
+    <div className="flex w-full shrink-0 flex-row items-center gap-2 rounded-xl border px-3 py-2 md:w-[88px] md:flex-col md:gap-0 md:px-2 md:py-3 md:text-center" style={{ borderColor: couleurDe(e.type) + "66", background: couleurDe(e.type) + "14" }}>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">{d.toLocaleDateString("fr-FR", { ...o, weekday: "short" })}</span>
+      <span className="text-2xl md:text-3xl font-bold leading-none text-ink">{d.toLocaleDateString("fr-FR", { ...o, day: "numeric" })}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-ink-soft">{d.toLocaleDateString("fr-FR", { ...o, month: "short" })}</span>
+      <span className="ml-auto md:ml-0 md:mt-1.5 text-sm font-semibold tabular-nums" style={{ color: couleurDe(e.type) }}>{heure(e.startAt)}</span>
+    </div>
+  );
+}
+
+function CarteEvenement({ e, large = false }: { e: Evenement; large?: boolean }) {
+  const complet = e.maxPlaces > 0 && (e.participants ?? 0) >= e.maxPlaces;
+  const contenu = (
+    <>
       <div className="flex flex-wrap items-center gap-2 mb-1.5">
         <span className="text-xs uppercase tracking-wide text-ink-soft inline-flex items-center gap-1.5"><Icone nom={TYPES.find((t) => t.id === e.type)?.icone || "etoile"} className="w-4 h-4" style={{ color: couleurDe(e.type) }} />{e.typeLabel}</span>
         <Badge statut={e.status} />
@@ -110,6 +123,10 @@ function CarteEvenement({ e }: { e: Evenement }) {
         </p>
       )}
 
+    </>
+  );
+  const suite = (
+    <>
       {e.result && (e.result.text || e.result.url) ? (
         <div className="mt-3 rounded-xl border border-amber-300/30 bg-amber-300/5 p-3">
           <p className="text-sm font-semibold text-amber-200"><Icone nom="drapeau" className="w-4 h-4 mr-1.5" />Résultats</p>
@@ -132,7 +149,10 @@ function CarteEvenement({ e }: { e: Evenement }) {
         </div>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
+    </>
+  );
+  const boutons = (
+      <div className={`flex flex-wrap gap-2 ${large ? "mt-3 md:mt-0 md:w-56 md:flex-col md:items-stretch md:[&>*]:text-center" : "mt-3"}`}>
         {e.status !== "termine" && e.discordUrl && !complet ? (
           <a href={e.discordUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-violet px-4 py-2 text-sm font-semibold text-ink shadow-glow-sm hover:bg-violet-light">
             <Icone nom="mainLevee" className="w-4 h-4 mr-1.5" />Je participe (Discord)
@@ -149,6 +169,18 @@ function CarteEvenement({ e }: { e: Evenement }) {
           </a>
         ) : null}
       </div>
+  );
+  if (large)
+    return (
+      <article className="carte-holo rounded-2xl border border-violet/25 p-4 md:p-5 flex flex-col gap-3 md:flex-row md:items-start md:gap-5" style={{ borderLeft: `4px solid ${couleurDe(e.type)}` }}>
+        <PaveDate e={e} />
+        <div className="min-w-0 flex-1">{contenu}{suite}</div>
+        {boutons}
+      </article>
+    );
+  return (
+    <article className="carte-holo rounded-2xl border border-violet/25 p-4 md:p-5" style={{ borderLeft: `4px solid ${couleurDe(e.type)}` }}>
+      {contenu}{suite}{boutons}
     </article>
   );
 }
@@ -157,10 +189,10 @@ export default function Calendrier() {
   const [evenements, setEvenements] = useState<Evenement[] | null>(null);
   const [erreur, setErreur] = useState(false);
   const [filtres, setFiltres] = useState<string[]>(TYPES.map((t) => t.id));
-  const [vue, setVue] = useState<"mois" | "liste">("mois");
+  const [grand, setGrand] = useState(false); // calendrier agrandi (pour naviguer dedans)
   const aujourdHui = jourParis(Date.now());
   const [mois, setMois] = useState(() => aujourdHui.slice(0, 7)); // « 2026-10 »
-  const [jour, setJour] = useState<string>(aujourdHui);
+  const [jour, setJour] = useState<string | null>(null); // jour choisi dans le calendrier (sinon : tout ce qui arrive)
 
   useEffect(() => {
     let annule = false;
@@ -205,36 +237,95 @@ export default function Calendrier() {
 
   const aVenir = visibles.filter((e) => e.status !== "termine");
   const resultats = visibles.filter((e) => e.status === "termine" && e.result).reverse().slice(0, 6);
-  const duJour = parJour.get(jour) ?? [];
+  const duJour = jour ? parJour.get(jour) ?? [] : [];
 
   const basculer = (id: string) =>
     setFiltres((f) => (f.length === TYPES.length ? [id] : f.includes(id) ? (f.length === 1 ? TYPES.map((t) => t.id) : f.filter((x) => x !== id)) : [...f, id]));
 
-  return (
-    <div className="space-y-8">
-      <div className="flex flex-wrap items-center gap-2">
-        {TYPES.map((t) => {
-          const actif = filtres.includes(t.id);
+  // Calendrier du mois : petit (une pastille de couleur par événement) ou agrandi (les titres dans les cases)
+  const calendrier = (
+    <section className={`carte-holo rounded-2xl border border-violet/25 ${grand ? "p-3 md:p-5" : "p-3"}`} aria-label="Calendrier du mois">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <button type="button" onClick={() => changerMois(-1)} className="rounded-full border border-violet/25 w-8 h-8 text-ink-soft hover:bg-violet/10" aria-label="Mois précédent">‹</button>
+        <h2 className={`${grand ? "text-lg md:text-xl" : "text-sm"} font-semibold text-ink first-letter:uppercase`}>{titreMois}</h2>
+        <button type="button" onClick={() => changerMois(1)} className="rounded-full border border-violet/25 w-8 h-8 text-ink-soft hover:bg-violet/10" aria-label="Mois suivant">›</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-[10px] uppercase tracking-wide text-ink-soft mb-1">
+        {JOURS.map((j) => <div key={j}>{grand ? j : j.slice(0, 1)}</div>)}
+      </div>
+      <div className="grid grid-cols-7 gap-1">
+        {cases.map((c) => {
+          const evs = parJour.get(c.cle) ?? [];
+          const choisi = c.cle === jour;
           return (
             <button
-              key={t.id}
+              key={c.cle}
               type="button"
-              aria-pressed={actif}
-              onClick={() => basculer(t.id)}
-              className={`rounded-full px-4 py-2 text-sm font-medium transition-all border ${actif ? "text-ink bg-violet/15" : "text-ink-soft/60 border-violet/15"}`}
-              style={actif ? { borderColor: couleurDe(t.id) } : undefined}
+              onClick={() => setJour(choisi ? null : c.cle)}
+              aria-pressed={choisi}
+              aria-label={`${c.num}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}`}
+              className={`${grand ? "min-h-[58px] md:min-h-[84px] p-1 md:p-1.5 text-left" : "h-10 p-0.5 text-center"} rounded-lg border align-top transition-all ${
+                choisi ? "border-violet-light bg-violet/20" : evs.length ? "border-violet/25 hover:border-violet/50" : "border-transparent hover:border-violet/25"
+              } ${c.dansMois ? "" : "opacity-35"}`}
             >
-              <Icone nom={t.icone} className="w-4 h-4 mr-1.5" style={actif ? { color: couleurDe(t.id) } : undefined} />
-              {t.label}
+              <span className={`text-xs font-semibold ${c.cle === aujourdHui ? "rounded-full bg-violet px-1.5 text-ink" : evs.length ? "text-ink" : "text-ink-soft"}`}>{c.num}</span>
+              {grand ? (
+                <>
+                  <span className="mt-1 hidden md:flex flex-col gap-0.5">
+                    {evs.slice(0, 3).map((e) => (
+                      <span key={e.id} className="truncate rounded px-1 text-[10.5px] leading-4 text-ink" style={{ background: couleurDe(e.type) + "33" }}>
+                        <Icone nom={TYPES.find((t) => t.id === e.type)?.icone || "etoile"} className="w-3 h-3 mr-1" />{e.title}
+                      </span>
+                    ))}
+                    {evs.length > 3 ? <span className="text-[10px] text-ink-soft">+{evs.length - 3}</span> : null}
+                  </span>
+                  <span className="mt-1 flex md:hidden gap-0.5 flex-wrap">
+                    {evs.slice(0, 4).map((e) => <span key={e.id} className="w-1.5 h-1.5 rounded-full" style={{ background: couleurDe(e.type) }} />)}
+                  </span>
+                </>
+              ) : (
+                <span className="mt-0.5 flex justify-center gap-0.5">
+                  {evs.slice(0, 3).map((e) => <span key={e.id} className="w-1.5 h-1.5 rounded-full" style={{ background: couleurDe(e.type) }} />)}
+                </span>
+              )}
             </button>
           );
         })}
-        <div className="ml-auto flex rounded-full border border-violet/25 p-1">
-          {(["mois", "liste"] as const).map((v) => (
-            <button key={v} type="button" aria-pressed={vue === v} onClick={() => setVue(v)} className={`rounded-full px-4 py-1.5 text-sm font-semibold ${vue === v ? "bg-violet text-ink" : "text-ink-soft"}`}>
-              {v === "mois" ? <><Icone nom="calendrier" className="w-4 h-4 mr-1.5" />Mois</> : <><Icone nom="liste" className="w-4 h-4 mr-1.5" />Liste</>}
-            </button>
-          ))}
+      </div>
+      <button type="button" onClick={() => setGrand((g) => !g)} className="mt-3 w-full rounded-full border border-violet/30 px-3 py-1.5 text-xs font-medium text-ink-soft hover:bg-violet/10 hover:text-ink">
+        <Icone nom="calendrier" className="w-3.5 h-3.5 mr-1.5" />{grand ? "Réduire le calendrier" : "Agrandir le calendrier"}
+      </button>
+    </section>
+  );
+
+  const liste = jour ? duJour : aVenir;
+  return (
+    <div className="space-y-8">
+      <div>
+        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-soft">
+          <Icone nom="curseurs" className="w-3.5 h-3.5 mr-1.5" />Filtrer par type
+          <span className="ml-2 font-normal normal-case tracking-normal text-ink-soft/70">touche un type pour n’afficher que lui, puis d’autres pour les ajouter</span>
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          {TYPES.map((t) => {
+            const actif = filtres.includes(t.id);
+            return (
+              <button
+                key={t.id}
+                type="button"
+                aria-pressed={actif}
+                onClick={() => basculer(t.id)}
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-all border ${actif ? "text-ink bg-violet/15" : "text-ink-soft/60 border-violet/15"}`}
+                style={actif ? { borderColor: couleurDe(t.id) } : undefined}
+              >
+                <Icone nom={t.icone} className="w-4 h-4 mr-1.5" style={actif ? { color: couleurDe(t.id) } : undefined} />
+                {t.label}
+              </button>
+            );
+          })}
+          {filtres.length !== TYPES.length ? (
+            <button type="button" onClick={() => setFiltres(TYPES.map((t) => t.id))} className="rounded-full px-3 py-2 text-sm text-lilac underline underline-offset-2">Tout afficher</button>
+          ) : null}
         </div>
       </div>
 
@@ -244,67 +335,22 @@ export default function Calendrier() {
         <p className="carte-holo rounded-2xl border border-violet/25 p-5 text-ink-soft">
           Le calendrier est momentanément indisponible. Retrouve les événements sur le Discord, avec la commande <code className="text-lilac">/calendrier</code>.
         </p>
-      ) : vue === "mois" ? (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-          <section className="carte-holo rounded-2xl border border-violet/25 p-3 md:p-5" aria-label="Calendrier du mois">
-            <div className="flex items-center justify-between mb-3">
-              <button type="button" onClick={() => changerMois(-1)} className="rounded-full border border-violet/25 w-9 h-9 text-ink-soft hover:bg-violet/10" aria-label="Mois précédent">‹</button>
-              <h2 className="text-lg md:text-xl font-semibold text-ink first-letter:uppercase">{titreMois}</h2>
-              <button type="button" onClick={() => changerMois(1)} className="rounded-full border border-violet/25 w-9 h-9 text-ink-soft hover:bg-violet/10" aria-label="Mois suivant">›</button>
+      ) : (
+        <div className={grand ? "space-y-6" : "grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start"}>
+          {grand ? calendrier : null}
+          <section aria-live="polite" className="lg:order-1">
+            <div className="mb-3 flex flex-wrap items-center gap-3">
+              <h2 className="text-xl font-semibold text-ink first-letter:uppercase">{jour ? dateLongue(new Date(`${jour}T12:00:00Z`).getTime()) : "À venir"}</h2>
+              {jour ? <button type="button" onClick={() => setJour(null)} className="rounded-full border border-violet/30 px-3 py-1 text-xs text-ink-soft hover:bg-violet/10 hover:text-ink">← Tous les événements à venir</button> : null}
             </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[11px] uppercase tracking-wide text-ink-soft mb-1">
-              {JOURS.map((j) => <div key={j}>{j}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {cases.map((c) => {
-                const evs = parJour.get(c.cle) ?? [];
-                const choisi = c.cle === jour;
-                return (
-                  <button
-                    key={c.cle}
-                    type="button"
-                    onClick={() => setJour(c.cle)}
-                    aria-pressed={choisi}
-                    aria-label={`${c.num}${evs.length ? `, ${evs.length} événement${evs.length > 1 ? "s" : ""}` : ""}`}
-                    className={`min-h-[58px] md:min-h-[84px] rounded-xl border p-1 md:p-1.5 text-left align-top transition-all ${
-                      choisi ? "border-violet-light bg-violet/20" : "border-violet/10 hover:border-violet/35"
-                    } ${c.dansMois ? "" : "opacity-35"}`}
-                  >
-                    <span className={`text-xs font-semibold ${c.cle === aujourdHui ? "rounded-full bg-violet px-1.5 text-ink" : "text-ink-soft"}`}>{c.num}</span>
-                    <span className="mt-1 hidden md:flex flex-col gap-0.5">
-                      {evs.slice(0, 3).map((e) => (
-                        <span key={e.id} className="truncate rounded px-1 text-[10.5px] leading-4 text-ink" style={{ background: couleurDe(e.type) + "33" }}>
-                          <Icone nom={TYPES.find((t) => t.id === e.type)?.icone || "etoile"} className="w-3 h-3 mr-1" />{e.title}
-                        </span>
-                      ))}
-                      {evs.length > 3 ? <span className="text-[10px] text-ink-soft">+{evs.length - 3}</span> : null}
-                    </span>
-                    <span className="mt-1 flex md:hidden gap-0.5 flex-wrap">
-                      {evs.slice(0, 4).map((e) => <span key={e.id} className="w-1.5 h-1.5 rounded-full" style={{ background: couleurDe(e.type) }} />)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-          <section aria-live="polite">
-            <h2 className="text-lg font-semibold text-ink mb-3 first-letter:uppercase">{dateLongue(new Date(`${jour}T12:00:00Z`).getTime())}</h2>
-            {duJour.length ? (
-              <div className="space-y-3">{duJour.map((e) => <CarteEvenement key={e.id} e={e} />)}</div>
+            {liste.length ? (
+              <div className="space-y-3">{liste.map((e) => <CarteEvenement key={e.id} e={e} large />)}</div>
             ) : (
-              <p className="text-ink-soft text-sm">Rien de prévu ce jour-là. Choisis un autre jour dans le calendrier.</p>
+              <p className="carte-holo rounded-2xl border border-violet/20 p-5 text-ink-soft text-sm">{jour ? "Rien de prévu ce jour-là. Choisis un autre jour dans le calendrier." : "Rien de prévu pour l’instant… reviens bientôt !"}</p>
             )}
           </section>
+          {grand ? null : <aside className="lg:order-2 lg:sticky lg:top-24">{calendrier}</aside>}
         </div>
-      ) : (
-        <section>
-          <h2 className="text-xl font-semibold text-ink mb-3">À venir</h2>
-          {aVenir.length ? (
-            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{aVenir.map((e) => <CarteEvenement key={e.id} e={e} />)}</div>
-          ) : (
-            <p className="text-ink-soft text-sm">Rien de prévu pour l’instant… reviens bientôt !</p>
-          )}
-        </section>
       )}
 
       {resultats.length ? (

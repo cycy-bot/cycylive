@@ -230,12 +230,12 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
         </div>
       </div>
       {/* tablette et ordinateur : carrousel */}
-      <div className="relative max-sm:hidden">
-      <button type="button" aria-label="Jours précédents" onClick={() => defiler(-1)} disabled={bords.debut} className={`${fleche} -left-3 xl:-left-6`}><IconChevronLeft className="h-5 w-5" /></button>
-      <button type="button" aria-label="Jours suivants" onClick={() => defiler(1)} disabled={bords.fin} className={`${fleche} -right-3 xl:-right-6`}><IconChevronRight className="h-5 w-5" /></button>
+      <div className="relative max-sm:hidden sm:px-12 xl:px-0">
+      <button type="button" aria-label="Jours précédents" onClick={() => defiler(-1)} disabled={bords.debut} className={`${fleche} left-0 xl:-left-12`}><IconChevronLeft className="h-5 w-5" /></button>
+      <button type="button" aria-label="Jours suivants" onClick={() => defiler(1)} disabled={bords.fin} className={`${fleche} right-0 xl:-right-12`}><IconChevronRight className="h-5 w-5" /></button>
       <div ref={piste} onScroll={suivre} className="-mx-1 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto scroll-smooth px-1 pb-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {jours.map((jour) => (
-            <div key={(jour.date || jour.jour) + jour.semaine} className="flex shrink-0 snap-start basis-[calc((100%-0.75rem)/2)] md:basis-[calc((100%-3*0.75rem)/4)] lg:basis-[calc((100%-6*0.75rem)/7)]">
+            <div key={(jour.date || jour.jour) + jour.semaine} className="flex shrink-0 snap-start basis-[calc((100%-0.75rem)/2)] md:basis-[calc((100%-2*0.75rem)/3)] lg:basis-[calc((100%-4*0.75rem)/5)] xl:basis-[calc((100%-6*0.75rem)/7)]">
               {rendreJour(jour)}
             </div>
         ))}
