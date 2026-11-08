@@ -23,6 +23,12 @@ export type DonneesCycyBot = {
   commands: { everyone: CommandeCycyBot[]; mods: CommandeCycyBot[]; groups?: GroupeCommandesTwitch[] };
   transmission?: LigneConsole[];
   discord?: DiscordCycyBot | null;
+  /** Chiffres publics (page Statistiques) : des totaux, aucun pseudo. */
+  chiffres?: {
+    twitch: { subs: number | null; subsOfferts: number | null; jours: number; nouveauxSubs: number; subsOffertsPeriode: number; bits: number; lives: number };
+    tiktok: { abonnes: number; likes: number | null } | null;
+    youtube: { abonnes: number } | null;
+  } | null;
   /** Rank Valorant (même source que la commande !rank du chat). */
   valorant?: { rank: { tier: string; division: number | null; rr: number | null; label: string; text: string; updatedAt: string } | null };
   updatedAt: string;

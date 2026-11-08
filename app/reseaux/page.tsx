@@ -6,6 +6,9 @@ import { lireContenus } from "@/lib/contenusStore";
 import { ajouterMiniatures, type ContenuAvecMiniature } from "@/lib/miniatures";
 import AccentCosmique from "@/components/AccentCosmique";
 import CarouselFleches from "@/components/CarouselFleches";
+import Link from "next/link";
+import { lireChoixClips, clipsAffiches } from "@/lib/clipsChoixStore";
+import { derniersClipsTwitch } from "@/lib/clipsTwitch";
 import {
   IconTwitch,
   IconTikTok,
@@ -87,6 +90,9 @@ function BlocPlateforme({
   );
 }
 
+// clips Twitch triés dans CycyBot : la page se met à jour toutes les 10 minutes
+export const revalidate = 600;
+
 export const metadata: Metadata = {
   title: "Réseaux & contenus | Cycylive",
   description:
@@ -101,9 +107,14 @@ export const metadata: Metadata = {
 };
 
 export default async function ReseauxPage() {
-  const contenus = await ajouterMiniatures(await lireContenus());
+  const [brut, choix, recents] = await Promise.all([lireContenus(), lireChoixClips(), derniersClipsTwitch(60).catch(() => [])]);
+  const contenus = await ajouterMiniatures(brut);
 
-  const clipsTwitch = contenus.filter((c) => c.plateforme === "Twitch");
+  // Clips Twitch : ceux publiés depuis le tri des clips (CycyBot › Studio › Clips Twitch), comme sur la page Gaming,
+  // après les éventuels clips ajoutés à la main dans les contenus du site
+  const clipsTries: ContenuAvecMiniature[] = clipsAffiches(choix, recents, 40).map((c) => ({ id: "clip-" + c.id, plateforme: "Twitch", titre: c.titre, url: c.url, format: "horizontal", miniature: c.miniature || undefined } as ContenuAvecMiniature));
+  const vus = new Set<string>();
+  const clipsTwitch = [...contenus.filter((c) => c.plateforme === "Twitch"), ...clipsTries].filter((c) => (vus.has(c.url) ? false : (vus.add(c.url), true)));
   const tiktoks = contenus.filter((c) => c.plateforme === "TikTok");
   const reels = contenus.filter((c) => c.plateforme === "Instagram");
   const videosYoutube = contenus.filter((c) => c.plateforme === "YouTube");
@@ -132,11 +143,14 @@ export default async function ReseauxPage() {
         ctaLabel="Voir la chaîne"
       >
         {clipsTwitch.length > 0 ? (
-          <CarouselFleches>
-            {clipsTwitch.map((c) => (
-              <CarteVideo key={c.id} c={c} largeur="w-40" />
-            ))}
-          </CarouselFleches>
+          <>
+            <CarouselFleches>
+              {clipsTwitch.map((c) => (
+                <CarteVideo key={c.id} c={c} largeur={c.format === "vertical" ? "w-40" : "w-64 md:w-72"} />
+              ))}
+            </CarouselFleches>
+            <Link href="/gaming/clips" className="mt-3 inline-block text-sm font-semibold text-lilac hover:text-ink">Tous les clips, live par live →</Link>
+          </>
         ) : (
           <p className="text-ink-soft/60 text-sm">Aucun clip pour l'instant.</p>
         )}

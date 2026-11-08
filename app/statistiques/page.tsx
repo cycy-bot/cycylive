@@ -7,7 +7,8 @@ import { statsTwitchTracker } from "@/lib/twitchTracker";
 import AccentCosmique from "@/components/AccentCosmique";
 import DiscordEnLigne from "@/components/DiscordEnLigne";
 import AnnoncesDiscord from "@/components/AnnoncesDiscord";
-import { IconTwitch } from "@/components/Icons";
+import { IconTwitch, IconTikTok, IconYouTube } from "@/components/Icons";
+import { lireCycyBot } from "@/lib/cycybot";
 import Icone, { Pastille, type Teinte } from "@/components/icones/Icone";
 import type { NomIcone } from "@/components/icones/banque";
 import TitreSection from "@/components/icones/TitreSection";
@@ -31,7 +32,8 @@ const nf = (n: number) => n.toLocaleString("fr-FR");
 type Tuile = { e: NomIcone; c?: Teinte; v: string; l: string; d?: string; mise?: boolean };
 
 export default async function StatistiquesPage() {
-  const [connecte, tracker] = await Promise.all([estConnecteeATwitch().catch(() => false), statsTwitchTracker(chaine).catch(() => null)]);
+  const [connecte, tracker, bot] = await Promise.all([estConnecteeATwitch().catch(() => false), statsTwitchTracker(chaine).catch(() => null), lireCycyBot().catch(() => null)]);
+  const ch = bot?.chiffres ?? null, tw = ch?.twitch;
   const followers = (connecte ? await obtenirNombreFollowers().catch(() => null) : null) ?? tracker?.followersTotal ?? null;
 
   const classements = [
@@ -46,6 +48,18 @@ export default async function StatistiquesPage() {
     ...(tracker?.heuresRegardees ? [{ e: "ecran", c: "indigo", v: `${nf(Math.round(tracker.heuresRegardees))} h`, l: "Regardées par la commu", d: "sur les 30 derniers jours" }] : []),
     ...(tracker?.nouveauxFollowers ? [{ e: "eclats", c: "or", v: `+${nf(tracker.nouveauxFollowers)}`, l: "Nouveaux followers", d: "sur les 30 derniers jours" }] : []),
   ] as Tuile[];
+  // Soutien Twitch (relevé par CycyBot) : subs actuels, puis sur les 30 derniers jours de live
+  const soutien = [
+    ...(tw?.subs ? [{ e: "etoile", c: "violet", v: nf(tw.subs), l: "Subs", d: tw.subsOfferts != null ? `en ce moment · dont ${nf(tw.subsOfferts)} offert${tw.subsOfferts > 1 ? "s" : ""}` : "en ce moment" }] : []),
+    ...(tw?.nouveauxSubs ? [{ e: "coeur", c: "fuchsia", v: nf(tw.nouveauxSubs), l: "Subs et resubs", d: `pendant les lives des ${tw.jours} derniers jours` }] : []),
+    ...(tw?.subsOffertsPeriode ? [{ e: "cadeau", c: "vert", v: nf(tw.subsOffertsPeriode), l: "Subs offerts", d: `pendant les lives des ${tw.jours} derniers jours` }] : []),
+    ...(tw?.bits ? [{ e: "diamant", c: "ciel", v: nf(tw.bits), l: "Bits", d: `pendant les lives des ${tw.jours} derniers jours` }] : []),
+  ] as Tuile[];
+  const reseaux = [
+    ...(ch?.tiktok?.abonnes ? [{ i: IconTikTok, v: nf(ch.tiktok.abonnes), l: "Abonnés TikTok", href: liens.tiktok }] : []),
+    ...(ch?.tiktok?.likes ? [{ i: IconTikTok, v: nf(ch.tiktok.likes), l: "Likes TikTok", href: liens.tiktok }] : []),
+    ...(ch?.youtube?.abonnes ? [{ i: IconYouTube, v: nf(ch.youtube.abonnes), l: "Abonnés YouTube", href: liens.youtube }] : []),
+  ];
 
   return (
     <div className="mx-auto max-w-5xl px-5 md:px-8 py-8 md:py-12">
@@ -78,10 +92,41 @@ export default async function StatistiquesPage() {
       ) : (
         <p className="carte-holo rounded-2xl p-6 text-ink-soft mb-4">Les chiffres reviennent dans un instant.</p>
       )}
+      {soutien.length > 0 && (
+        <>
+          <TitreSection icone="coeur" className="mt-8 mb-3 !text-xl">Le soutien sur Twitch</TitreSection>
+          <div className={`grid grid-cols-2 gap-3 mb-4 ${soutien.length >= 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+            {soutien.map((t) => (
+              <div key={t.l} className="carte-holo rounded-2xl p-5">
+                <Pastille nom={t.e} teinte={t.c} />
+                <p className="mt-2 font-display text-3xl font-semibold text-ink tabular-nums">{t.v}</p>
+                <p className="text-sm text-ink">{t.l}</p>
+                {t.d && <p className="text-xs text-ink-soft/60">{t.d}</p>}
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {reseaux.length > 0 && (
+        <>
+          <TitreSection icone="smartphone" className="mt-8 mb-3 !text-xl">Sur mes autres réseaux</TitreSection>
+          <div className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-3">
+            {reseaux.map((t) => (
+              <a key={t.l} href={t.href} target="_blank" rel="noopener noreferrer" className="carte-holo rounded-2xl p-5 hover:border-violet/40 transition-all">
+                <span className="grid h-9 w-9 place-items-center rounded-full border border-violet/25 bg-violet/10 text-violet-light"><t.i className="w-4 h-4" /></span>
+                <p className="mt-2 font-display text-3xl font-semibold text-ink tabular-nums">{t.v}</p>
+                <p className="text-sm text-ink">{t.l}</p>
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
       <p className="text-xs text-ink-soft/60 mb-12">
         Moyennes, pic et classements : source{" "}
         <a href={`https://twitchtracker.com/${chaine}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-ink">TwitchTracker</a>
-        {" "}(30 derniers jours) · followers : Twitch.
+        {" "}(30 derniers jours) · followers : Twitch{soutien.length ? " · subs et bits : Twitch, relevés par CycyBot" : ""}{reseaux.length ? " · TikTok et YouTube : profils publics" : ""}.
       </p>
 
       {/* Appel au soutien */}
