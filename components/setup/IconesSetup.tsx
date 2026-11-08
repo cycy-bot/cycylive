@@ -109,11 +109,28 @@ export const TYPES_MATERIEL: Record<TypeMateriel, { label: string; dessin: React
     <path {...T} d="M12 16v4M8 20.5h8" />
     {eclat(16.5, 7.5, 1.8)}
   </> },
-  lumiere: { label: "Éclairage", dessin: <>
-    <circle {...T} cx="12" cy="9.5" r="6.8" />
-    <circle {...F} cx="12" cy="9.5" r="3.8" />
-    <path {...T} d="M12 16.3v4.7M9 21h6" />
-    {eclat(12, 9.5, 1.6)}
+  // ring light : l'anneau lumineux (épais, rempli), le téléphone au centre, le pied et ses rayons
+  lumiere: { label: "Ring light", dessin: <>
+    <circle {...T} cx="12" cy="9" r="5.6" strokeWidth={3.4} strokeOpacity={0.35} />
+    <circle {...T} cx="12" cy="9" r="6.9" />
+    <circle {...T} cx="12" cy="9" r="3.9" />
+    <rect {...P} x="11" y="7.4" width="2" height="3.2" rx=".5" />
+    <path {...T} d="M12 16.3v4.2M8.5 21.5 12 19.8l3.5 1.7" />
+    <path {...T} d="M1.6 9h1.3M21.1 9h1.3M3.2 3.2l1 1M20.8 3.2l-1 1M3.2 14.8l1-1M20.8 14.8l-1-1" />
+  </> },
+  // néon : un tube lumineux qui serpente (avec son halo) et deux petits éclats
+  neon: { label: "Néon / LED", dessin: <>
+    <path {...T} strokeWidth={4.2} strokeOpacity={0.18} d="M4 17c0-5 3-9 6-9s3.5 6 6.5 6S20 10 20 6.5" />
+    <path {...T} d="M4 17c0-5 3-9 6-9s3.5 6 6.5 6S20 10 20 6.5" />
+    <path {...T} d="M3 20.5h3M18 20.5h3" opacity=".6" />
+    {eclat(19.5, 16.5, 1.7)}
+    {eclat(5.5, 5.5, 1.4)}
+  </> },
+  lampe: { label: "Lampe", dessin: <>
+    <path {...F} d="M7.5 3.5h9l2.5 7.5H5Z" />
+    <path {...T} d="M12 11v7.5M8 21h8M12 18.5c-2.2 0-4 1.1-4 2.5" />
+    <path {...T} d="M8.5 13.5l-1.3 1.6M15.5 13.5l1.3 1.6" opacity=".7" />
+    {eclat(12, 7.2, 1.5)}
   </> },
   deck: { label: "Contrôleur", dessin: <>
     <rect {...F} x="3" y="4.5" width="18" height="12" rx="2.5" />
@@ -172,6 +189,8 @@ export function devinerType(nom: string): TypeMateriel | null {
     [/souris|mouse|deathadder|viper|g pro/, "souris"],
     [/casque|headset|hs\d{2}|arctis|cloud/, "casque"],
     [/[ée]cran|moniteur|iiyama|monitor/, "ecran"],
+    [/n[ée]on|led strip|ruban|bande led|govee|nanoleaf|hexagon/, "neon"],
+    [/lampe|lamp|veilleuse|ampoule/, "lampe"],
     [/key ?light|ring|lumi[èe]re|[ée]clairage|led/, "lumiere"],
     [/stream ?deck|deck/, "deck"],
     [/elgato hd|capture|acquisition/, "capture"],

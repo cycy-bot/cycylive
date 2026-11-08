@@ -6,7 +6,7 @@
 
 export type TypeMateriel =
   | "gpu" | "cpu" | "ram" | "carteMere" | "ssd" | "alim" | "boitier" | "ventirad" | "wifi"
-  | "camera" | "micro" | "clavier" | "souris" | "casque" | "ecran" | "lumiere" | "deck" | "capture" | "chaise" | "manette" | "autre";
+  | "camera" | "micro" | "clavier" | "souris" | "casque" | "ecran" | "lumiere" | "neon" | "lampe" | "deck" | "capture" | "chaise" | "manette" | "autre";
 
 export type ItemSetup = {
   id: string;
