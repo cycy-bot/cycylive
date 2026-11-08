@@ -78,23 +78,9 @@ export default async function StatistiquesPage() {
         </div>
       )}
 
-      {chiffres.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 mb-4">
-          {chiffres.map((t) => (
-            <div key={t.l} className="carte-holo rounded-2xl p-5">
-              <Pastille nom={t.e} teinte={t.c} />
-              <p className="mt-2 font-display text-3xl font-semibold text-ink tabular-nums">{t.v}</p>
-              <p className="text-sm text-ink">{t.l}</p>
-              {t.d && <p className="text-xs text-ink-soft/60">{t.d}</p>}
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p className="carte-holo rounded-2xl p-6 text-ink-soft mb-4">Les chiffres reviennent dans un instant.</p>
-      )}
       {soutien.length > 0 && (
         <>
-          <TitreSection icone="coeur" className="mt-8 mb-3 !text-xl">Le soutien sur Twitch</TitreSection>
+          <TitreSection icone="coeur" className="mb-3 !text-xl">Le soutien sur Twitch</TitreSection>
           <div className={`grid grid-cols-2 gap-3 mb-4 ${soutien.length >= 5 ? "md:grid-cols-3 lg:grid-cols-5" : soutien.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
             {soutien.map((t) => (
               <div key={t.l} className="carte-holo rounded-2xl p-5">
@@ -108,6 +94,20 @@ export default async function StatistiquesPage() {
         </>
       )}
 
+      {chiffres.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3 mb-4 mt-6">
+          {chiffres.map((t) => (
+            <div key={t.l} className="carte-holo rounded-2xl p-5">
+              <Pastille nom={t.e} teinte={t.c} />
+              <p className="mt-2 font-display text-3xl font-semibold text-ink tabular-nums">{t.v}</p>
+              <p className="text-sm text-ink">{t.l}</p>
+              {t.d && <p className="text-xs text-ink-soft/60">{t.d}</p>}
+            </div>
+          ))}
+        </div>
+      ) : soutien.length || reseaux.length ? null : (
+        <p className="carte-holo rounded-2xl p-6 text-ink-soft mb-4">Les chiffres reviennent dans un instant.</p>
+      )}
       {reseaux.length > 0 && (
         <>
           <TitreSection icone="smartphone" className="mt-8 mb-3 !text-xl">Sur mes autres réseaux</TitreSection>

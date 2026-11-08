@@ -96,12 +96,15 @@ function Deroule({ etapes, heure, couleur = "text-lilac", avecJeu = true }: { et
 }
 
 export default function GrillePlanning({ semaines, aujourdhui }: { semaines: SemaineGrille[]; aujourdhui: string }) {
-  // Carrousel : tous les jours des semaines à la suite. Au départ, aujourd'hui est vers le milieu (4e sur 7 à l'écran
-  // sur ordinateur) ; les flèches font défiler d'un écran, les boutons de semaine sautent directement à un lundi.
+  // Carrousel : tous les jours des semaines à la suite. Au départ, aujourd'hui est vers le milieu ; les flèches avancent
+  // d'un jour, les boutons de semaine sautent directement au lundi de la semaine. Le nombre de jours à l'écran dépend de
+  // la largeur : 7 sur ordinateur, moins sur tablette (écran tactile : colonnes plus larges pour que le texte respire).
   const jours = semaines.flatMap((w, i) => w.jours.map((j) => ({ ...j, semaine: i })));
   const piste = useRef<HTMLDivElement>(null);
   const [s, setS] = useState(0);
   const [bords, setBords] = useState({ debut: true, fin: false });
+  const [n, setN] = useState(0); // 0 : pas encore mesuré
+  const place = useRef(false);
   // Téléphone : 3 jours empilés (hier, aujourd'hui, demain au départ), les flèches avancent de 3 jours
   const iAuj = Math.max(0, jours.findIndex((j) => j.date === aujourdhui));
   const PAR_TEL = 3;
@@ -125,14 +128,27 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
     setBords({ debut: x < 4, fin: x + t.clientWidth >= t.scrollWidth - 4 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jours.length]);
+  // jours à l'écran selon la largeur disponible
   useEffect(() => {
-    const i = jours.findIndex((j) => j.date === aujourdhui);
-    allerA(i < 0 ? 0 : i - Math.floor((parEcran() - 1) / 2), false);
-    suivre();
-    const r = () => suivre(); window.addEventListener("resize", r);
-    return () => window.removeEventListener("resize", r);
+    const mesurer = () => {
+      const t = piste.current; if (!t || !t.clientWidth) return;
+      const tactile = window.matchMedia?.("(pointer: coarse)").matches;
+      const minW = tactile ? 200 : 140;
+      setN(Math.max(2, Math.min(7, Math.floor((t.clientWidth + 12) / (minW + 12)))));
+      suivre();
+    };
+    mesurer(); window.addEventListener("resize", mesurer);
+    return () => window.removeEventListener("resize", mesurer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aujourdhui]);
+  }, []);
+  // au départ : aujourd'hui vers le milieu (une fois la taille des colonnes connue)
+  useEffect(() => {
+    const t = piste.current; if (!t || !t.clientWidth || !n) return;
+    if (!place.current) { place.current = true; const i = jours.findIndex((j) => j.date === aujourdhui); allerA(i < 0 ? 0 : i - Math.floor((n - 1) / 2), false); }
+    suivre();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [n, aujourdhui]);
+  const premierVisible = () => { const t = piste.current, c = cases(); return t && c.length ? Math.round(t.scrollLeft / ((c[0].offsetWidth || 1) + 12)) : 0; };
   const rendreJour = (jour: (typeof jours)[number]) => {
           const estAujourdhui = jour.date === aujourdhui;
           // jour passé (comme sur le Discord) : carte éteinte, sans couleur d'événement ni halo, pour que le prochain live ressorte
@@ -199,7 +215,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
             </div>
     );
   };
-  const defiler = (sens: number) => { const t = piste.current; if (t) t.scrollBy({ left: sens * t.clientWidth, behavior: "smooth" }); };
+  const defiler = (sens: number) => allerA(premierVisible() + sens); // un jour à la fois
   const fleche = "absolute top-1/2 z-10 -translate-y-1/2 grid h-10 w-10 place-items-center rounded-full border border-violet/40 bg-void/85 text-ink shadow-glow-sm backdrop-blur transition hover:border-violet-light hover:bg-violet/30 disabled:pointer-events-none disabled:opacity-0";
   return (
     <div>
@@ -235,7 +251,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
       <button type="button" aria-label="Jours suivants" onClick={() => defiler(1)} disabled={bords.fin} className={`${fleche} right-0 xl:-right-12`}><IconChevronRight className="h-5 w-5" /></button>
       <div ref={piste} onScroll={suivre} className="-mx-1 flex snap-x snap-mandatory items-stretch gap-3 overflow-x-auto scroll-smooth px-1 pb-4 pt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {jours.map((jour) => (
-            <div key={(jour.date || jour.jour) + jour.semaine} className="flex shrink-0 snap-start basis-[calc((100%-0.75rem)/2)] md:basis-[calc((100%-2*0.75rem)/3)] lg:basis-[calc((100%-4*0.75rem)/5)] xl:basis-[calc((100%-6*0.75rem)/7)]">
+            <div key={(jour.date || jour.jour) + jour.semaine} className="flex shrink-0 snap-start" style={{ flexBasis: `calc((100% - ${((n || 7) - 1) * 12}px) / ${n || 7})` }}>
               {rendreJour(jour)}
             </div>
         ))}
