@@ -86,7 +86,7 @@ function Deroule({ etapes, heure, couleur = "text-lilac", avecJeu = true }: { et
   return (
     <ol className="flex flex-col gap-1 w-full">
       {lignesDeroule(etapes, { debut: heure, avecJeu }).map((x, i) => (
-        <li key={i} className="grid grid-cols-[2.6rem_1fr] items-baseline gap-1.5 min-w-0 text-left text-[11.5px] leading-tight">
+        <li key={i} className="grid grid-cols-[3rem_1fr] md:grid-cols-[2.6rem_1fr] items-baseline gap-2 md:gap-1.5 min-w-0 text-left text-[13px] md:text-[11.5px] leading-snug md:leading-tight">
           <span className="tabular-nums font-semibold text-ink text-right">{x.heure || "ensuite"}</span>
           <span className={`min-w-0 line-clamp-2 font-medium ${x.reprise ? "text-ink-soft" : couleur}`}>{x.emoji ? x.emoji + " " : x.reprise ? "↻ " : ""}{x.texte}</span>
         </li>
@@ -100,14 +100,14 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
   const semaine = semaines[s] ?? semaines[0];
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
+      <div className="-mx-4 mb-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0">
         {semaines.map((w, i) => (
           <button
             key={w.du}
             type="button"
             aria-pressed={i === s}
             onClick={() => setS(i)}
-            className={`rounded-full px-3.5 py-1.5 text-xs md:text-sm border transition-all ${i === s ? "border-violet-light bg-violet/20 text-ink" : "border-violet/15 text-ink-soft hover:text-ink hover:border-violet/35"}`}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs md:text-sm border transition-all ${i === s ? "border-violet-light bg-violet/20 text-ink" : "border-violet/15 text-ink-soft hover:text-ink hover:border-violet/35"}`}
           >
             {NOMS_SEMAINE[i] ?? `Semaine du ${w.du}`}
             <span className="ml-1.5 text-ink-soft/70">{w.du} → {w.au}</span>
@@ -127,7 +127,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
             <div
               key={jour.date || jour.jour}
               style={st?.carte}
-              className={`relative carte-holo rounded-2xl px-4 py-3 md:p-4 md:min-h-[168px] flex flex-wrap md:flex-col items-center md:justify-center md:text-center gap-x-3 gap-y-1 md:gap-2 border ${
+              className={`relative carte-holo rounded-2xl px-4 py-3 md:p-4 md:min-h-[168px] flex ${jour.off ? "flex-row items-center" : "flex-col items-stretch"} md:flex-col md:items-center md:justify-center md:text-center gap-x-3 gap-y-2 md:gap-2 border ${estAujourdhui || (passe && !jour.off) ? "pt-5 md:pt-4" : ""} ${
                 passe ? "border-violet/10 opacity-45 saturate-[.35]" : st ? (estAujourdhui ? "ring-2 ring-violet-light/80 ring-offset-2 ring-offset-void" : "") : estAujourdhui ? "border-violet-light shadow-glow" : jour.off ? "border-violet/10 opacity-80" : "border-violet/35 shadow-glow-sm"
               }`}
             >
@@ -141,37 +141,45 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                   Aujourd&apos;hui
                 </span>
               )}
-              <span className="w-24 md:w-auto text-xs tracking-wide text-ink-soft uppercase">
-                {jour.jour}
-                {jour.date ? <span className="ml-1 text-ink-soft/60">{Number(jour.date.slice(8))}</span> : null}
-              </span>
-              {jour.off ? (
-                <>
-                  <Icone nom="dodo" className="w-6 h-6 text-ink-soft/70" />
-                  <span className="ml-auto md:ml-0 text-ink-soft text-sm font-medium">OFF</span>
-                </>
-              ) : (
-                <>
-                  {sp ? <IconeLive type={sp} /> : valo ? (
-                    // même logo violet que le planning du Discord (image du bot)
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src="/images/jeux/valorant.png" alt="Valorant" width={30} height={24} className="h-6 w-auto shrink-0 drop-shadow-[0_0_10px_rgba(181,124,255,.7)]" />
-                  ) : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}
-                  <div className="flex-1 md:flex-none md:w-full min-w-0">
-                    {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span>
-                      : formatDe(jour.categorie) ? <span className="mb-1 inline-block whitespace-nowrap rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-lilac">{formatDe(jour.categorie)!.emoji} {formatDe(jour.categorie)!.label}</span> : null}
-                    {jour.titre ? <span className={`block text-sm font-semibold leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
-                    {(jour.etapes?.length || 0) > 1 ? <Deroule etapes={jour.etapes!} heure={jour.aVenir ? "" : jour.heure} couleur={st?.texte} avecJeu={!valo} /> : jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
-                  </div>
-                  <span className="ml-auto md:ml-0 text-ink text-sm font-semibold whitespace-nowrap">
+              {(() => {
+                const nomJour = (
+                  <span className={`${jour.off ? "w-24" : ""} md:w-auto md:order-1 text-xs tracking-wide text-ink-soft uppercase`}>
+                    {jour.jour}
+                    {jour.date ? <span className="ml-1 text-ink-soft/60">{Number(jour.date.slice(8))}</span> : null}
+                  </span>
+                );
+                if (jour.off) return nomJour;
+                const horaires = (
+                  <span className="md:order-4 text-ink text-sm font-semibold whitespace-nowrap">
                     {jour.aVenir ? <span className="font-medium text-lilac">Horaires à venir</span> : <>
                       {jour.heure}
                       {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
                     </>}
                   </span>
+                );
+                return <div className="flex w-full items-center justify-between gap-3 border-b border-violet/10 pb-2 md:contents">{nomJour}{horaires}</div>;
+              })()}
+              {jour.off ? (
+                <>
+                  <Icone nom="dodo" className="w-6 h-6 text-ink-soft/70 md:order-2" />
+                  <span className="ml-auto md:ml-0 md:order-3 text-ink-soft text-sm font-medium">OFF</span>
                 </>
+              ) : (
+                <div className="flex w-full items-start gap-3 md:contents">
+                  <span className="mt-0.5 shrink-0 md:order-2 md:mt-0">{sp ? <IconeLive type={sp} /> : valo ? (
+                    // même logo violet que le planning du Discord (image du bot)
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src="/images/jeux/valorant.png" alt="Valorant" width={30} height={24} className="h-6 w-auto shrink-0 drop-shadow-[0_0_10px_rgba(181,124,255,.7)]" />
+                  ) : <IconCrystal className="w-6 h-6 text-lilac shrink-0" />}</span>
+                  <div className="flex-1 md:order-3 md:flex-none md:w-full min-w-0">
+                    {st ? <span className={`mb-1 inline-block whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${st.pastille}`}>{st.label}</span>
+                      : formatDe(jour.categorie) ? <span className="mb-1 inline-block whitespace-nowrap rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-lilac">{formatDe(jour.categorie)!.emoji} {formatDe(jour.categorie)!.label}</span> : null}
+                    {jour.titre ? <span className={`block text-[15px] md:text-sm font-semibold leading-snug md:leading-tight ${st?.texte || "text-ink"}`}>{jour.titre}</span> : null}
+                    {(jour.etapes?.length || 0) > 1 ? <Deroule etapes={jour.etapes!} heure={jour.aVenir ? "" : jour.heure} couleur={st?.texte} avecJeu={!valo} /> : jour.jeux.length || !jour.titre ? <Jeux jeux={jour.jeux} couleur={st?.texte} vide={jour.titre ? "" : formatDe(jour.categorie) ? "" : "Stream"} /> : null}
+                  </div>
+                </div>
               )}
-              {jour.note ? <span className="w-full md:w-auto text-[11px] leading-tight text-ink-soft line-clamp-2">{jour.note}</span> : null}
+              {jour.note ? <span className="w-full md:order-5 md:w-auto text-[11px] leading-tight text-ink-soft line-clamp-2">{jour.note}</span> : null}
             </div>
           );
         })}
