@@ -95,7 +95,7 @@ export default async function StatistiquesPage() {
       {soutien.length > 0 && (
         <>
           <TitreSection icone="coeur" className="mt-8 mb-3 !text-xl">Le soutien sur Twitch</TitreSection>
-          <div className={`grid grid-cols-2 gap-3 mb-4 ${soutien.length >= 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
+          <div className={`grid grid-cols-2 gap-3 mb-4 ${soutien.length >= 5 ? "md:grid-cols-3 lg:grid-cols-5" : soutien.length === 4 ? "md:grid-cols-4" : "md:grid-cols-3"}`}>
             {soutien.map((t) => (
               <div key={t.l} className="carte-holo rounded-2xl p-5">
                 <Pastille nom={t.e} teinte={t.c} />
