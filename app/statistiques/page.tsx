@@ -41,7 +41,6 @@ export default async function StatistiquesPage() {
     ...(tracker?.rangMondial ? [{ e: "globe", c: "ciel", v: `#${nf(tracker.rangMondial)}`, l: "Classement mondial", d: "sur l'ensemble de Twitch", mise: true }] : []),
   ] as Tuile[];
   const chiffres = [
-    ...(followers ? [{ e: "coeur", c: "violet", v: nf(followers), l: "Followers Twitch", d: "en direct" }] : []),
     ...(tracker?.moyenneViewers ? [{ e: "oeil", c: "ciel", v: nf(Math.round(tracker.moyenneViewers)), l: "Viewers en moyenne", d: "sur les 30 derniers jours" }] : []),
     ...(tracker?.picViewers ? [{ e: "fusee", c: "fuchsia", v: nf(tracker.picViewers), l: "Pic de viewers", d: "sur les 30 derniers jours" }] : []),
     ...(tracker?.heuresStreamees ? [{ e: "chrono", c: "vert", v: `${nf(tracker.heuresStreamees)} h`, l: "De live", d: "sur les 30 derniers jours" }] : []),
@@ -50,6 +49,7 @@ export default async function StatistiquesPage() {
   ] as Tuile[];
   // Soutien Twitch (relevé par CycyBot) : subs actuels, puis sur les 30 derniers jours de live
   const soutien = [
+    ...(followers ? [{ e: "coeur", c: "violet", v: nf(followers), l: "Followers Twitch", d: "en direct" }] : []),
     ...(tw?.subs ? [{ e: "etoile", c: "violet", v: nf(tw.subs), l: "Subs", d: tw.subsOfferts != null ? `en ce moment · dont ${nf(tw.subsOfferts)} offert${tw.subsOfferts > 1 ? "s" : ""}` : "en ce moment" }] : []),
     ...(tw?.nouveauxSubs ? [{ e: "coeur", c: "fuchsia", v: nf(tw.nouveauxSubs), l: "Subs et resubs", d: `pendant les lives des ${tw.jours} derniers jours` }] : []),
     ...(tw?.subsOffertsPeriode ? [{ e: "cadeau", c: "vert", v: nf(tw.subsOffertsPeriode), l: "Subs offerts", d: `pendant les lives des ${tw.jours} derniers jours` }] : []),
