@@ -118,17 +118,24 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2.5 md:gap-3 md:auto-rows-fr">
         {semaine.jours.map((jour) => {
           const estAujourdhui = jour.date === aujourdhui;
+          // jour passé (comme sur le Discord) : carte éteinte, sans couleur d'événement ni halo, pour que le prochain live ressorte
+          const passe = Boolean(jour.date && aujourdhui && jour.date < aujourdhui);
           const sp = jour.off ? "" : typeLive(jour);
-          const st = sp ? STYLE_LIVE[sp] : null;
+          const st = sp && !passe ? STYLE_LIVE[sp] : null;
           const valo = !jour.off && !sp && (jour.categorie === "valorant" || jour.categorie === "pp" || [jour.titre || "", ...jour.jeux].some((j) => /valorant/i.test(j)));
           return (
             <div
               key={jour.date || jour.jour}
               style={st?.carte}
               className={`relative carte-holo rounded-2xl px-4 py-3 md:p-4 md:min-h-[168px] flex flex-wrap md:flex-col items-center md:justify-center md:text-center gap-x-3 gap-y-1 md:gap-2 border ${
-                st ? (estAujourdhui ? "ring-2 ring-violet-light/80 ring-offset-2 ring-offset-void" : "") : estAujourdhui ? "border-violet-light shadow-glow" : jour.off ? "border-violet/10 opacity-80" : "border-violet/35 shadow-glow-sm"
+                passe ? "border-violet/10 opacity-45 saturate-[.35]" : st ? (estAujourdhui ? "ring-2 ring-violet-light/80 ring-offset-2 ring-offset-void" : "") : estAujourdhui ? "border-violet-light shadow-glow" : jour.off ? "border-violet/10 opacity-80" : "border-violet/35 shadow-glow-sm"
               }`}
             >
+              {passe && !jour.off && (
+                <span className="absolute -top-2.5 right-4 md:right-auto md:left-1/2 md:-translate-x-1/2 rounded-full border border-violet/20 bg-void px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-soft">
+                  Terminé
+                </span>
+              )}
               {estAujourdhui && (
                 <span className="absolute -top-2.5 right-4 md:right-auto md:left-1/2 md:-translate-x-1/2 rounded-full bg-violet px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
                   Aujourd&apos;hui
