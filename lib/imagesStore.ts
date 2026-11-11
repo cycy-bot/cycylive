@@ -51,5 +51,7 @@ export async function lireImage(id: string): Promise<{ type: string; octets: Uin
 export function lienValide(url: string | undefined, { image = false }: { image?: boolean } = {}): boolean {
   if (!url) return true;
   if (image && /^\/api\/images\/[a-z0-9]{6,24}$/.test(url)) return true;
+  // visuels fournis avec le site (ex. /images/partenaires/horus-x-13.jpg)
+  if (image && /^\/images\/[\w-]+(\/[\w-]+)*\.(png|jpe?g|webp|gif|svg|avif)$/i.test(url)) return true;
   return /^https?:\/\/[^\s]+$/i.test(url);
 }
