@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { COULEUR_RARETE, NOM_RARETE, FigurineVisuel, type Rarete } from "@/components/arcade/CosmoFigurine";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
-import { saisonNoel } from "@/lib/noel";
+import { useSaison } from "@/lib/saison";
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 const RARETES: Rarete[] = ["commune", "peu", "rare", "epique", "legendaire", "mythique"];
@@ -131,13 +131,8 @@ export default function CosmoCapsules() {
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [collection, setCollection] = useState("toutes");
   // 🎄 Saison de Noël : la machine décorée pour tout le monde (même sans être connecté), dès minuit le 1er décembre
-  const [noelLocal, setNoelLocal] = useState(false);
-  useEffect(() => {
-    const maj = () => { let apercu = false; try { apercu = sessionStorage.getItem("apercu-noel") === "1"; } catch { /* stockage indisponible */ } setNoelLocal(apercu || saisonNoel()); };
-    maj();
-    const t = setInterval(maj, 60000);
-    return () => clearInterval(t);
-  }, []);
+  const saisonSite = useSaison();
+  const noelLocal = saisonSite?.saison?.cle === "noel" || saisonSite?.decor === "noel";
   const saison = etat?.saison || null;
   const noel = Boolean(saison) || (!etat && noelLocal);
   const M = noel ? MACHINE_NOEL : MACHINE;

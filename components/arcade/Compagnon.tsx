@@ -8,6 +8,19 @@ import Creature, { ESPECES, ACCESSOIRES, AccessoireApercu, Oeuf, especeInfo, typ
 import { idAppareil } from "@/components/arcade/appareil";
 import Sticker, { stickerDuGain, type NomSticker } from "@/components/arcade/Stickers";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
+import { useSaison } from "@/lib/saison";
+
+// Ce qu'on attrape en jouant avec lui : des étoiles, ou l'objet de la saison (calendrier des saisons de CycyBot)
+const OBJETS_JEU: Record<string, { sticker: NomSticker; nom: string; un: string; emoji: string; lueur: string }> = {
+  etoiles: { sticker: "etoile", nom: "étoiles", un: "l'étoile", emoji: "⭐", lueur: "#ffd66b" },
+  citrouilles: { sticker: "citrouille", nom: "citrouilles", un: "la citrouille", emoji: "🎃", lueur: "#ff9a3c" },
+  sucres: { sticker: "sucre", nom: "sucres d'orge", un: "le sucre d'orge", emoji: "🍭", lueur: "#ff5d73" },
+  coeurs: { sticker: "coeur", nom: "cœurs", un: "le cœur", emoji: "💜", lueur: "#ff7ad9" },
+  oeufs: { sticker: "oeuf", nom: "œufs", un: "l'œuf", emoji: "🥚", lueur: "#c9a8ff" },
+  feuilles: { sticker: "feuille", nom: "feuilles", un: "la feuille", emoji: "🍂", lueur: "#f59e0b" },
+  confettis: { sticker: "fete", nom: "confettis", un: "le confetti", emoji: "🎉", lueur: "#fde68a" },
+  cadeaux: { sticker: "cadeau", nom: "cadeaux", un: "le cadeau", emoji: "🎁", lueur: "#b57cff" },
+};
 
 // ============================================================
 // COMPAGNON GALACTIQUE — façon Tamagotchi, sans compte
@@ -197,6 +210,8 @@ export default function Compagnon() {
   const [message, setMessage] = useState("");
   const [saut, setSaut] = useState(0);
   const [jeu, setJeu] = useState<{ fin: number; attrapees: number; etoiles: { id: string; x: number; y: number; nee: number }[] } | null>(null);
+  const saisonJeu = useSaison();
+  const objet = OBJETS_JEU[saisonJeu?.compagnon || "etoiles"] || OBJETS_JEU.etoiles;
   const [envoi, setEnvoi] = useState<{ etat: "libre" | "envoi" | "erreur"; texte: string }>({ etat: "libre", texte: "" });
   const [copie, setCopie] = useState(false);
   const compte = useCompteDiscord();
@@ -346,7 +361,7 @@ export default function Compagnon() {
     if (etat.stats.energie < 15) return dire("Il est trop fatigué pour jouer… mets-le au lit 🌙");
     partieGagnee.current = false;
     setJeu({ fin: Date.now() + 9000, attrapees: 0, etoiles: [] });
-    dire("Attrape 5 étoiles avant qu'elles disparaissent ! ⭐");
+    dire(`Attrape 5 ${objet.nom} avant qu'ils disparaissent ! ${objet.emoji}`);
   };
 
   // Mini-jeu : des étoiles apparaissent, il faut en attraper 5
@@ -388,9 +403,9 @@ export default function Compagnon() {
   const jeuEnCours = jeu !== null;
   const prec = useRef(false);
   useEffect(() => {
-    if (prec.current && !jeuEnCours && !partieGagnee.current) dire("Raté, les étoiles sont parties… on réessaie ? ⭐");
+    if (prec.current && !jeuEnCours && !partieGagnee.current) dire(`Raté, les ${objet.nom} sont partis… on réessaie ? ${objet.emoji}`);
     prec.current = jeuEnCours;
-  }, [jeuEnCours, dire]);
+  }, [jeuEnCours, dire, objet]);
 
   const dormir = () => {
     if (!etat) return;
@@ -700,15 +715,15 @@ export default function Compagnon() {
                 type="button"
                 onClick={() => attraper(s.id)}
                 className="absolute cp-etoile"
-                style={{ left: `${s.x}%`, top: `${s.y}%`, filter: "drop-shadow(0 0 10px #ffd66b)" }}
-                aria-label="Attraper l'étoile"
+                style={{ left: `${s.x}%`, top: `${s.y}%`, filter: `drop-shadow(0 0 10px ${objet.lueur})` }}
+                aria-label={`Attraper ${objet.un}`}
               >
-                <Sticker nom="etoile" taille={50} />
+                <Sticker nom={objet.sticker} taille={50} />
               </button>
             ))}
           {jeu && (
             <div className="absolute right-3 bottom-3 rounded-full bg-black/40 px-3 py-1 text-xs text-ink">
-              <Sticker nom="etoile" taille={16} className="mr-1 -mt-0.5" />{jeu.attrapees}/5 · {Math.max(0, Math.ceil((jeu.fin - Date.now()) / 1000))} s
+              <Sticker nom={objet.sticker} taille={16} className="mr-1 -mt-0.5" />{jeu.attrapees}/5 · {Math.max(0, Math.ceil((jeu.fin - Date.now()) / 1000))} s
             </div>
           )}
 

@@ -12,7 +12,8 @@ export type NomSticker =
   | "viande" | "donut" | "taco" | "fraise" | "bonbon"
   | "bulle" | "etincelle" | "coeur" | "zzz" | "caca" | "etoile" | "maison" | "oeuf" | "soleil" | "lune" | "fete"
   | "planete" | "fusee" | "comete" | "soucoupe" | "robot" | "boule" | "cible"
-  | "points" | "eclats" | "booster" | "fragment" | "combo" | "pack" | "tresor" | "cadeau";
+  | "points" | "eclats" | "booster" | "fragment" | "combo" | "pack" | "tresor" | "cadeau"
+  | "citrouille" | "sucre" | "feuille";
 
 const C = { strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
@@ -341,6 +342,30 @@ const DESSINS: Record<NomSticker, ReactNode> = {
       <rect x="10" y="44" width="44" height="14" rx="4" fill="#b57cff" stroke="#3d1590" strokeWidth="2.2" />
       <Brille x={56} y={10} r={5} />
       <Brille x={8} y={16} r={4} c="#f0abfc" />
+    </>
+  ),
+  citrouille: (
+    <>
+      <path d="M31 14 q-1 -7 5 -9" stroke="#3f6b2a" strokeWidth="4" fill="none" {...C} />
+      <path d="M32 16 C16 14 6 24 6 37 C6 50 18 58 32 58 C46 58 58 50 58 37 C58 24 48 14 32 16 Z" fill="#ff9a3c" stroke="#b9561a" strokeWidth="2.4" />
+      <path d="M32 17 C24 24 24 50 32 57 M32 17 C40 24 40 50 32 57 M18 20 C12 30 12 46 20 55 M46 20 C52 30 52 46 44 55" stroke="#d9702a" strokeWidth="2" fill="none" {...C} />
+      <Visage x={32} y={38} s={0.9} couleur="#5a2a08" />
+      <Reflet d="M14 30 q2 -8 9 -11" />
+    </>
+  ),
+  sucre: (
+    <>
+      <path d="M24 58 V24 a12 12 0 0 1 24 0 v4" fill="none" stroke="#b9223a" strokeWidth="11" {...C} />
+      <path d="M24 58 V24 a12 12 0 0 1 24 0 v4" fill="none" stroke="#fff" strokeWidth="7" strokeDasharray="5 6" {...C} />
+      <path d="M24 58 V24 a12 12 0 0 1 24 0 v4" fill="none" stroke="#ff5d73" strokeWidth="7" strokeDasharray="5 6" strokeDashoffset="5.5" {...C} />
+      <Brille x={52} y={12} r={4} />
+    </>
+  ),
+  feuille: (
+    <>
+      <path d="M10 54 C10 26 28 8 56 8 C56 36 38 54 10 54 Z" fill="#f59e0b" stroke="#b45309" strokeWidth="2.4" {...C} />
+      <path d="M12 52 L50 14 M24 40 l-2 -10 M34 30 l-2 -10 M30 44 l10 -2 M40 34 l10 -2" stroke="#b45309" strokeWidth="2" fill="none" {...C} />
+      <Brille x={50} y={46} r={4} />
     </>
   ),
   cadeau: (
