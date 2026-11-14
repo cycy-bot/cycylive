@@ -229,8 +229,8 @@ export default function CosmoCapsules() {
           <p className="cc-titre relative text-center text-2xl sm:text-3xl font-black tracking-wide">Cosmo-Capsules</p>
           {noel ? (
             <div className="relative mb-2 text-center">
-              <p className="text-sm font-black uppercase tracking-[.18em] text-[#c2410c]">🎄 {saison?.nom || "La Magie des Astres"} · {saison?.sousTitre || "Édition spéciale Noël"}</p>
-              <p className="text-sm text-[#7a5aa8]">Chaque jour, une figurine de Noël que tu n&apos;as pas encore : jamais de doublon !</p>
+              <p className="text-sm font-black uppercase tracking-[.18em] text-[#fde68a] drop-shadow">🎄 {saison?.nom || "La Magie des Astres"} · {saison?.sousTitre || "Édition spéciale Noël"}</p>
+              <p className="text-sm text-[#efe6ff] drop-shadow">Chaque jour, une figurine de Noël que tu n&apos;as pas encore : jamais de doublon !</p>
               {saison ? (
                 <p className="mt-1 inline-block rounded-full bg-white/80 px-3 py-0.5 text-xs font-bold text-[#7a3a8a]">
                   {saison.possedees} / {saison.total} figurines de Noël{saison.possedees < saison.total ? ` · encore ${saison.joursRestants} jour${saison.joursRestants > 1 ? "s" : ""}` : " · collection complète 🎉"}
@@ -437,7 +437,7 @@ export default function CosmoCapsules() {
       </aside>
 
       <style>{`
-        .cc-noel{background:radial-gradient(ellipse at 50% 0%,#fff7f0 0%,#f6e6ff 45%,#e6d4ff 100%)!important}
+        .cc-noel{background:#1c1040 url(/figurines/fond-machine-419436a00b.webp) center bottom/cover no-repeat!important}.cc-noel .cc-etoiles{opacity:.3}
         .cc-scene{background:radial-gradient(ellipse at 50% 0%,#fff1fa 0%,#f3e6ff 45%,#e3d6ff 100%);box-shadow:0 0 0 3px #ffffffaa,0 30px 80px -30px #c9a8ff}
         .cc-etoiles{position:absolute;inset:0;background-image:radial-gradient(#ffffff 1.5px,transparent 2px),radial-gradient(#ffd23f 1.2px,transparent 1.8px),radial-gradient(#ffb3d6 1.5px,transparent 2px);background-size:90px 90px,140px 140px,60px 60px;background-position:10px 20px,60px 70px,30px 40px;opacity:.8;animation:cc-scintille 4s ease-in-out infinite alternate}
         @keyframes cc-scintille{to{opacity:.4}}
