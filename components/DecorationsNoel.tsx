@@ -7,7 +7,7 @@
 //   des sucres d'orge suspendus ;
 // • de la neige qui tombe doucement (rien si l'utilisateur
 //   préfère réduire les animations) ;
-// • un peu de neige posée en bas de page.
+// • un peu de neige posée sur le pied de page.
 // Tout s'affiche seul à minuit le 1er décembre (heure de Paris),
 // même sur une page restée ouverte. Aperçu : ?apercu-noel
 
@@ -152,7 +152,6 @@ export default function DecorationsNoel() {
     <>
       <Neige />
       <Guirlande />
-      <div className="noel-neige-sol" aria-hidden />
       <style>{`
         .noel-guirlande{position:fixed;left:0;right:0;top:80px;z-index:49;height:34px;pointer-events:none}
         .noel-ampoule{filter:drop-shadow(0 0 4px currentColor);animation:noel-clignote 2.4s ease-in-out infinite}
@@ -160,9 +159,9 @@ export default function DecorationsNoel() {
         .noel-pendant{position:absolute;top:6px;flex-direction:column;align-items:center;transform-origin:top center;animation:noel-balance 4s ease-in-out infinite}
         .noel-fil{width:1.5px;background:linear-gradient(#2f5d3a,#d4b06a)}
         @keyframes noel-balance{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}
-        .noel-neige-sol{position:fixed;left:0;right:0;bottom:0;height:12px;z-index:44;pointer-events:none;
-          background:radial-gradient(14px 8px at 10px 12px,#fff 98%,transparent) 0 0/26px 12px repeat-x;opacity:.85;filter:drop-shadow(0 -2px 6px #ffffff55)}
-        @media (max-width:767px){.noel-neige-sol{display:none}}
+        html.noel footer{position:relative}
+        html.noel footer::before{content:"";position:absolute;left:0;right:0;top:-9px;height:14px;pointer-events:none;
+          background:radial-gradient(15px 9px at 13px 14px,#fff 98%,transparent) 0 0/26px 14px repeat-x;opacity:.9;filter:drop-shadow(0 -2px 6px #ffffff66)}
         @media (prefers-reduced-motion:reduce){.noel-ampoule,.noel-pendant{animation:none}}
       `}</style>
     </>
