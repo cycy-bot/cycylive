@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Icone from "@/components/icones/Icone";
 import { COULEUR_RARETE, NOM_RARETE, FigurineVisuel, type Rarete } from "@/components/arcade/CosmoFigurine";
 import { BandeauDiscord, BoutonDiscord, sessionDiscord, useCompteDiscord } from "@/components/arcade/compteDiscord";
+import { saisonNoel } from "@/lib/noel";
 
 const BOT = process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr";
 const RARETES: Rarete[] = ["commune", "peu", "rare", "epique", "legendaire", "mythique"];
@@ -21,7 +22,8 @@ const CHANCES_DEFAUT: Record<Rarete, number> = { commune: 52, peu: 27, rare: 13,
 const NIVEAU: Record<Rarete, number> = { commune: 0, peu: 1, rare: 2, epique: 3, legendaire: 4, mythique: 5 };
 
 type Figurine = { id: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; image: string; description?: string; stock: number; distribues: number; numero?: number; numerotee?: boolean; edition?: string };
-type Collection = { id: string; nom: string; emoji: string; description: string; bonus: string; terminee: boolean };
+type Collection = { id: string; nom: string; emoji: string; description: string; bonus: string; terminee: boolean; saison?: string };
+type Saison = { cle: string; nom: string; sousTitre: string; edition: string; debut: string; fin: string; machine: string; total: number; possedees: number; joursRestants: number };
 type Resultat = { figurine: string; nom: string; rarete: Rarete; rareteLabel: string; collection: string; collectionNom: string; image: string; description?: string; stock: number; numero: number; nouvelle: boolean; label: string; bonus: { type: string; label: string }[]; garantie: boolean; given: string[] | null; special?: boolean; numerotee?: boolean; edition?: string; evenement?: string };
 type Etat = {
   disponible: boolean;
@@ -38,6 +40,7 @@ type Etat = {
   gains?: Record<Rarete, string[]>;
   resultat?: Resultat;
   special?: { cle: string; nom: string; emoji: string; couleur: string; disponible: boolean } | null;
+  saison?: Saison | null;
 };
 
 class ConnexionRequise extends Error {}
@@ -55,10 +58,22 @@ const BOULE: Record<Rarete, string> = {
   epique: "/figurines/boule-violette.webp", legendaire: "/figurines/boule-doree.webp", mythique: "/figurines/boule-noire.webp",
 };
 // Repères sur l'image de la machine (en % de sa largeur / hauteur)
-const GLOBE = { x: 51.5, y: 42.5, rx: 44, ry: 19 };
-const BOUTON = { x: 53.9, y: 72.7, r: 8.6 };
-const SORTIE = { x: 53.9, y: 89 };
-const LUMIERES: [number, number, number][] = [[50.3, 8, 1], [25, 74, 0.6], [79.7, 73.8, 0.6], [7, 73, 0.7], [94, 73, 0.7], [16, 5, 0.5], [86, 5, 0.5]];
+type Machine = { src: string; globe: { x: number; y: number; rx: number; ry: number }; bouton: { x: number; y: number; r: number }; sortie: { x: number; y: number }; lumieres: [number, number, number][] };
+const MACHINE: Machine = {
+  src: "/figurines/machine.webp",
+  globe: { x: 51.5, y: 42.5, rx: 44, ry: 19 },
+  bouton: { x: 53.9, y: 72.7, r: 8.6 },
+  sortie: { x: 53.9, y: 89 },
+  lumieres: [[50.3, 8, 1], [25, 74, 0.6], [79.7, 73.8, 0.6], [7, 73, 0.7], [94, 73, 0.7], [16, 5, 0.5], [86, 5, 0.5]],
+};
+// 🎄 La machine décorée de Noël (du 1er au 25 décembre)
+const MACHINE_NOEL: Machine = {
+  src: "/figurines/machine-6741bb8e72.webp",
+  globe: { x: 51, y: 44, rx: 45, ry: 18 },
+  bouton: { x: 52, y: 72.3, r: 7 },
+  sortie: { x: 52, y: 91 },
+  lumieres: [[50.5, 9.5, 0.9], [6, 73, 0.55], [95, 73.5, 0.55], [14, 7, 0.55], [86.5, 7, 0.55]],
+};
 
 /** Petite boule (légende, album). */
 function BouleImg({ rarete, taille = 28, className = "" }: { rarete: Rarete; taille?: number; className?: string }) {
@@ -115,6 +130,25 @@ export default function CosmoCapsules() {
   const [anim, setAnim] = useState<"repos" | "tourne" | "tombe" | "posee" | "ouvre" | "ouverte">("repos");
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const [collection, setCollection] = useState("toutes");
+  // 🎄 Saison de Noël : la machine décorée pour tout le monde (même sans être connecté), dès minuit le 1er décembre
+  const [noelLocal, setNoelLocal] = useState(false);
+  useEffect(() => {
+    const maj = () => { let apercu = false; try { apercu = sessionStorage.getItem("apercu-noel") === "1"; } catch { /* stockage indisponible */ } setNoelLocal(apercu || saisonNoel()); };
+    maj();
+    const t = setInterval(maj, 60000);
+    return () => clearInterval(t);
+  }, []);
+  const saison = etat?.saison || null;
+  const noel = Boolean(saison) || (!etat && noelLocal);
+  const M = noel ? MACHINE_NOEL : MACHINE;
+  // l'album s'ouvre sur les collections de Noël pendant la saison
+  const [albumOuvert, setAlbumOuvert] = useState(false);
+  useEffect(() => {
+    if (albumOuvert || !etat) return;
+    setAlbumOuvert(true);
+    const c = etat.collections.find((x) => x.saison);
+    if (etat.saison && c) setCollection(c.id);
+  }, [etat, albumOuvert]);
   const [filtre, setFiltre] = useState<Rarete | "toutes">("toutes");
   const [reste, setReste] = useState("");
 
@@ -190,29 +224,41 @@ export default function CosmoCapsules() {
     <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
       <div className="min-w-0">
         {/* ── La machine ── */}
-        <div className="cc-scene relative overflow-hidden rounded-[28px] px-4 pb-6 pt-5">
+        <div className={`cc-scene ${noel ? "cc-noel" : ""} relative overflow-hidden rounded-[28px] px-4 pb-6 pt-5`}>
           <div className="cc-etoiles" aria-hidden />
           <p className="cc-titre relative text-center text-2xl sm:text-3xl font-black tracking-wide">Cosmo-Capsules</p>
-          <p className="relative mb-2 text-center text-sm text-[#7a5aa8]">Une capsule par jour · une figurine à collectionner · un cadeau sur Discord</p>
+          {noel ? (
+            <div className="relative mb-2 text-center">
+              <p className="text-sm font-black uppercase tracking-[.18em] text-[#c2410c]">🎄 {saison?.nom || "La Magie des Astres"} · {saison?.sousTitre || "Édition spéciale Noël"}</p>
+              <p className="text-sm text-[#7a5aa8]">Chaque jour, une figurine de Noël que tu n&apos;as pas encore : jamais de doublon !</p>
+              {saison ? (
+                <p className="mt-1 inline-block rounded-full bg-white/80 px-3 py-0.5 text-xs font-bold text-[#7a3a8a]">
+                  {saison.possedees} / {saison.total} figurines de Noël{saison.possedees < saison.total ? ` · encore ${saison.joursRestants} jour${saison.joursRestants > 1 ? "s" : ""}` : " · collection complète 🎉"}
+                </p>
+              ) : null}
+            </div>
+          ) : (
+            <p className="relative mb-2 text-center text-sm text-[#7a5aa8]">Une capsule par jour · une figurine à collectionner · un cadeau sur Discord</p>
+          )}
 
           <div className="relative mx-auto w-full max-w-[420px]">
             <div className={`cc-machine relative w-full ${anim === "tourne" ? "cc-secoue" : ""}`} role="img" aria-label="Machine gatchapon Cosmo-Capsules">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/figurines/machine.webp" alt="" className="block w-full select-none" draggable={false} />
+              <img src={M.src} alt="" className="block w-full select-none" draggable={false} />
               {/* le globe : les boules tournent pendant le tirage */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/figurines/machine.webp" alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-brasse" : ""}`}
-                style={{ clipPath: `ellipse(${GLOBE.rx}% ${GLOBE.ry}% at ${GLOBE.x}% ${GLOBE.y}%)`, transformOrigin: `${GLOBE.x}% ${GLOBE.y}%` }} />
+              <img src={M.src} alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-brasse" : ""}`}
+                style={{ clipPath: `ellipse(${M.globe.rx}% ${M.globe.ry}% at ${M.globe.x}% ${M.globe.y}%)`, transformOrigin: `${M.globe.x}% ${M.globe.y}%` }} />
               {/* le bouton doré : il tourne */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/figurines/machine.webp" alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-manivelle" : ""}`}
-                style={{ clipPath: `circle(${BOUTON.r}% at ${BOUTON.x}% ${BOUTON.y}%)`, transformOrigin: `${BOUTON.x}% ${BOUTON.y}%` }} />
+              <img src={M.src} alt="" aria-hidden draggable={false} className={`cc-couche ${anim === "tourne" ? "cc-manivelle" : ""}`}
+                style={{ clipPath: `circle(${M.bouton.r}% at ${M.bouton.x}% ${M.bouton.y}%)`, transformOrigin: `${M.bouton.x}% ${M.bouton.y}%` }} />
               {/* les étoiles de la machine scintillent */}
-              {LUMIERES.map(([x, y, k], i) => (
+              {M.lumieres.map(([x, y, k], i) => (
                 <span key={i} className={`cc-lumiere ${anim === "tourne" ? "cc-lumiere-vite" : ""}`} style={{ left: `${x}%`, top: `${y}%`, width: `${18 * k}%`, animationDelay: `${i * 0.35}s` }} aria-hidden />
               ))}
               {/* lueur de la sortie */}
-              <span className="cc-sortie" style={{ left: `${SORTIE.x}%`, top: `${SORTIE.y}%` }} aria-hidden />
+              <span className="cc-sortie" style={{ left: `${M.sortie.x}%`, top: `${M.sortie.y}%` }} aria-hidden />
             </div>
 
             {/* la capsule tombe, se pose, puis s'ouvre */}
@@ -363,6 +409,12 @@ export default function CosmoCapsules() {
       {/* ── Règles et raretés ── */}
       <aside className="carte-holo rounded-2xl border border-violet/12 p-5">
         <h2 className="mb-3 text-lg font-semibold text-ink">Comment ça marche ?</h2>
+        {noel ? (
+          <div className="mb-4 rounded-2xl border border-[#f59e0b]/30 bg-[#f59e0b]/10 p-3 text-sm text-ink-soft">
+            <p className="mb-1 font-semibold text-ink">🎄 Spécial Noël, jusqu&apos;au 25 décembre</p>
+            <p>La machine ne contient que les figurines de Noël, en <strong className="text-ink">édition limitée</strong>. Chaque capsule t&apos;en donne une que tu n&apos;as pas encore : une capsule par jour, et ta collection sera <strong className="text-ink">complète le 25 décembre</strong>, sans aucun doublon. Les Légendaires et la Mythique arrivent avec leurs gros cadeaux 🎁</p>
+          </div>
+        ) : null}
         <ol className="mb-5 list-inside list-decimal space-y-2 text-sm text-ink-soft">
           <li>Connecte-toi avec Discord, puis tourne la manivelle : <strong className="text-ink">une capsule par jour</strong>.</li>
           <li>Ouvre-la : une figurine rejoint ton album, et un cadeau arrive sur ton compte Discord. <strong className="text-ink">Plus la figurine est rare, plus le cadeau est gros</strong>. Jamais de capsule vide !</li>
@@ -385,6 +437,7 @@ export default function CosmoCapsules() {
       </aside>
 
       <style>{`
+        .cc-noel{background:radial-gradient(ellipse at 50% 0%,#fff7f0 0%,#f6e6ff 45%,#e6d4ff 100%)!important}
         .cc-scene{background:radial-gradient(ellipse at 50% 0%,#fff1fa 0%,#f3e6ff 45%,#e3d6ff 100%);box-shadow:0 0 0 3px #ffffffaa,0 30px 80px -30px #c9a8ff}
         .cc-etoiles{position:absolute;inset:0;background-image:radial-gradient(#ffffff 1.5px,transparent 2px),radial-gradient(#ffd23f 1.2px,transparent 1.8px),radial-gradient(#ffb3d6 1.5px,transparent 2px);background-size:90px 90px,140px 140px,60px 60px;background-position:10px 20px,60px 70px,30px 40px;opacity:.8;animation:cc-scintille 4s ease-in-out infinite alternate}
         @keyframes cc-scintille{to{opacity:.4}}

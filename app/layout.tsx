@@ -6,6 +6,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import BarreMobile from "@/components/BarreMobile";
 import CielAnime from "@/components/CielAnime";
+import DecorationsNoel from "@/components/DecorationsNoel";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -61,6 +62,7 @@ export default function RootLayout({
           Aller au contenu
         </a>
         <CielAnime />
+        <DecorationsNoel />
         <Header />
         <main id="contenu" tabIndex={-1} className="flex-1 pb-16 md:pb-0 outline-none">{children}</main>
         <Footer />
