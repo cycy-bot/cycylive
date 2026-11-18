@@ -43,6 +43,7 @@ export const FORMATS = [
   { id: "evenement", label: "Événement spécial", emoji: "✨" },
   { id: "caritatif", label: "Live caritatif", emoji: "💜" },
   { id: "giveaway", label: "Giveaway", emoji: "🎁" },
+  { id: "subathon", label: "Subathon", emoji: "⏳" },
   { id: "tournoi", label: "Tournoi", emoji: "🥇" },
   { id: "anniversaire", label: "Anniversaire", emoji: "🎂" },
   { id: "halloween", label: "Halloween", emoji: "🎃" },

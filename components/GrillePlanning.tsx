@@ -15,7 +15,7 @@ export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
 type TypeLive = "caritatif" | "horreur" | "halloween" | "noel" | "anniversaire" | "tournoi" | "giveaway" | "communautaire" | "evenement" | "";
 type TypeSpecial = Exclude<TypeLive, "">;
 const sansAcc = (t: string) => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-const PAR_CATEGORIE: Record<string, TypeLive> = { caritatif: "caritatif", horreur: "horreur", halloween: "halloween", noel: "noel", anniversaire: "anniversaire", tournoi: "tournoi", giveaway: "giveaway", communautaire: "communautaire", evenement: "evenement" };
+const PAR_CATEGORIE: Record<string, TypeLive> = { caritatif: "caritatif", horreur: "horreur", halloween: "halloween", noel: "noel", anniversaire: "anniversaire", tournoi: "tournoi", giveaway: "giveaway", communautaire: "communautaire", evenement: "evenement", subathon: "evenement" };
 function typeLive(jour: JourGrille): TypeLive {
   if (jour.categorie) return PAR_CATEGORIE[jour.categorie] || "";
   const t = sansAcc(`${jour.titre || ""} ${jour.jeux.join(" ")} ${jour.note || ""}`);
