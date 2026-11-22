@@ -121,7 +121,7 @@ export default function StatutTwitch() {
               <>
                 <p className="text-ink-soft mb-1">
                   {prochainLive.estAujourdhui
-                    ? "Ce soir"
+                    ? momentDuJour(prochainLive.heure)
                     : formaterDateProchainLive(prochainLive.timestamp)}
                   {prochainLive.heure ? <> · {prochainLive.heure}</> : null}
                   {prochainLive.jeu ? <> · <span className="text-lilac">{prochainLive.jeu}</span></> : null}
@@ -153,4 +153,15 @@ export default function StatutTwitch() {
       </div>
     </section>
   );
+}
+
+// « Ce matin », « Cet après-midi », « Ce soir » ou « Cette nuit » selon l'heure du live (ex. « 8h », « 21h30 »)
+function momentDuJour(heure?: string): string {
+  const m = String(heure || "").match(/(\d{1,2})\s*h/i);
+  if (!m) return "Aujourd’hui";
+  const h = Number(m[1]);
+  if (h >= 5 && h < 12) return "Ce matin";
+  if (h >= 12 && h < 18) return "Cet après-midi";
+  if (h >= 18) return "Ce soir";
+  return "Cette nuit";
 }

@@ -189,7 +189,15 @@ export default function PlanningSemaines({ planning, calendrier, modifierJour, s
                 <>
                   <input aria-label={`Début du ${NOMS[i]}`} value={e.heure ?? ""} placeholder="21h30" onChange={(x) => maj({ heure: x.target.value })} className={`${CHAMP} w-20`} />
                   <span className="text-ink-soft text-sm">→</span>
-                  <input aria-label={`Fin du ${NOMS[i]}`} value={e.fin ?? ""} placeholder="Fin (1h)" onChange={(x) => maj({ fin: x.target.value })} className={`${CHAMP} w-24`} />
+                  {e.fin === "aucune" ? (
+                    <span className="rounded-lg border border-dashed border-violet/30 px-3 py-1.5 text-sm text-ink-soft">sans fin</span>
+                  ) : (
+                    <input aria-label={`Fin du ${NOMS[i]}`} value={e.fin ?? ""} placeholder="Fin (1h)" onChange={(x) => maj({ fin: x.target.value })} className={`${CHAMP} w-24`} />
+                  )}
+                  <label className="inline-flex items-center gap-1.5 text-xs text-ink-soft cursor-pointer" title="Pas d'heure de fin affichée ce jour-là (subathon, live sans horaire de fin…)">
+                    <input type="checkbox" checked={e.fin === "aucune"} onChange={(x) => maj({ fin: x.target.checked ? "aucune" : "" })} />
+                    Pas d’heure de fin
+                  </label>
                 </>
               )}
               <label className="ml-auto inline-flex items-center gap-1.5 text-xs text-ink-soft cursor-pointer" title="Il y aura un live ce jour-là, mais l'heure n'est pas encore fixée">

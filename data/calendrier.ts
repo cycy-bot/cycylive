@@ -52,7 +52,7 @@ export function dateParis(d: Date): string {
 
 /** Le jour du planning habituel, avec l'exception de cette date si elle existe. */
 export function jourAvecException(jour: JourPlanning, exception?: ExceptionPlanning): JourPlanning & { note?: string; modifie?: boolean } {
-  if (!exception) return jour;
+  if (!exception) return jour.fin === "aucune" ? { ...jour, fin: undefined } : jour;
   if (exception.off) return { jour: jour.jour, off: true, note: exception.note, modifie: true };
   // Soirée personnalisée ce jour-là (titre, catégorie ou jeux) ; sinon celle de la semaine type
   const perso = Boolean(exception.titre || exception.categorie || jeuxDe(exception).length || deroule(exception).length);
@@ -60,8 +60,11 @@ export function jourAvecException(jour: JourPlanning, exception?: ExceptionPlann
   const d = deroule(src);
   const soiree = { jeux: jeuxDe(src), titre: src.titre, categorie: src.categorie, etapes: d.length ? d : undefined };
   const aVenir = Boolean(exception.aVenir);
-  return { jour: jour.jour, off: false, heure: aVenir ? undefined : exception.heure || jour.heure, fin: aVenir ? undefined : exception.fin || jour.fin, aVenir, ...soiree, jeu: libelleSoiree(soiree) || undefined, note: exception.note, modifie: true };
+  return { jour: jour.jour, off: false, heure: aVenir ? undefined : exception.heure || jour.heure, fin: aVenir || exception.fin === "aucune" ? undefined : sansAucune(exception.fin || jour.fin), aVenir, ...soiree, jeu: libelleSoiree(soiree) || undefined, note: exception.note, modifie: true };
 }
+
+// « aucune » : pas d'heure de fin affichée ce jour-là
+const sansAucune = (f?: string) => (f && f !== "aucune" ? f : undefined);
 
 const texte = (v: unknown, max: number) => (typeof v === "string" ? v.trim().slice(0, max) : "");
 const TYPES = TYPES_EVENEMENT.map((t) => t.valeur);

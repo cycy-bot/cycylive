@@ -20,7 +20,7 @@ export type JourPlanning = {
   titre?: string; // titre libre de la soirée (« Soirée jeux communautaires »…)
   categorie?: string; // format de la soirée (voir FORMATS) : choisit l'illustration du planning
   heure?: string; // format "21h30"
-  fin?: string; // heure de fin (facultative), format "1h" ou "23h30"
+  fin?: string; // heure de fin (facultative), format "1h" ou "23h30" ; « aucune » = pas d'heure de fin ce jour-là (même si la semaine type en a une)
   aVenir?: boolean; // live prévu ce jour-là, horaires pas encore connus
   etapes?: Etape[]; // déroulé de la soirée (ex. 19h parties persos → 21h15 giveaway → parties persos)
 };
