@@ -8,7 +8,7 @@ import Icone from "@/components/icones/Icone";
 import { formatDe, lignesDeroule, type Etape } from "@/data/planning";
 import { IconChevronLeft, IconChevronRight, IconCrystal } from "@/components/Icons";
 
-export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean; etapes?: Etape[] };
+export type JourGrille = { jour: string; date: string; off: boolean; heure?: string; fin?: string; reel?: boolean; jeux: string[]; titre?: string; categorie?: string; aVenir?: boolean; note?: string; modifie?: boolean; etapes?: Etape[] };
 export type SemaineGrille = { du: string; au: string; jours: JourGrille[] };
 
 // Lives spéciaux (même détection que l'image du planning Discord) : illustration et couleurs à part
@@ -186,6 +186,7 @@ export default function GrillePlanning({ semaines, aujourdhui }: { semaines: Sem
                     {jour.aVenir ? <span className="font-medium text-lilac">Horaires à venir</span> : <>
                       {jour.heure}
                       {jour.fin ? <span className="font-normal text-ink-soft"> → {jour.fin}</span> : null}
+                      {jour.reel ? <span className="ml-1.5 font-normal text-emerald-300/80" title="Horaires réels du live">✓</span> : null}
                     </>}
                   </span>
                 );

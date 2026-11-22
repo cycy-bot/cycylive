@@ -10,8 +10,21 @@ import { IconCalendar, IconArrowRight } from "@/components/Icons";
 
 const ICONE_EVENEMENT: Record<string, NomIcone> = { quiz: "quiz", discord: "fete", projet: "outils", live: "live", autre: "etoile" };
 
+// Horaires RÉELS des lives passés (CycyBot les connaît grâce à ses récaps)
+const BOT = (process.env.NEXT_PUBLIC_CYCYBOT_URL || "https://bot.cycylive.fr").replace(/\/+$/, "");
+type LiveReel = { heure: string; fin: string; finMs: number };
+async function livesReels(): Promise<Record<string, LiveReel>> {
+  try {
+    const r = await fetch(BOT + "/api/lives-reels", { next: { revalidate: 120 }, signal: AbortSignal.timeout(4000) });
+    if (!r.ok) return {};
+    return ((await r.json())?.jours as Record<string, LiveReel>) || {};
+  } catch {
+    return {};
+  }
+}
+
 export default async function Planning() {
-  const [habituel, calendrier] = await Promise.all([lirePlanning(), lireCalendrier()]);
+  const [habituel, calendrier, reels] = await Promise.all([lirePlanning(), lireCalendrier(), livesReels()]);
   // La semaine en cours et les 3 suivantes : les changements prévus (planning de /admin) remplacent la semaine type
   const lundi = datesSemaineActuelle();
   const aujourdhui = dateParis(new Date());
@@ -23,6 +36,11 @@ export default async function Planning() {
       const jour = habituel.find((x) => x.jour === JOURS_ORDRE[k]);
       if (!jour) return [];
       const j = jourAvecException(jour, calendrier.exceptions[dates[i]]);
+      // Jour passé (ou live d'aujourd'hui terminé) : on affiche ce qui a vraiment été fait
+      const r = reels[dates[i]];
+      if (r && (dates[i] < aujourdhui || (dates[i] === aujourdhui && r.finMs < Date.now()))) {
+        return [{ jour: j.jour, date: dates[i], off: false, heure: r.heure, fin: r.fin, reel: true, jeux: jeuxDe(j), titre: j.titre, categorie: j.categorie, aVenir: false, note: j.note, modifie: j.modifie, etapes: deroule(j) }];
+      }
       return [{ jour: j.jour, date: dates[i], off: j.off, heure: j.heure, fin: j.fin, jeux: jeuxDe(j), titre: j.titre, categorie: j.categorie, aVenir: Boolean(j.aVenir), note: j.note, modifie: j.modifie, etapes: deroule(j) }];
     });
     return { du: court(dates[0]), au: court(dates[6]), jours };
